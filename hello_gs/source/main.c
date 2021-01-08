@@ -10,7 +10,7 @@
 =================================================================*/
 
 #define GS_IMPL
-#include <gunslinger/gs.h>
+#include <gs/gs.h>
 
 void update()
 {
