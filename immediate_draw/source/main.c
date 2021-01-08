@@ -9,10 +9,10 @@
 ================================================================*/
 
 #define GS_IMPL
-#include <gunslinger/gs.h>
+#include <gs/gs.h>
 
 #define GS_IMMEDIATE_DRAW_IMPL
-#include <gunslinger/util/gs_idraw.h>
+#include <gs/util/gs_idraw.h>
 
 gs_command_buffer_t               cb  = {0};
 gs_immediate_draw_t               gsi = {0};
