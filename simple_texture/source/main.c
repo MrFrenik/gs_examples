@@ -4,8 +4,7 @@
 
     The purpose of this example is to demonstrate how to create a 
     dynamic texture, load a texture from file, and explicitly construct 
-    GPU resources to use for your application. Uses a shader to blend
-    two textures together.
+    GPU resources to use for your application.
 
     Included: 
         * Constructing textures via tetxure despcriptors 
