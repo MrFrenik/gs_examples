@@ -16,3 +16,6 @@ asset_manager/bin/.vs/App/v16/Browse.VC.db-shm
 asset_manager/bin/.vs/App/v16/Browse.VC.db-wal
 asset_manager/bin/.vs/App/v16/Browse.VC.opendb
 *.exe
+*.ilk
+*.pdb
+audio/bin/main.obj

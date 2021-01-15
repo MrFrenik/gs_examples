@@ -4,7 +4,7 @@ mkdir bin
 pushd bin
 
 rem Name
-set name=SimpleTexture
+set name=App
 
 rem Include directories 
 set inc=/I ..\..\third_party\include\
@@ -28,7 +28,7 @@ rem /EHsc /link /SUBSYSTEM:CONSOLE /NODEFAULTLIB:msvcrt.lib /NODEFAULTLIB:LIBCMT
 rem %os_libs%
 
 rem Compile Debug
-cl /w /MP -Zi /DEBUG:FULL /Fe%name%.exe %src_all% %inc% ^
+cl /W2 /MP -Zi /DEBUG:FULL /Fe%name%.exe %src_all% %inc% ^
 /EHsc /link /SUBSYSTEM:CONSOLE /NODEFAULTLIB:msvcrt.lib /NODEFAULTLIB:LIBCMT ^
 %os_libs%
 

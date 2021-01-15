@@ -4,7 +4,7 @@ mkdir bin
 pushd bin
 
 rem Name
-set name=HelloGS
+set name=App
 
 rem Include directories 
 set inc=/I ..\..\third_party\include\
