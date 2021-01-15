@@ -518,6 +518,10 @@ extern "C" {
     #define gs_force_inline gs_inline
 #endif
 
+#ifdef __cplusplus
+    #pragma warning(disable:4996)
+#endif
+
 /*===================
 // GS_API_DECL
 ===================*/
@@ -1404,7 +1408,7 @@ do {\
 #define gs_byte_buffer_read_bulkc(__BUFFER, __T, __NAME, __SZ)\
     __T __NAME = gs_default_val();\
     __T* gs_macro_cat(__NAME, __LINE__) = &(__NAME);\
-    gs_byte_buffer_read_bulk(__BUFFER, &gs_macro_cat(__NAME, __LINE__), __SZ);
+    gs_byte_buffer_read_bulk(__BUFFER, (void**)&gs_macro_cat(__NAME, __LINE__), __SZ);
 
 /* Desc */
 GS_API_DECL void gs_byte_buffer_init(gs_byte_buffer_t* buffer);
@@ -1548,7 +1552,7 @@ void gs_dyn_array_set_data_i(void** arr, void* val, size_t val_len, uint32_t off
 
 #define gs_dyn_array_push(__ARR, __ARRVAL)\
     do {\
-        gs_dyn_array_init(&(__ARR), sizeof(*(__ARR)));\
+        gs_dyn_array_init((void**)&(__ARR), sizeof(*(__ARR)));\
         if (!(__ARR) || ((__ARR) && gs_dyn_array_need_grow(__ARR, 1))) {\
             *((void **)&(__ARR)) = gs_dyn_array_grow(__ARR); \
         }\
@@ -1558,14 +1562,14 @@ void gs_dyn_array_set_data_i(void** arr, void* val, size_t val_len, uint32_t off
 
 #define gs_dyn_array_reserve(__ARR, __AMOUNT)\
     do {\
-        if ((!__ARR)) gs_dyn_array_init(&(__ARR), sizeof(*(__ARR)));\
+        if ((!__ARR)) gs_dyn_array_init((void**)&(__ARR), sizeof(*(__ARR)));\
         if ((!__ARR) || (size_t)__AMOUNT > gs_dyn_array_capacity(__ARR)) {\
             *((void **)&(__ARR)) = gs_dyn_array_resize_impl(__ARR, sizeof(*__ARR), __AMOUNT);\
         }\
     } while(0)
 
 #define gs_dyn_array_empty(__ARR)\
-    (gs_dyn_array_init(&(__ARR), sizeof(*(__ARR))), (gs_dyn_array_size(__ARR) == 0))
+    (gs_dyn_array_init((void**)&(__ARR), sizeof(*(__ARR))), (gs_dyn_array_size(__ARR) == 0))
 
 #define gs_dyn_array_pop(__ARR)\
     do {\
@@ -1639,13 +1643,21 @@ typedef enum gs_hash_table_entry_state
 #define gs_hash_table_new(__K, __V)\
     NULL
 
+gs_force_inline
+void __gs_hash_table_init_impl(void** ht, size_t sz)
+{
+    *ht = gs_malloc(sz);
+}
+
 #define gs_hash_table_init(__HT, __K, __V)\
     do {\
         size_t entry_sz = sizeof(__K) + sizeof(__V) + sizeof(gs_hash_table_entry_state);\
         size_t ht_sz = sizeof(__K) + sizeof(__V) + sizeof(void*) + 2 * sizeof(size_t);\
-        (__HT) = gs_malloc(ht_sz);\
+        __gs_hash_table_init_impl((void**)&(__HT), ht_sz);\
         memset((__HT), 0, ht_sz);\
-        (__HT)->data = gs_dyn_array_resize_impl(NULL, entry_sz, 2);\
+        gs_dyn_array_reserve(__HT->data, 2);\
+        __HT->data[0].state = GS_HASH_TABLE_ENTRY_INACTIVE;\
+        __HT->data[1].state = GS_HASH_TABLE_ENTRY_INACTIVE;\
         uintptr_t d0 = (uintptr_t)&((__HT)->data[0]);\
         uintptr_t d1 = (uintptr_t)&((__HT)->data[1]);\
         ptrdiff_t diff = (d1 - d0);\
@@ -1704,10 +1716,13 @@ typedef enum gs_hash_table_entry_state
         float __LF = gs_hash_table_load_factor(__HT);\
         if (__LF >= 0.5f || !__CAP)\
         {\
-            gs_hash_table_grow(__HT, __CAP ? __CAP * 2 : 1);\
+            uint32_t NEW_CAP = __CAP ? __CAP * 2 : 2;\
+            size_t ENTRY_SZ = sizeof(__HT->tmp_key) + sizeof(__HT->tmp_val) + sizeof(gs_hash_table_entry_state);\
+            gs_dyn_array_reserve(__HT->data, NEW_CAP);\
+            /**((void **)&(__HT->data)) = gs_dyn_array_resize_impl(__HT->data, ENTRY_SZ, NEW_CAP);*/\
             /* Iterate through data and set state to null, from __CAP -> __CAP * 2 */\
             /* Memset here instead */\
-            for (uint32_t __I = __CAP; __I < __CAP * 2; ++__I) {\
+            for (uint32_t __I = __CAP; __I < NEW_CAP; ++__I) {\
                 (__HT)->data[__I].state = GS_HASH_TABLE_ENTRY_INACTIVE;\
             }\
             __CAP = gs_hash_table_capacity(__HT);\
@@ -1715,7 +1730,7 @@ typedef enum gs_hash_table_entry_state
     \
         /* Get hash of key */\
         (__HT)->tmp_key = (__HMK);\
-        size_t __HSH = gs_hash_bytes(&((__HT)->tmp_key), sizeof((__HT)->tmp_key), GS_HASH_TABLE_HASH_SEED);\
+        size_t __HSH = gs_hash_bytes((void*)&((__HT)->tmp_key), sizeof((__HT)->tmp_key), GS_HASH_TABLE_HASH_SEED);\
         size_t __HSH_IDX = __HSH % __CAP;\
         (__HT)->tmp_key = (__HT)->data[__HSH_IDX].key;\
         uint32_t c = 0;\
@@ -1723,7 +1738,7 @@ typedef enum gs_hash_table_entry_state
         /* Find valid idx and place data */\
         while (\
             c < __CAP\
-            && __HSH != gs_hash_bytes(&__HT->tmp_key, sizeof((__HT)->tmp_key), GS_HASH_TABLE_HASH_SEED)\
+            && __HSH != gs_hash_bytes((void*)&__HT->tmp_key, sizeof((__HT)->tmp_key), GS_HASH_TABLE_HASH_SEED)\
             && __HT->data[__HSH_IDX].state == GS_HASH_TABLE_ENTRY_ACTIVE)\
         {\
             __HSH_IDX = ((__HSH_IDX + 1) % __CAP);\
@@ -1925,14 +1940,14 @@ void** gs_slot_array_init(void** sa, size_t sz)
 }
 
 #define gs_slot_array_init_all(__SA)\
-    (gs_slot_array_init(&(__SA), sizeof(*(__SA))), gs_dyn_array_init((void**)&((__SA)->indices), sizeof(uint32_t)),\
+    (gs_slot_array_init((void**)&(__SA), sizeof(*(__SA))), gs_dyn_array_init((void**)&((__SA)->indices), sizeof(uint32_t)),\
         gs_dyn_array_init((void**)&((__SA)->data), sizeof((__SA)->tmp)))
 
 gs_force_inline
 uint32_t gs_slot_array_insert_func(void** indices, void** data, void* val, size_t val_len, uint32_t* ip)
 {
     // Find next available index
-    u32 idx = __gs_slot_array_find_next_available_index(*indices);
+    u32 idx = __gs_slot_array_find_next_available_index((uint32_t*)*indices);
 
     if (idx == gs_dyn_array_size(*indices)) {
         uint32_t v = 0;
@@ -4455,7 +4470,7 @@ typedef struct gs_asset_texture_t
     gs_graphics_texture_desc_t desc;
 } gs_asset_texture_t;
 
-GS_API_DECL void gs_asset_texture_load_from_file(const char* path, void* out, bool32_t keep_data);
+GS_API_DECL void gs_asset_texture_load_from_file(const char* path, void* out, gs_graphics_texture_desc_t* desc, bool32_t flip_on_load, bool32_t keep_data);
 
 // Font
 typedef struct gs_baked_char_t
@@ -4554,7 +4569,7 @@ GS_API_DECL gs_app_desc_t gs_main(int32_t argc, char** argv);
 
 void gs_byte_buffer_init(gs_byte_buffer_t* buffer)
 {
-    buffer->data     = gs_malloc(GS_BYTE_BUFFER_DEFAULT_CAPCITY);
+    buffer->data     = (uint8_t*)gs_malloc(GS_BYTE_BUFFER_DEFAULT_CAPCITY);
     buffer->capacity = GS_BYTE_BUFFER_DEFAULT_CAPCITY;
     buffer->size     = 0;
     buffer->position = 0;
@@ -4582,7 +4597,7 @@ void gs_byte_buffer_clear(gs_byte_buffer_t* buffer)
 
 void gs_byte_buffer_resize(gs_byte_buffer_t* buffer, size_t sz)
 {
-    uint8_t* data = gs_realloc(buffer->data, sz);
+    uint8_t* data = (uint8_t*)gs_realloc(buffer->data, sz);
 
     if (data == NULL) {
         return;
@@ -4726,32 +4741,32 @@ gs_camera_t gs_camera_perspective()
 
 gs_vec3 gs_camera_forward(gs_camera_t* cam)
 {
-    return (gs_quat_rotate(cam->transform.rotation, (gs_vec3){0.0f, 0.0f, -1.0f}));
+    return (gs_quat_rotate(cam->transform.rotation, gs_v3(0.0f, 0.0f, -1.0f)));
 } 
 
 gs_vec3 gs_camera_backward(gs_camera_t* cam)
 {
-    return (gs_quat_rotate(cam->transform.rotation, (gs_vec3){0.0f, 0.0f, 1.0f}));
+    return (gs_quat_rotate(cam->transform.rotation, gs_v3(0.0f, 0.0f, 1.0f)));
 } 
 
 gs_vec3 gs_camera_up(gs_camera_t* cam)
 {
-    return (gs_quat_rotate(cam->transform.rotation, (gs_vec3){0.0f, 1.0f, 0.0f}));
+    return (gs_quat_rotate(cam->transform.rotation, gs_v3(0.0f, 1.0f, 0.0f)));
 }
 
 gs_vec3 gs_camera_down(gs_camera_t* cam)
 {
-    return (gs_quat_rotate(cam->transform.rotation, (gs_vec3){0.0f, -1.0f, 0.0f}));
+    return (gs_quat_rotate(cam->transform.rotation, gs_v3(0.0f, -1.0f, 0.0f)));
 }
 
 gs_vec3 gs_camera_right(gs_camera_t* cam)
 {
-    return (gs_quat_rotate(cam->transform.rotation, (gs_vec3){1.0f, 0.0f, 0.0f}));
+    return (gs_quat_rotate(cam->transform.rotation, gs_v3(1.0f, 0.0f, 0.0f)));
 }
 
 gs_vec3 gs_camera_left(gs_camera_t* cam)
 {
-    return (gs_quat_rotate(cam->transform.rotation, (gs_vec3){-1.0f, 0.0f, 0.0f}));
+    return (gs_quat_rotate(cam->transform.rotation, gs_v3(-1.0f, 0.0f, 0.0f)));
 }
 
 gs_vec3 gs_camera_unproject(gs_camera_t* cam, gs_vec3 coords, s32 view_width, s32 view_height)
@@ -4781,11 +4796,11 @@ gs_vec3 gs_camera_unproject(gs_camera_t* cam, gs_vec3 coords, s32 view_width, s3
     }
 
     out.w = 1.f / out.w;
-    wc = (gs_vec3) {
+    wc = gs_v3(
         out.x * out.w,
         out.y * out.w,
         out.z * out.w
-    };
+    );
 
     return wc;
 }
@@ -4848,7 +4863,7 @@ gs_mat4 gs_camera_get_projection(gs_camera_t* cam, s32 view_width, s32 view_heig
 
 void gs_camera_offset_orientation(gs_camera_t* cam, f32 yaw, f32 pitch)
 {
-    gs_quat x = gs_quat_angle_axis(gs_deg2rad(yaw), (gs_vec3){0.f, 1.f, 0.f});      // Absolute up
+    gs_quat x = gs_quat_angle_axis(gs_deg2rad(yaw), gs_v3(0.f, 1.f, 0.f));      // Absolute up
     gs_quat y = gs_quat_angle_axis(gs_deg2rad(pitch), gs_camera_right(cam));            // Relative right
     cam->transform.rotation = gs_quat_mul(gs_quat_mul(x, y), cam->transform.rotation);
 }
@@ -4916,21 +4931,26 @@ bool32_t gs_util_load_texture_data_from_file(const char* file_path, int32_t* wid
 // GS_ASSET_TYPES
 ==========================*/
 
-void gs_asset_texture_load_from_file(const char* path, void* out, bool32_t keep_data)
+void gs_asset_texture_load_from_file(const char* path, void* out, gs_graphics_texture_desc_t* desc, bool32_t flip_on_load, bool32_t keep_data)
 {
     gs_asset_texture_t* t = (gs_asset_texture_t*)out; 
 
     memset(&t->desc, 0, sizeof(gs_graphics_texture_desc_t));
-    t->desc.format = GS_GRAPHICS_TEXTURE_FORMAT_RGBA8;
-    t->desc.min_filter = GS_GRAPHICS_TEXTURE_FILTER_LINEAR;
-    t->desc.mag_filter = GS_GRAPHICS_TEXTURE_FILTER_LINEAR; 
-    t->desc.wrap_s = GS_GRAPHICS_TEXTURE_WRAP_REPEAT;
-    t->desc.wrap_t = GS_GRAPHICS_TEXTURE_WRAP_REPEAT;
+
+    if (desc) {
+        t->desc = *desc;
+    } else {
+        t->desc.format = GS_GRAPHICS_TEXTURE_FORMAT_RGBA8;
+        t->desc.min_filter = GS_GRAPHICS_TEXTURE_FILTER_LINEAR;
+        t->desc.mag_filter = GS_GRAPHICS_TEXTURE_FILTER_LINEAR; 
+        t->desc.wrap_s = GS_GRAPHICS_TEXTURE_WRAP_REPEAT;
+        t->desc.wrap_t = GS_GRAPHICS_TEXTURE_WRAP_REPEAT;
+    }
 
     // Load texture data
-    const bool flip_vertically_on_load = true;
     int32_t num_comps = 0;
-    bool32_t loaded = gs_util_load_texture_data_from_file(path, &t->desc.width, &t->desc.height, &num_comps, &t->desc.data, flip_vertically_on_load);
+    bool32_t loaded = gs_util_load_texture_data_from_file(path, (int32_t*)&t->desc.width, 
+        (int32_t*)&t->desc.height, (uint32_t*)&num_comps, (void**)&t->desc.data, flip_on_load);
 
     if (!loaded) {
         gs_println("Warning: could not load texture: %s", path);
@@ -4958,8 +4978,8 @@ void gs_asset_font_load_from_file(const char* path, void* out, uint32_t point_si
     const u32 w = 512;
     const u32 h = 512;
     const u32 num_comps = 4;
-    u8* alpha_bitmap = gs_malloc(w * h);
-    u8* flipmap = gs_malloc(w * h * num_comps);
+    u8* alpha_bitmap = (u8*)gs_malloc(w * h);
+    u8* flipmap = (u8*)gs_malloc(w * h * num_comps);
     memset(alpha_bitmap, 0, w * h);
     memset(flipmap, 0, w * h * num_comps);
     s32 v = stbtt_BakeFontBitmap((u8*)ttf, 0, (float)point_size, alpha_bitmap, w, h, 32, 96, (stbtt_bakedchar*)f->glyphs); // no guarantee this fits!
