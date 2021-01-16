@@ -19,3 +19,6 @@ asset_manager/bin/.vs/App/v16/Browse.VC.opendb
 *.ilk
 *.pdb
 audio/bin/main.obj
+asset_manager/bin/.vs/App/v16/.suo
+gs_cpp/bin/app.obj
+gs_cpp/bin/main.obj
