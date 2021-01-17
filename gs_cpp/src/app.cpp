@@ -60,9 +60,29 @@ void App::Shutdown()
     // Nothing by default...
 }
 
-void App::LoadTexture(std::string name, std::string path, gs_graphics_texture_desc_t* desc) 
+void App::PlaceAsset(const std::string& name, gs_asset_t hndl)
 {
-    m_assetTable[name] = gs_assets_load_from_file(&m_gsa, gs_asset_texture_t, path.c_str(), desc); 
+    gs_hash_table_insert(m_assetTable, gs_hash_str64(name.c_str()), hndl);
+}
+
+gs_asset_t App::GetAsset(const std::string& name)
+{
+    return gs_hash_table_get(m_assetTable, gs_hash_str64(name.c_str()));
+}
+
+void App::LoadTexture(const std::string& name, const std::string& path, gs_graphics_texture_desc_t* desc) 
+{
+    PlaceAsset(name, gs_assets_load_from_file(&m_gsa, gs_asset_texture_t, path.c_str(), desc));
+}
+
+void App::LoadFont(const std::string& name, const std::string& path, uint32_t font_point)
+{
+    PlaceAsset(name, gs_assets_load_from_file(&m_gsa, gs_asset_font_t, path.c_str(), font_point));
+}
+
+void App::LoadAudio(const std::string& name, const std::string& path)
+{
+    PlaceAsset(name, gs_assets_load_from_file(&m_gsa, gs_asset_audio_t, path.c_str()));
 }
 
 void App::Run() 
