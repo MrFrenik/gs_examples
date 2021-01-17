@@ -13,12 +13,13 @@ typedef struct custom_asset_t
 
 // Custom load from file function you can use to load resource data from file
 // Can give any optional parameters AFTER void* out parameter.
-void load_custom_asset_from_file(const char* path, void* out, uint32_t optional_uint_param, double optional_float_param)
+void load_custom_asset_from_file(const char* path, void* out, const char* name, uint32_t optional_uint_param, double optional_float_param)
 {
     // Load your data here however you want...
     custom_asset_t* ca = (custom_asset_t*)out;
 
     // Set data for optional param
+    ca->name = name;
     ca->udata = optional_uint_param;
     ca->fdata = (float)optional_float_param;
 }
@@ -96,9 +97,9 @@ class MyApp : public App
 
         virtual ~MyApp() override {}
 
-        void LoadCustomData(const std::string& name, const std::string& path, uint32_t udata = 10, float fdata = 10.f)
+        void LoadCustomData(const std::string& name, const std::string& path, const char* opt_name = "default", uint32_t udata = 10, float fdata = 10.f)
         {
-            PlaceAsset(name, gs_assets_load_from_file(&m_gsa, custom_asset_t, NULL, udata, fdata)); 
+            PlaceAsset(name, gs_assets_load_from_file(&m_gsa, custom_asset_t, NULL, opt_name, udata, fdata)); 
         }
 
         virtual void Init() override 
@@ -115,12 +116,12 @@ class MyApp : public App
             // Create asset and get handle for custom data placed into asset manager
             custom_asset_t custom = {};
             custom.name = "whatever";
-            custom.udata = 10;
+            custom.udata = 50;
             custom.fdata = 3.145f;
             PlaceAsset("c0", gs_assets_create_asset(&m_gsa, custom_asset_t, &custom));
 
             // Load custom data "from file" (can provide optional data AFTER path)
-            LoadCustomData("c1", "path/to/data", 10, 2.45f);
+            LoadCustomData("c1", "path/to/data", "name", 10, 2.45f);
 
             // Load a texture with custom parameters
             gs_graphics_texture_desc_t desc = {};
@@ -192,7 +193,7 @@ class MyApp : public App
                     float uvx1 = uvp->z;
                     float uvy1 = uvp->w;
 
-                    gs_vec2 dim = gs_vec2_scale(gs_v2(frame->width, frame->height), 40.f);
+                    gs_vec2 dim = gs_vec2_scale(gs_v2(frame->width, frame->height), 60.f);
                     gs_vec2 a = gs_v2(100.f, 100.f);
                     gs_vec2 b = gs_v2(a.x + dim.x, a.y + dim.y);
 
@@ -234,11 +235,11 @@ class MyApp : public App
             {
                 gsi_camera2D(&m_gsi);
 
-                gs_snprintfc(tmpbuf, 256, "c0 <%zu, %.2f>", c0->udata, c0->fdata);
+                gs_snprintfc(tmpbuf, 512, "c0 <%zu, %.2f, %s>", c0->udata, c0->fdata, c0->name);
                 gsi_text(&m_gsi, 200.f, 400.f, tmpbuf, fp0, false, 255, 200, 100, 255);
 
-                gs_snprintfc(tmpbuf1, 256, "c1 <%zu, %.2f>", c1->udata, c1->fdata);
-                gsi_text(&m_gsi, 200.f, 500.f, tmpbuf1, fp1, false, 255, 0, 100, 255);
+                gs_snprintfc(tmpbuf1, 256, "c1 <%zu, %.2f, %s>", c1->udata, c1->fdata, c1->name);
+                gsi_text(&m_gsi, 50.f, 500.f, tmpbuf1, fp1, false, 255, 0, 100, 255);
             }
             gsi_pop_matrix(&m_gsi); // projection
 
