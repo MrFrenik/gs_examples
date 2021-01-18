@@ -193,7 +193,7 @@ class MyApp : public App
                     float uvx1 = uvp->z;
                     float uvy1 = uvp->w;
 
-                    gs_vec2 dim = gs_vec2_scale(gs_v2(frame->width, frame->height), 60.f);
+                    gs_vec2 dim = gs_vec2_scale(gs_v2(frame->width, frame->height), 80.f);
                     gs_vec2 a = gs_v2(100.f, 100.f);
                     gs_vec2 b = gs_v2(a.x + dim.x, a.y + dim.y);
 
