@@ -97,7 +97,7 @@ void init()
         }
     );
 
-    gs_graphics_vertex_attribute_type layout[] = {
+        gs_graphics_vertex_attribute_type layout[] = {
         GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2
     };
 

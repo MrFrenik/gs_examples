@@ -26,3 +26,7 @@ asset_manager/bin/main.obj
 meta_class/bin/App
 immediate_draw/bin/main.obj
 simple_texture/bin/main.obj
+nuklear_gui/bin/impl.obj
+nuklear_gui/bin/main.obj
+nuklear_gui/external/Nuklear/.gitattributes
+nuklear_gui/external/Nuklear/.gitmodules

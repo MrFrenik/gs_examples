@@ -4938,16 +4938,26 @@ void gs_camera_offset_orientation(gs_camera_t* cam, f32 yaw, f32 pitch)
 // GS_UTIL
 =============================*/
 
-#define STB_DEFINE
+#ifndef GS_NO_STB_RECT_PACK
+    #define STB_RECT_PACK_IMPLEMENTATION
+#endif
+
+#ifndef GS_NO_STB_TRUETYPE
+    #define STB_TRUETYPE_IMPLEMENTATION
+#endif
+
+#ifndef GS_NO_STB_DEFINE
+    #define STB_DEFINE
+#endif
+
+#ifndef GS_NO_STB_IMAGE
+    #define STB_IMAGE_IMPLEMENTATION
+    #define STB_IMAGE_WRITE_IMPLEMENTATION
+#endif
+
 #include "external/stb/stb.h"
-
-#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "external/stb/stb_image_write.h"
-
-#define STB_TRUETYPE_IMPLEMENTATION
 #include "external/stb/stb_truetype.h"
-
-#define STB_IMAGE_IMPLEMENTATION
 #include "external/stb/stb_image.h"
 
 bool32_t gs_util_load_texture_data_from_file(const char* file_path, int32_t* width, int32_t* height, uint32_t* num_comps, void** data, bool32_t flip_vertically_on_load)
