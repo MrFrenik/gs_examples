@@ -24,3 +24,4 @@ gs_cpp/bin/app.obj
 gs_cpp/bin/main.obj
 asset_manager/bin/main.obj
 meta_class/bin/App
+immediate_draw/bin/main.obj
