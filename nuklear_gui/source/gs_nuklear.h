@@ -41,7 +41,7 @@ typedef struct gs_nk_ctx_t
     int32_t display_width, display_height;
 } gs_nk_ctx_t;
 
-NK_API struct nk_context*   gs_nk_init(gs_nk_ctx_t* gs, uint32_t win_hndl, gs_nk_init_state state);
+NK_API struct nk_context*   gs_nk_init(gs_nk_ctx_t* gs, uint32_t win_hndl, enum gs_nk_init_state init_state);
 NK_API void                 gs_nk_render(gs_nk_ctx_t* gs, enum nk_anti_aliasing AA, int32_t max_vertex_buffer, int32_t max_element_buffer);
 
 NK_INTERN void              gs_nk_clipboard_paste(nk_handle usr, struct nk_text_edit *edit);
@@ -187,8 +187,7 @@ gs_nk_device_create(gs_nk_ctx_t* gs)
     );
 }
 
-NK_API struct nk_context*
-gs_nk_init(gs_nk_ctx_t* gs, uint32_t win_hndl, enum nk_glfw_init_state init_state)
+NK_API struct nk_context* gs_nk_init(gs_nk_ctx_t* gs, uint32_t win_hndl, enum gs_nk_init_state init_state)
 {
     // glfwSetWindowUserPointer(win, glfw);
     // glfw->win = win;

@@ -13,12 +13,12 @@ flags=(
 
 # Include directories
 inc=(
-	-I ../../third_party/include/
+	-I ../../third_party/include/ -I ../external/
 )
 
 # Source files
 src=(
-	../source/main.c
+	../source/*.c
 )
 
 fworks=(
