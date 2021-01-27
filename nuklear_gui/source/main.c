@@ -11,29 +11,88 @@
 ================================================================*/
 
 // Nuklear will define these, so we will not implement them ourselves
-#include <gs/gs.h>
-#include <Nuklear/nuklear.h>
-#include "gs_nuklear.h"
-
-#define MAX_VERTEX_BUFFER 512 * 1024
-#define MAX_ELEMENT_BUFFER 128 * 1024
+#include "gs_nk_incl.h"
 
 gs_command_buffer_t gcb = {0};
 
 /* Platform */
 gs_nk_ctx_t         gs_nk = {0};
 struct nk_colorf    bg = {0};
+  
+/* nuklear - v1.00 - public domain */
+static void
+calculator(struct nk_context *ctx)
+{
+    if (nk_begin(ctx, "Calculator", nk_rect(10, 10, 180, 250),
+        NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR|NK_WINDOW_MOVABLE))
+    {
+        static int set = 0, prev = 0, op = 0;
+        static const char numbers[] = "789456123";
+        static const char ops[] = "+-*/";
+        static double a = 0, b = 0;
+        static double *current = &a;
+
+        size_t i = 0;
+        int solve = 0;
+        {int len; char buffer[256];
+        nk_layout_row_dynamic(ctx, 35, 1);
+        len = snprintf(buffer, 256, "%.2f", *current);
+        nk_edit_string(ctx, NK_EDIT_SIMPLE, buffer, &len, 255, nk_filter_float);
+        buffer[len] = 0;
+        *current = atof(buffer);}
+
+        nk_layout_row_dynamic(ctx, 35, 4);
+        for (i = 0; i < 16; ++i) {
+            if (i >= 12 && i < 15) {
+                if (i > 12) continue;
+                if (nk_button_label(ctx, "C")) {
+                    a = b = op = 0; current = &a; set = 0;
+                } if (nk_button_label(ctx, "0")) {
+                    *current = *current*10.0f; set = 0;
+                } if (nk_button_label(ctx, "=")) {
+                    solve = 1; prev = op; op = 0;
+                }
+            } else if (((i+1) % 4)) {
+                if (nk_button_text(ctx, &numbers[(i/4)*3+i%4], 1)) {
+                    *current = *current * 10.0f + numbers[(i/4)*3+i%4] - '0';
+                    set = 0;
+                }
+            } else if (nk_button_text(ctx, &ops[i/4], 1)) {
+                if (!set) {
+                    if (current != &b) {
+                        current = &b;
+                    } else {
+                        prev = op;
+                        solve = 1;
+                    }
+                }
+                op = ops[i/4];
+                set = 1;
+            }
+        }
+        if (solve) {
+            if (prev == '+') a = a + b;
+            if (prev == '-') a = a - b;
+            if (prev == '*') a = a * b;
+            if (prev == '/') a = a / b;
+            current = &a;
+            if (set) current = &b;
+            b = 0; set = 0;
+        }
+    }
+    nk_end(ctx);
+}
 
 void init()
 {
     gcb = gs_command_buffer_new();
-    gs_nk_init(&gs_nk, gs_platform_main_window(), 0x00, MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER);
+
+    // Initialize gs_nk context
+    gs_nk_init(&gs_nk, gs_platform_main_window(), 0x00);
+
+    // Default font (can add different ones in here)
     gs_nk_font_stash_begin(&gs_nk, NULL);
     gs_nk_font_stash_end(&gs_nk);
-    gs_nk.tmp_vertex_data = gs_malloc(MAX_VERTEX_BUFFER);
-    gs_nk.tmp_index_data = gs_malloc(MAX_ELEMENT_BUFFER);
-    gs_assert(gs_nk.tmp_vertex_data);
-    gs_assert(gs_nk.tmp_index_data);
 }
 
 void update()
@@ -48,7 +107,6 @@ void update()
             NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
             NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
     {
-        /*
         enum {EASY, HARD};
         static int op = EASY;
         static int property = 20;
@@ -76,15 +134,15 @@ void update()
             bg.a = nk_propertyf(ctx, "#A:", 0, bg.a, 1.0f, 0.01f,0.005f);
             nk_combo_end(ctx);
         }
-        */
     }
     nk_end(ctx);
-    // nk_clear(&gs_nk.nk_ctx);
-    // nk_buffer_clear(&gs_nk.cmds);
 
-    gs_nk_render(&gcb, &gs_nk, NK_ANTI_ALIASING_ON, MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER);
+    calculator(ctx);
 
-    // Final command buffer submit
+    // Render gs_nk commands into graphics command buffer
+    gs_nk_render(&gs_nk, &gcb, NK_ANTI_ALIASING_ON);
+
+    // Final graphics command buffer submit
     gs_graphics_submit_command_buffer(&gcb);
 }
 

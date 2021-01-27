@@ -5,6 +5,9 @@
     #define GS_NK_TEXT_MAX 256
 #endif
 
+#define GS_NK_MAX_VERTEX_BUFFER 512 * 1024
+#define GS_NK_MAX_INDEX_BUFFER  128 * 1024
+
 typedef enum gs_nk_init_state 
 {
     GS_NK_DEFAULT = 0x00,
@@ -38,8 +41,8 @@ typedef struct gs_nk_ctx_t
     int32_t display_width, display_height;
 } gs_nk_ctx_t;
 
-NK_API struct nk_context*   gs_nk_init(gs_nk_ctx_t* gs, uint32_t win_hndl, enum gs_nk_init_state init_state, int32_t max_vert_buffer, int32_t max_elem_buffer);
-NK_API void                 gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA, int32_t max_vertex_buffer, int32_t max_element_buffer);
+NK_API struct nk_context*   gs_nk_init(gs_nk_ctx_t* gs, uint32_t win_hndl, enum gs_nk_init_state init_state);
+NK_API void                 gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA);
 NK_API void                 gs_nk_device_upload_atlas(gs_nk_ctx_t* gs, const void *image, int32_t width, int32_t height);
 NK_API void                 gs_nk_device_create(gs_nk_ctx_t* gs);
 
@@ -171,7 +174,7 @@ gs_nk_device_create(gs_nk_ctx_t* gs)
         &(gs_graphics_pipeline_desc_t) {
             .raster = {
                 .shader = gs->shader,
-                .index_buffer_element_size = sizeof(uint16_t)   // unsigned short in size
+                .index_buffer_element_size = sizeof(uint32_t)   // unsigned short in size
             },
             .blend = {
                 .func = GS_GRAPHICS_BLEND_EQUATION_ADD,
@@ -184,16 +187,8 @@ gs_nk_device_create(gs_nk_ctx_t* gs)
     );
 }
 
-NK_API struct nk_context* gs_nk_init(gs_nk_ctx_t* gs, uint32_t win_hndl, 
-    enum gs_nk_init_state init_state, int32_t max_vert_buffer, int32_t max_elem_buffer)
+NK_API struct nk_context* gs_nk_init(gs_nk_ctx_t* gs, uint32_t win_hndl, enum gs_nk_init_state init_state)
 {
-    // glfwSetWindowUserPointer(win, glfw);
-    // glfw->win = win;
-    // if (init_state == NK_GLFW3_INSTALL_CALLBACKS) {
-    //     glfwSetScrollCallback(win, nk_gflw3_scroll_callback);
-    //     glfwSetCharCallback(win, nk_glfw3_char_callback);
-    //     glfwSetMouseButtonCallback(win, nk_glfw3_mouse_button_callback);
-    // }
     gs->window_hndl = win_hndl;
     nk_init_default(&gs->nk_ctx, 0);
     gs->nk_ctx.clip.copy = gs_nk_clipboard_copy;
@@ -205,11 +200,11 @@ NK_API struct nk_context* gs_nk_init(gs_nk_ctx_t* gs, uint32_t win_hndl,
     gs->double_click_pos = nk_vec2(0, 0);
 
     // Tmp data buffers for upload
-    // gs->tmp_vertex_data = gs_malloc(max_vert_buffer);
-    // gs->tmp_index_data = gs_malloc(max_elem_buffer);
+    gs->tmp_vertex_data = gs_malloc(GS_NK_MAX_VERTEX_BUFFER);
+    gs->tmp_index_data = gs_malloc(GS_NK_MAX_INDEX_BUFFER);
 
-    // gs_assert(gs->tmp_vertex_data);
-    // gs_assert(gs->tmp_index_data);
+    gs_assert(gs->tmp_vertex_data);
+    gs_assert(gs->tmp_index_data);
 
     // Font atlas
     gs->atlas = gs_malloc(sizeof(struct nk_font_atlas));
@@ -228,7 +223,7 @@ gs_nk_device_upload_atlas(gs_nk_ctx_t* gs, const void *image, int32_t width, int
             .format = GS_GRAPHICS_TEXTURE_FORMAT_RGBA8,
             .min_filter = GS_GRAPHICS_TEXTURE_FILTER_LINEAR, 
             .mag_filter = GS_GRAPHICS_TEXTURE_FILTER_LINEAR, 
-            .data = image
+            .data = (void*)image
         }
     );
 }
@@ -265,7 +260,7 @@ NK_API void
 gs_nk_new_frame(gs_nk_ctx_t* gs)
 {
     int i;
-    double x, y;
+    int32_t x, y;
     struct nk_context* ctx = &gs->nk_ctx;
 
     // Get window size
@@ -277,80 +272,85 @@ gs_nk_new_frame(gs_nk_ctx_t* gs)
     gs->fb_scale.x = (float)gs->display_width/(float)gs->width;
     gs->fb_scale.y = (float)gs->display_height/(float)gs->height;
 
-    // Why would this be fucking asserting?
     nk_input_begin(ctx);
-    // for (i = 0; i < gs->text_len; ++i)
-    //     nk_input_unicode(ctx, gs->text[i]);
+    {
+        // Update text based on key presses
 
-// #ifdef NK_GLFW_GL3_MOUSE_GRABBING
-//     /* optional grabbing behavior */
-//     if (ctx->input.mouse.grab)
-//         glfwSetInputMode(glfw.win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-//     else if (ctx->input.mouse.ungrab)
-//         glfwSetInputMode(glfw->win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-// #endif
+        for (i = 0; i < gs->text_len; ++i)
+            nk_input_unicode(ctx, gs->text[i]);
 
-    nk_input_key(ctx, NK_KEY_DEL, gs_platform_key_pressed(GS_KEYCODE_DELETE));
-    nk_input_key(ctx, NK_KEY_ENTER, gs_platform_key_pressed(GS_KEYCODE_ENTER));
-    nk_input_key(ctx, NK_KEY_TAB, gs_platform_key_pressed(GS_KEYCODE_TAB));
-    nk_input_key(ctx, NK_KEY_BACKSPACE, gs_platform_key_pressed(GS_KEYCODE_BSPACE));
-    nk_input_key(ctx, NK_KEY_UP, gs_platform_key_pressed(GS_KEYCODE_UP));
-    nk_input_key(ctx, NK_KEY_DOWN, gs_platform_key_pressed(GS_KEYCODE_DOWN));
-    nk_input_key(ctx, NK_KEY_TEXT_START, gs_platform_key_pressed(GS_KEYCODE_HOME));
-    nk_input_key(ctx, NK_KEY_TEXT_END, gs_platform_key_pressed(GS_KEYCODE_END));
-    nk_input_key(ctx, NK_KEY_SCROLL_START, gs_platform_key_pressed(GS_KEYCODE_HOME));
-    nk_input_key(ctx, NK_KEY_SCROLL_END, gs_platform_key_pressed(GS_KEYCODE_END));
-    nk_input_key(ctx, NK_KEY_SCROLL_DOWN, gs_platform_key_pressed(GS_KEYCODE_PGDOWN));
-    nk_input_key(ctx, NK_KEY_SCROLL_UP, gs_platform_key_pressed(GS_KEYCODE_PGUP));
-    nk_input_key(ctx, NK_KEY_SHIFT, gs_platform_key_pressed(GS_KEYCODE_LSHIFT)||
-                                    gs_platform_key_pressed(GS_KEYCODE_RSHIFT));
+    // #ifdef NK_GLFW_GL3_MOUSE_GRABBING
+    //     /* optional grabbing behavior */
+    //     if (ctx->input.mouse.grab)
+    //         glfwSetInputMode(glfw.win, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+    //     else if (ctx->input.mouse.ungrab)
+    //         glfwSetInputMode(glfw->win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    // #endif
 
-    if (gs_platform_key_pressed(GS_KEYCODE_LCTRL) ||
-        gs_platform_key_pressed(GS_KEYCODE_RCTRL)) {
-        nk_input_key(ctx, NK_KEY_COPY, gs_platform_key_pressed(GS_KEYCODE_C));
-        nk_input_key(ctx, NK_KEY_PASTE, gs_platform_key_pressed(GS_KEYCODE_V));
-        nk_input_key(ctx, NK_KEY_CUT, gs_platform_key_pressed(GS_KEYCODE_X));
-        nk_input_key(ctx, NK_KEY_TEXT_UNDO, gs_platform_key_pressed(GS_KEYCODE_Z));
-        nk_input_key(ctx, NK_KEY_TEXT_REDO, gs_platform_key_pressed(GS_KEYCODE_R));
-        nk_input_key(ctx, NK_KEY_TEXT_WORD_LEFT, gs_platform_key_pressed(GS_KEYCODE_LEFT));
-        nk_input_key(ctx, NK_KEY_TEXT_WORD_RIGHT, gs_platform_key_pressed(GS_KEYCODE_RIGHT));
-        nk_input_key(ctx, NK_KEY_TEXT_LINE_START, gs_platform_key_pressed(GS_KEYCODE_B));
-        nk_input_key(ctx, NK_KEY_TEXT_LINE_END, gs_platform_key_pressed(GS_KEYCODE_E));
-    } else {
-        nk_input_key(ctx, NK_KEY_LEFT, gs_platform_key_pressed(GS_KEYCODE_LEFT));
-        nk_input_key(ctx, NK_KEY_RIGHT, gs_platform_key_pressed(GS_KEYCODE_RIGHT));
-        nk_input_key(ctx, NK_KEY_COPY, 0);
-        nk_input_key(ctx, NK_KEY_PASTE, 0);
-        nk_input_key(ctx, NK_KEY_CUT, 0);
-        nk_input_key(ctx, NK_KEY_SHIFT, 0);
+        nk_input_key(ctx, NK_KEY_DEL, gs_platform_key_pressed(GS_KEYCODE_DELETE));
+        nk_input_key(ctx, NK_KEY_ENTER, gs_platform_key_pressed(GS_KEYCODE_ENTER));
+        nk_input_key(ctx, NK_KEY_TAB, gs_platform_key_pressed(GS_KEYCODE_TAB));
+        nk_input_key(ctx, NK_KEY_BACKSPACE, gs_platform_key_pressed(GS_KEYCODE_BSPACE));
+        nk_input_key(ctx, NK_KEY_UP, gs_platform_key_pressed(GS_KEYCODE_UP));
+        nk_input_key(ctx, NK_KEY_DOWN, gs_platform_key_pressed(GS_KEYCODE_DOWN));
+        nk_input_key(ctx, NK_KEY_TEXT_START, gs_platform_key_pressed(GS_KEYCODE_HOME));
+        nk_input_key(ctx, NK_KEY_TEXT_END, gs_platform_key_pressed(GS_KEYCODE_END));
+        nk_input_key(ctx, NK_KEY_SCROLL_START, gs_platform_key_pressed(GS_KEYCODE_HOME));
+        nk_input_key(ctx, NK_KEY_SCROLL_END, gs_platform_key_pressed(GS_KEYCODE_END));
+        nk_input_key(ctx, NK_KEY_SCROLL_DOWN, gs_platform_key_pressed(GS_KEYCODE_PGDOWN));
+        nk_input_key(ctx, NK_KEY_SCROLL_UP, gs_platform_key_pressed(GS_KEYCODE_PGUP));
+        nk_input_key(ctx, NK_KEY_SHIFT, gs_platform_key_pressed(GS_KEYCODE_LSHIFT)||
+                                        gs_platform_key_pressed(GS_KEYCODE_RSHIFT));
+
+        if (gs_platform_key_down(GS_KEYCODE_LCTRL) ||
+            gs_platform_key_down(GS_KEYCODE_RCTRL)) {
+            nk_input_key(ctx, NK_KEY_COPY, gs_platform_key_pressed(GS_KEYCODE_C));
+            nk_input_key(ctx, NK_KEY_PASTE, gs_platform_key_pressed(GS_KEYCODE_V));
+            nk_input_key(ctx, NK_KEY_CUT, gs_platform_key_pressed(GS_KEYCODE_X));
+            nk_input_key(ctx, NK_KEY_TEXT_UNDO, gs_platform_key_pressed(GS_KEYCODE_Z));
+            nk_input_key(ctx, NK_KEY_TEXT_REDO, gs_platform_key_pressed(GS_KEYCODE_R));
+            nk_input_key(ctx, NK_KEY_TEXT_WORD_LEFT, gs_platform_key_pressed(GS_KEYCODE_LEFT));
+            nk_input_key(ctx, NK_KEY_TEXT_WORD_RIGHT, gs_platform_key_pressed(GS_KEYCODE_RIGHT));
+            nk_input_key(ctx, NK_KEY_TEXT_LINE_START, gs_platform_key_pressed(GS_KEYCODE_B));
+            nk_input_key(ctx, NK_KEY_TEXT_LINE_END, gs_platform_key_pressed(GS_KEYCODE_E));
+        } else {
+            nk_input_key(ctx, NK_KEY_LEFT, gs_platform_key_pressed(GS_KEYCODE_LEFT));
+            nk_input_key(ctx, NK_KEY_RIGHT, gs_platform_key_pressed(GS_KEYCODE_RIGHT));
+            nk_input_key(ctx, NK_KEY_COPY, 0);
+            nk_input_key(ctx, NK_KEY_PASTE, 0);
+            nk_input_key(ctx, NK_KEY_CUT, 0);
+            nk_input_key(ctx, NK_KEY_SHIFT, 0);
+        }
+
+        gs_platform_mouse_position(&x, &y);
+        nk_input_motion(ctx, (int32_t)x, (int32_t)y);
+
+    #ifdef GS_NK_MOUSE_GRABBING
+        if (ctx->input.mouse.grabbed) {
+            // glfwSetCursorPos(glfw->win, ctx->input.mouse.prev.x, ctx->input.mouse.prev.y);
+            ctx->input.mouse.pos.x = ctx->input.mouse.prev.x;
+            ctx->input.mouse.pos.y = ctx->input.mouse.prev.y;
+        }
+    #endif
+
+        nk_input_button(ctx, NK_BUTTON_LEFT, (int)x, (int)y, gs_platform_mouse_down(GS_MOUSE_LBUTTON));
+        nk_input_button(ctx, NK_BUTTON_MIDDLE, (int)x, (int)y, gs_platform_mouse_pressed(GS_MOUSE_MBUTTON));
+        nk_input_button(ctx, NK_BUTTON_RIGHT, (int)x, (int)y, gs_platform_mouse_pressed(GS_MOUSE_RBUTTON));
+        nk_input_button(ctx, NK_BUTTON_DOUBLE, (int)gs->double_click_pos.x, (int)gs->double_click_pos.y, gs->is_double_click_down);
+        nk_input_scroll(ctx, gs->scroll);
     }
-
-    gs_platform_mouse_position((float*)&x, (float*)&y);
-
-//     glfwGetCursorPos(win, &x, &y);
-    nk_input_motion(ctx, (int)x, (int)y);
-
-// #ifdef NK_GLFW_GL3_MOUSE_GRABBING
-//     if (ctx->input.mouse.grabbed) {
-//         glfwSetCursorPos(glfw->win, ctx->input.mouse.prev.x, ctx->input.mouse.prev.y);
-//         ctx->input.mouse.pos.x = ctx->input.mouse.prev.x;
-//         ctx->input.mouse.pos.y = ctx->input.mouse.prev.y;
-//     }
-// #endif
-    nk_input_button(ctx, NK_BUTTON_LEFT, (int)x, (int)y, gs_platform_mouse_pressed(GS_MOUSE_LBUTTON));
-    nk_input_button(ctx, NK_BUTTON_MIDDLE, (int)x, (int)y, gs_platform_mouse_pressed(GS_MOUSE_MBUTTON));
-    nk_input_button(ctx, NK_BUTTON_RIGHT, (int)x, (int)y, gs_platform_mouse_pressed(GS_MOUSE_RBUTTON));
-    nk_input_button(ctx, NK_BUTTON_DOUBLE, (int)gs->double_click_pos.x, (int)gs->double_click_pos.y, gs->is_double_click_down);
-    nk_input_scroll(ctx, gs->scroll);
     nk_input_end(ctx);
+
     gs->text_len = 0;
     gs->scroll = nk_vec2(0,0);
 }
 
 NK_API void
-gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA, int32_t max_vertex_buffer, int32_t max_element_buffer)
+gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
 {
-    struct nk_buffer vbuf, ebuf;
+    struct nk_buffer vbuf, ibuf;
+
+    // Projection matrix
     float ortho[4][4] = {
         {2.0f, 0.0f, 0.0f, 0.0f},
         {0.0f,-2.0f, 0.0f, 0.0f},
@@ -359,60 +359,28 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA,
     };
     ortho[0][0] /= (float)gs->width;
     ortho[1][1] /= (float)gs->height;
+    gs_mat4 m = gs_mat4_elem((float*)ortho);
 
     // Set up data binds
     gs_graphics_bind_desc_t binds[] = {
         (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_VERTEX_BUFFER, .buffer = gs->vbo},
         (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_INDEX_BUFFER, .buffer = gs->ibo},
-        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_UNIFORM_BUFFER, .buffer = gs->u_proj, .data = (float*)ortho}
+        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_UNIFORM_BUFFER, .buffer = gs->u_proj, .data = &m}
     };
 
     gs_assert(gs->tmp_vertex_data);
     gs_assert(gs->tmp_index_data);
 
-    // static int32_t d = 0;
-    // if (!d) {
-    //     // Resize byte buffers to match data size
-    //     gs_byte_buffer_resize(&gs->tmp_vertex_data, max_vertex_buffer);
-    //     gs_byte_buffer_resize(&gs->tmp_index_data, max_element_buffer);
-    //     d++;
-    // }
-
-    // Convert vertex/index data into buffers
-
-    // Upload buffer data
-
-    // Set up render pass
-    // Set viewport
-    // Bind pipeline
-    // Bind bindings
-    // Draw
-
-    /* setup program */
-    // glUseProgram(dev->prog);
-    // glUniform1i(dev->uniform_tex, 0);
-    // glUniformMatrix4fv(dev->uniform_proj, 1, GL_FALSE, &ortho[0][0]);
-    // glViewport(0,0,(GLsizei)glfw->display_width,(GLsizei)glfw->display_height);
+    // Convert from command queue into draw list and draw to screen
     {
-        /* convert from command queue into draw list and draw to screen */
         const struct nk_draw_command* cmd;
-        void *vertices, *elements;
-        const nk_draw_index* offset = NULL;
+        void *vertices, *indices;
+        const nk_draw_index *offset = 0;
 
         vertices = gs->tmp_vertex_data;
-        elements = gs->tmp_index_data;
+        indices = gs->tmp_index_data;
 
-        /* allocate vertex and element buffer */
-        // glBindVertexArray(dev->vao);
-        // glBindBuffer(GL_ARRAY_BUFFER, dev->vbo);
-        // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dev->ebo);
-
-        // glBufferData(GL_ARRAY_BUFFER, max_vertex_buffer, NULL, GL_STREAM_DRAW);
-        // glBufferData(GL_ELEMENT_ARRAY_BUFFER, max_element_buffer, NULL, GL_STREAM_DRAW);
-
-        /* load draw vertices & elements directly into vertex + element buffer */
-        // vertices = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-        // elements = glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
+        // Convert commands into draw lists
         {
             /* fill convert configuration */
             struct nk_convert_config config;
@@ -434,68 +402,52 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA,
             config.shape_AA = AA;
             config.line_AA = AA;
 
-            /* setup buffers to load vertices and elements */
-            nk_buffer_init_fixed(&vbuf, vertices, (size_t)max_vertex_buffer);
-            nk_buffer_init_fixed(&ebuf, elements, (size_t)max_element_buffer);
-            nk_convert(&gs->nk_ctx, &gs->cmds, &vbuf, &ebuf, &config);
+            // Setup buffers to load vertices and indices
+            nk_buffer_init_fixed(&vbuf, vertices, (size_t)GS_NK_MAX_VERTEX_BUFFER);
+            nk_buffer_init_fixed(&ibuf, indices, (size_t)GS_NK_MAX_INDEX_BUFFER);
+            nk_convert(&gs->nk_ctx, &gs->cmds, &vbuf, &ibuf, &config);
         }
-        // glUnmapBuffer(GL_ARRAY_BUFFER);
-        // glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 
-        // Request update for vertex buffer
-
-        // Update vertex data
-        /*
+        // Request update vertex data
         gs_graphics_buffer_request_update(
             cb, 
             gs->vbo, 
             &(gs_graphics_buffer_desc_t){
                 .type = GS_GRAPHICS_BUFFER_VERTEX,
                 .usage = GS_GRAPHICS_BUFFER_USAGE_STREAM,
-                .data = gs->tmp_vertex_data,
-                .size = max_vertex_buffer
+                .data = vertices,
+                .size = GS_NK_MAX_VERTEX_BUFFER
             }
         );
 
-        // Update index data
+        // Request update index data
         gs_graphics_buffer_request_update(
             cb, 
             gs->ibo, 
             &(gs_graphics_buffer_desc_t){
                 .type = GS_GRAPHICS_BUFFER_INDEX,
                 .usage = GS_GRAPHICS_BUFFER_USAGE_STREAM,
-                .data = gs->tmp_index_data,
-                .size = max_element_buffer
+                .data = indices,
+                .size = GS_NK_MAX_INDEX_BUFFER
             }
         );
-        */
-
-        // Render pass
-        // Bind pipeline
-        // Set viewport
-        // Bind global bindings
-        // For each cmd
-            // Set view scissor
-            // Bind individual bindings
-            // Draw
 
         // Render pass action for clearing the screen
         gs_graphics_render_pass_action_t action = (gs_graphics_render_pass_action_t){.color = {0.0f, 0.0f, 0.0f, 1.f}};
 
         // Render pass
-        // gs_graphics_begin_render_pass(cb, (gs_handle(gs_graphics_render_pass_t)){0}, &action, sizeof(action));
+        gs_graphics_begin_render_pass(cb, (gs_handle(gs_graphics_render_pass_t)){0}, &action, sizeof(action));
 
             // Bind pipeline for nuklear
-            // gs_graphics_bind_pipeline(cb, gs->pip);
+            gs_graphics_bind_pipeline(cb, gs->pip);
 
             // Set viewport
-            // gs_graphics_set_viewport(cb, 0, 0, (uint32_t)gs->display_width, (uint32_t)gs->display_height);
+            gs_graphics_set_viewport(cb, 0, 0, (uint32_t)gs->display_width, (uint32_t)gs->display_height);
 
             // Global bindings for pipeline
-            // gs_graphics_bind_bindings(cb, binds, sizeof(binds));
+            gs_graphics_bind_bindings(cb, binds, sizeof(binds));
 
             // Iterate and draw all commands
-            /*
             nk_draw_foreach(cmd, &gs->nk_ctx, &gs->cmds)
             {
                 if (!cmd->elem_count) continue;
@@ -504,7 +456,7 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA,
                 gs_handle(gs_graphics_texture_t) tex = gs_handle_create(gs_graphics_texture_t, cmd->texture.id);
 
                 gs_graphics_bind_desc_t sbind[] = {
-                    (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_SAMPLER_BUFFER, .buffer = gs->u_tex, .data = &tex},
+                    (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_SAMPLER_BUFFER, .buffer = gs->u_tex, .data = &tex, .binding = 0},
                 };
 
                 // Bind individual texture binding
@@ -512,34 +464,25 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA,
 
                 // Set view scissor
                 gs_graphics_set_view_scissor(cb, 
-                    cmd->clip_rect.x * gs->fb_scale.x, 
-                    ((gs->height - (cmd->clip_rect.y + cmd->clip_rect.h)) * gs->fb_scale.y),
-                    (cmd->clip_rect.w * gs->fb_scale.x),
-                    (cmd->clip_rect.h * gs->fb_scale.y)
+                   (uint32_t)(cmd->clip_rect.x * gs->fb_scale.x), 
+                   (uint32_t)((gs->height - (cmd->clip_rect.y + cmd->clip_rect.h)) * gs->fb_scale.y),
+                   (uint32_t)(cmd->clip_rect.w * gs->fb_scale.x),
+                   (uint32_t)(cmd->clip_rect.h * gs->fb_scale.y)
                 );
 
                 // Draw elements
-                gs_graphics_draw(cb, offset, cmd->elem_count);
+                gs_graphics_draw(cb, (size_t)offset, (uint32_t)cmd->elem_count);
 
                 // Increment offset for commands
                 offset += cmd->elem_count;
             }
-            */
 
-        // gs_graphics_end_render_pass(cb);
+        gs_graphics_end_render_pass(cb);
 
         // Clear nuklear info
         nk_clear(&gs->nk_ctx);
         nk_buffer_clear(&gs->cmds);
     }
-
-    /* default OpenGL state */
-    // glUseProgram(0);
-    // glBindBuffer(GL_ARRAY_BUFFER, 0);
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    // glBindVertexArray(0);
-    // glDisable(GL_BLEND);
-    // glDisable(GL_SCISSOR_TEST);
 }
 
 NK_INTERN void

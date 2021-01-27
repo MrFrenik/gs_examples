@@ -14,15 +14,7 @@
 #include <gs/gs.h>
 
 // Define necessary nuklear implementation
-#define NK_INCLUDE_FIXED_TYPES
-#define NK_INCLUDE_STANDARD_IO
-#define NK_INCLUDE_STANDARD_VARARGS
-#define NK_INCLUDE_DEFAULT_ALLOCATOR
-#define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
-#define NK_INCLUDE_FONT_BAKING
-#define NK_INCLUDE_DEFAULT_FONT
-#define NK_UINT_DRAW_INDEX
-#define GS_NK_IMPL
+// #define GS_NK_MOUSE_GRABBING
 #define NK_IMPLEMENTATION
-#include <Nuklear/nuklear.h>
-#include "gs_nuklear.h"
+#define GS_NK_IMPL
+#include "gs_nk_incl.h"

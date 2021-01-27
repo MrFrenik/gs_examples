@@ -30,3 +30,8 @@ nuklear_gui/bin/impl.obj
 nuklear_gui/bin/main.obj
 nuklear_gui/external/Nuklear/.gitattributes
 nuklear_gui/external/Nuklear/.gitmodules
+.vs/ProjectSettings.json
+.vs/slnx.sqlite
+nuklear_gui/bin/.vs/App/v15/Browse.VC.db
+nuklear_gui/bin/.vs/App/v15/Browse.VC.opendb
+nuklear_gui/output.txt

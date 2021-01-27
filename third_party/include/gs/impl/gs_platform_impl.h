@@ -176,6 +176,15 @@ void gs_platform_update_input(gs_platform_input_t* input)
     input->mouse.moved_this_frame = false;
 }
 
+gs_result gs_platform_update(gs_platform_i* platform)
+{
+    // Update platform input from previous frame        
+    gs_platform_update_input(&platform->input);
+
+    // Process input for this frame
+    return gs_platform_process_input(&platform->input);
+}
+
 bool gs_platform_was_key_down(gs_platform_keycode code)
 {
     gs_platform_input_t* input = __gs_input();
@@ -294,11 +303,11 @@ gs_vec2 gs_platform_mouse_positionv()
     );
 }
 
-void gs_platform_mouse_position(f32* x, f32* y)
+void gs_platform_mouse_position(int32_t* x, int32_t* y)
 {
     gs_platform_input_t* input = __gs_input();
-    *x = input->mouse.position.x;
-    *y = input->mouse.position.y;
+    *x = (int32_t)input->mouse.position.x;
+    *y = (int32_t)input->mouse.position.y;
 }
 
 void gs_platform_mouse_wheel(f32* x, f32* y)
@@ -761,7 +770,7 @@ void* gs_platform_create_window_internal(const char* title, uint32_t width, uint
     u32 window_hints = gs_engine_instance()->ctx.app.window_flags;
 
     // Set whether or not the screen is resizable
-    glfwWindowHint(GLFW_RESIZABLE, (window_hints & GS_WINDOW_FLAGS_RESIZABLE) == GS_WINDOW_FLAGS_RESIZABLE);
+    glfwWindowHint(GLFW_RESIZABLE, (window_hints & GS_WINDOW_FLAGS_NO_RESIZE) != GS_WINDOW_FLAGS_NO_RESIZE);
 
     GLFWwindow* window = glfwCreateWindow(width, height, title, NULL, NULL);
     if (window == NULL)
