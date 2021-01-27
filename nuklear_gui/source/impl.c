@@ -22,9 +22,7 @@
 #define NK_INCLUDE_FONT_BAKING
 #define NK_INCLUDE_DEFAULT_FONT
 #define NK_UINT_DRAW_INDEX
+#define GS_NK_IMPL
 #define NK_IMPLEMENTATION
 #include <Nuklear/nuklear.h>
-
-// Define gs_nuklear implementation
-#define GS_NK_IMPL
 #include "gs_nuklear.h"

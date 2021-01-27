@@ -1,9 +1,6 @@
 #ifndef __GS_NUKLEAR_H__
 #define __GS_NUKLEAR_H__
 
-#include <gs/gs.h>
-#include <Nuklear/src/nuklear.h>
-
 #ifndef GS_NK_TEXT_MAX
     #define GS_NK_TEXT_MAX 256
 #endif
@@ -17,7 +14,7 @@ typedef enum gs_nk_init_state
 typedef struct gs_nk_ctx_t 
 {
     struct nk_context nk_ctx;
-    struct nk_font_atlas atlas;
+    struct nk_font_atlas* atlas;
     struct nk_vec2 fb_scale;
     uint32_t text[GS_NK_TEXT_MAX];
     int32_t text_len;
@@ -27,8 +24,8 @@ typedef struct gs_nk_ctx_t
     struct nk_vec2 double_click_pos;
     struct nk_buffer cmds;
     struct nk_draw_null_texture null;
-    gs_byte_buffer_t tmp_vertex_data;
-    gs_byte_buffer_t tmp_index_data;
+    void* tmp_vertex_data;
+    void* tmp_index_data;
     gs_handle(gs_graphics_pipeline_t) pip;
     gs_handle(gs_graphics_buffer_t) vbo;
     gs_handle(gs_graphics_buffer_t) ibo;
@@ -41,13 +38,13 @@ typedef struct gs_nk_ctx_t
     int32_t display_width, display_height;
 } gs_nk_ctx_t;
 
-NK_API struct nk_context*   gs_nk_init(gs_nk_ctx_t* gs, uint32_t win_hndl, enum gs_nk_init_state init_state);
-NK_API void                 gs_nk_render(gs_nk_ctx_t* gs, enum nk_anti_aliasing AA, int32_t max_vertex_buffer, int32_t max_element_buffer);
+NK_API struct nk_context*   gs_nk_init(gs_nk_ctx_t* gs, uint32_t win_hndl, enum gs_nk_init_state init_state, int32_t max_vert_buffer, int32_t max_elem_buffer);
+NK_API void                 gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA, int32_t max_vertex_buffer, int32_t max_element_buffer);
+NK_API void                 gs_nk_device_upload_atlas(gs_nk_ctx_t* gs, const void *image, int32_t width, int32_t height);
+NK_API void                 gs_nk_device_create(gs_nk_ctx_t* gs);
 
 NK_INTERN void              gs_nk_clipboard_paste(nk_handle usr, struct nk_text_edit *edit);
 NK_INTERN void              gs_nk_clipboard_copy(nk_handle usr, const char *text, int32_t len);
-
-NK_API void                 gs_nk_device_create(gs_nk_ctx_t* gs);
 
 /*===============================
 //      Implementation
@@ -174,7 +171,7 @@ gs_nk_device_create(gs_nk_ctx_t* gs)
         &(gs_graphics_pipeline_desc_t) {
             .raster = {
                 .shader = gs->shader,
-                .index_buffer_element_size = sizeof(uint32_t)
+                .index_buffer_element_size = sizeof(uint16_t)   // unsigned short in size
             },
             .blend = {
                 .func = GS_GRAPHICS_BLEND_EQUATION_ADD,
@@ -187,7 +184,8 @@ gs_nk_device_create(gs_nk_ctx_t* gs)
     );
 }
 
-NK_API struct nk_context* gs_nk_init(gs_nk_ctx_t* gs, uint32_t win_hndl, enum gs_nk_init_state init_state)
+NK_API struct nk_context* gs_nk_init(gs_nk_ctx_t* gs, uint32_t win_hndl, 
+    enum gs_nk_init_state init_state, int32_t max_vert_buffer, int32_t max_elem_buffer)
 {
     // glfwSetWindowUserPointer(win, glfw);
     // glfw->win = win;
@@ -203,12 +201,64 @@ NK_API struct nk_context* gs_nk_init(gs_nk_ctx_t* gs, uint32_t win_hndl, enum gs
     gs->nk_ctx.clip.userdata = nk_handle_ptr(0);
     gs->last_button_click = 0;
     gs_nk_device_create(gs);
-    gs->tmp_vertex_data = gs_byte_buffer_new();
-    gs->tmp_index_data = gs_byte_buffer_new();
     gs->is_double_click_down = nk_false;
     gs->double_click_pos = nk_vec2(0, 0);
 
+    // Tmp data buffers for upload
+    // gs->tmp_vertex_data = gs_malloc(max_vert_buffer);
+    // gs->tmp_index_data = gs_malloc(max_elem_buffer);
+
+    // gs_assert(gs->tmp_vertex_data);
+    // gs_assert(gs->tmp_index_data);
+
+    // Font atlas
+    gs->atlas = gs_malloc(sizeof(struct nk_font_atlas));
+
     return &gs->nk_ctx;
+}
+
+NK_API void
+gs_nk_device_upload_atlas(gs_nk_ctx_t* gs, const void *image, int32_t width, int32_t height)
+{
+    // Create font texture
+    gs->font_tex = gs_graphics_texture_create(
+        &(gs_graphics_texture_desc_t){
+            .width = width,
+            .height = height,
+            .format = GS_GRAPHICS_TEXTURE_FORMAT_RGBA8,
+            .min_filter = GS_GRAPHICS_TEXTURE_FILTER_LINEAR, 
+            .mag_filter = GS_GRAPHICS_TEXTURE_FILTER_LINEAR, 
+            .data = image
+        }
+    );
+}
+
+NK_API void
+gs_nk_font_stash_begin(struct gs_nk_ctx_t* gs, struct nk_font_atlas **atlas)
+{
+    nk_font_atlas_init_default(gs->atlas);
+    nk_font_atlas_begin(gs->atlas);
+    if (atlas) {
+        *atlas = gs->atlas;
+    }
+}
+
+NK_API void
+gs_nk_font_stash_end(struct gs_nk_ctx_t* gs)
+{
+    const void *image; int32_t w, h;
+    image = nk_font_atlas_bake(gs->atlas, &w, &h, NK_FONT_ATLAS_RGBA32);
+
+    // Upload texture (this is where we'll set the font texture resource handle)
+    gs_nk_device_upload_atlas(gs, image, w, h);
+
+    // Create nk handle from resource handle
+    nk_handle hndl = nk_handle_id((int32_t)gs->font_tex.id);
+
+    nk_font_atlas_end(gs->atlas, hndl, &gs->null);
+
+    if (gs->atlas->default_font)
+        nk_style_set_font(&gs->nk_ctx, &gs->atlas->default_font->handle);
 }
 
 NK_API void
@@ -227,9 +277,10 @@ gs_nk_new_frame(gs_nk_ctx_t* gs)
     gs->fb_scale.x = (float)gs->display_width/(float)gs->width;
     gs->fb_scale.y = (float)gs->display_height/(float)gs->height;
 
+    // Why would this be fucking asserting?
     nk_input_begin(ctx);
-    for (i = 0; i < gs->text_len; ++i)
-        nk_input_unicode(ctx, gs->text[i]);
+    // for (i = 0; i < gs->text_len; ++i)
+    //     nk_input_unicode(ctx, gs->text[i]);
 
 // #ifdef NK_GLFW_GL3_MOUSE_GRABBING
 //     /* optional grabbing behavior */
@@ -297,7 +348,7 @@ gs_nk_new_frame(gs_nk_ctx_t* gs)
 }
 
 NK_API void
-gs_nk_render(gs_nk_ctx_t* gs, enum nk_anti_aliasing AA, int32_t max_vertex_buffer, int32_t max_element_buffer)
+gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA, int32_t max_vertex_buffer, int32_t max_element_buffer)
 {
     struct nk_buffer vbuf, ebuf;
     float ortho[4][4] = {
@@ -309,9 +360,28 @@ gs_nk_render(gs_nk_ctx_t* gs, enum nk_anti_aliasing AA, int32_t max_vertex_buffe
     ortho[0][0] /= (float)gs->width;
     ortho[1][1] /= (float)gs->height;
 
-    // Set up binds
+    // Set up data binds
+    gs_graphics_bind_desc_t binds[] = {
+        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_VERTEX_BUFFER, .buffer = gs->vbo},
+        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_INDEX_BUFFER, .buffer = gs->ibo},
+        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_UNIFORM_BUFFER, .buffer = gs->u_proj, .data = (float*)ortho}
+    };
+
+    gs_assert(gs->tmp_vertex_data);
+    gs_assert(gs->tmp_index_data);
+
+    // static int32_t d = 0;
+    // if (!d) {
+    //     // Resize byte buffers to match data size
+    //     gs_byte_buffer_resize(&gs->tmp_vertex_data, max_vertex_buffer);
+    //     gs_byte_buffer_resize(&gs->tmp_index_data, max_element_buffer);
+    //     d++;
+    // }
+
     // Convert vertex/index data into buffers
+
     // Upload buffer data
+
     // Set up render pass
     // Set viewport
     // Bind pipeline
@@ -329,6 +399,9 @@ gs_nk_render(gs_nk_ctx_t* gs, enum nk_anti_aliasing AA, int32_t max_vertex_buffe
         void *vertices, *elements;
         const nk_draw_index* offset = NULL;
 
+        vertices = gs->tmp_vertex_data;
+        elements = gs->tmp_index_data;
+
         /* allocate vertex and element buffer */
         // glBindVertexArray(dev->vao);
         // glBindBuffer(GL_ARRAY_BUFFER, dev->vbo);
@@ -342,48 +415,122 @@ gs_nk_render(gs_nk_ctx_t* gs, enum nk_anti_aliasing AA, int32_t max_vertex_buffe
         // elements = glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
         {
             /* fill convert configuration */
-            // struct nk_convert_config config;
-            // static const struct nk_draw_vertex_layout_element vertex_layout[] = {
-            //     {NK_VERTEX_POSITION, NK_FORMAT_FLOAT, NK_OFFSETOF(struct nk_glfw_vertex, position)},
-            //     {NK_VERTEX_TEXCOORD, NK_FORMAT_FLOAT, NK_OFFSETOF(struct nk_glfw_vertex, uv)},
-            //     {NK_VERTEX_COLOR, NK_FORMAT_R8G8B8A8, NK_OFFSETOF(struct nk_glfw_vertex, col)},
-            //     {NK_VERTEX_LAYOUT_END}
-            // };
-            // NK_MEMSET(&config, 0, sizeof(config));
-            // config.vertex_layout = vertex_layout;
-            // config.vertex_size = sizeof(struct nk_glfw_vertex);
-            // config.vertex_alignment = NK_ALIGNOF(struct nk_glfw_vertex);
-            // config.null = dev->null;
-            // config.circle_segment_count = 22;
-            // config.curve_segment_count = 22;
-            // config.arc_segment_count = 22;
-            // config.global_alpha = 1.0f;
-            // config.shape_AA = AA;
-            // config.line_AA = AA;
+            struct nk_convert_config config;
+            static const struct nk_draw_vertex_layout_element vertex_layout[] = {
+                {NK_VERTEX_POSITION, NK_FORMAT_FLOAT, NK_OFFSETOF(struct gs_nk_vertex_t, position)},
+                {NK_VERTEX_TEXCOORD, NK_FORMAT_FLOAT, NK_OFFSETOF(struct gs_nk_vertex_t, uv)},
+                {NK_VERTEX_COLOR, NK_FORMAT_R8G8B8A8, NK_OFFSETOF(struct gs_nk_vertex_t, col)},
+                {NK_VERTEX_LAYOUT_END}
+            };
+            NK_MEMSET(&config, 0, sizeof(config));
+            config.vertex_layout = vertex_layout;
+            config.vertex_size = sizeof(struct gs_nk_vertex_t);
+            config.vertex_alignment = NK_ALIGNOF(struct gs_nk_vertex_t);
+            config.null = gs->null;
+            config.circle_segment_count = 22;
+            config.curve_segment_count = 22;
+            config.arc_segment_count = 22;
+            config.global_alpha = 1.0f;
+            config.shape_AA = AA;
+            config.line_AA = AA;
 
-            // /* setup buffers to load vertices and elements */
-            // nk_buffer_init_fixed(&vbuf, vertices, (size_t)max_vertex_buffer);
-            // nk_buffer_init_fixed(&ebuf, elements, (size_t)max_element_buffer);
-            // nk_convert(&glfw->ctx, &dev->cmds, &vbuf, &ebuf, &config);
+            /* setup buffers to load vertices and elements */
+            nk_buffer_init_fixed(&vbuf, vertices, (size_t)max_vertex_buffer);
+            nk_buffer_init_fixed(&ebuf, elements, (size_t)max_element_buffer);
+            nk_convert(&gs->nk_ctx, &gs->cmds, &vbuf, &ebuf, &config);
         }
         // glUnmapBuffer(GL_ARRAY_BUFFER);
         // glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 
-        /* iterate over and execute each draw command */
-        // nk_draw_foreach(cmd, &glfw->ctx, &dev->cmds)
-        {
-            // if (!cmd->elem_count) continue;
-            // glBindTexture(GL_TEXTURE_2D, (GLuint)cmd->texture.id);
-            // glScissor(
-            //     (GLint)(cmd->clip_rect.x * glfw->fb_scale.x),
-            //     (GLint)((glfw->height - (GLint)(cmd->clip_rect.y + cmd->clip_rect.h)) * glfw->fb_scale.y),
-            //     (GLint)(cmd->clip_rect.w * glfw->fb_scale.x),
-            //     (GLint)(cmd->clip_rect.h * glfw->fb_scale.y));
-            // glDrawElements(GL_TRIANGLES, (GLsizei)cmd->elem_count, GL_UNSIGNED_SHORT, offset);
-            // offset += cmd->elem_count;
-        }
-        // nk_clear(&glfw->ctx);
-        // nk_buffer_clear(&dev->cmds);
+        // Request update for vertex buffer
+
+        // Update vertex data
+        /*
+        gs_graphics_buffer_request_update(
+            cb, 
+            gs->vbo, 
+            &(gs_graphics_buffer_desc_t){
+                .type = GS_GRAPHICS_BUFFER_VERTEX,
+                .usage = GS_GRAPHICS_BUFFER_USAGE_STREAM,
+                .data = gs->tmp_vertex_data,
+                .size = max_vertex_buffer
+            }
+        );
+
+        // Update index data
+        gs_graphics_buffer_request_update(
+            cb, 
+            gs->ibo, 
+            &(gs_graphics_buffer_desc_t){
+                .type = GS_GRAPHICS_BUFFER_INDEX,
+                .usage = GS_GRAPHICS_BUFFER_USAGE_STREAM,
+                .data = gs->tmp_index_data,
+                .size = max_element_buffer
+            }
+        );
+        */
+
+        // Render pass
+        // Bind pipeline
+        // Set viewport
+        // Bind global bindings
+        // For each cmd
+            // Set view scissor
+            // Bind individual bindings
+            // Draw
+
+        // Render pass action for clearing the screen
+        gs_graphics_render_pass_action_t action = (gs_graphics_render_pass_action_t){.color = {0.0f, 0.0f, 0.0f, 1.f}};
+
+        // Render pass
+        // gs_graphics_begin_render_pass(cb, (gs_handle(gs_graphics_render_pass_t)){0}, &action, sizeof(action));
+
+            // Bind pipeline for nuklear
+            // gs_graphics_bind_pipeline(cb, gs->pip);
+
+            // Set viewport
+            // gs_graphics_set_viewport(cb, 0, 0, (uint32_t)gs->display_width, (uint32_t)gs->display_height);
+
+            // Global bindings for pipeline
+            // gs_graphics_bind_bindings(cb, binds, sizeof(binds));
+
+            // Iterate and draw all commands
+            /*
+            nk_draw_foreach(cmd, &gs->nk_ctx, &gs->cmds)
+            {
+                if (!cmd->elem_count) continue;
+
+                // Grab handle from command texture id
+                gs_handle(gs_graphics_texture_t) tex = gs_handle_create(gs_graphics_texture_t, cmd->texture.id);
+
+                gs_graphics_bind_desc_t sbind[] = {
+                    (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_SAMPLER_BUFFER, .buffer = gs->u_tex, .data = &tex},
+                };
+
+                // Bind individual texture binding
+                gs_graphics_bind_bindings(cb, sbind, sizeof(sbind));
+
+                // Set view scissor
+                gs_graphics_set_view_scissor(cb, 
+                    cmd->clip_rect.x * gs->fb_scale.x, 
+                    ((gs->height - (cmd->clip_rect.y + cmd->clip_rect.h)) * gs->fb_scale.y),
+                    (cmd->clip_rect.w * gs->fb_scale.x),
+                    (cmd->clip_rect.h * gs->fb_scale.y)
+                );
+
+                // Draw elements
+                gs_graphics_draw(cb, offset, cmd->elem_count);
+
+                // Increment offset for commands
+                offset += cmd->elem_count;
+            }
+            */
+
+        // gs_graphics_end_render_pass(cb);
+
+        // Clear nuklear info
+        nk_clear(&gs->nk_ctx);
+        nk_buffer_clear(&gs->cmds);
     }
 
     /* default OpenGL state */
