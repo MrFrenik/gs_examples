@@ -3969,6 +3969,7 @@ GS_API_DECL void      gs_platform_mouse_position(int32_t* x, int32_t* y);
 GS_API_DECL void      gs_platform_mouse_wheel(float* x, float* y);
 GS_API_DECL bool      gs_platform_mouse_moved();
 
+// Events
 GS_API_DECL bool      gs_platform_poll_event(gs_platform_event_t* evt);
 
 // Platform Window
