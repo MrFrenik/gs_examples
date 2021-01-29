@@ -69,11 +69,7 @@ typedef struct gs_nk_vertex_t
     nk_byte col[4];
 } gs_nk_vertex_t;
 
-#ifdef GS_PLATFORM_APPLE
-  #define NK_SHADER_VERSION "#version 150\n"
-#else
-  #define NK_SHADER_VERSION "#version 300 es\n"
-#endif
+#define NK_SHADER_VERSION "#version 330 core\n"
 
 NK_API void
 gs_nk_device_create(gs_nk_ctx_t* gs)
@@ -81,9 +77,9 @@ gs_nk_device_create(gs_nk_ctx_t* gs)
     static const char* nk_vertsrc =
         NK_SHADER_VERSION
         "uniform mat4 ProjMtx;\n"
-        "in vec2 Position;\n"
-        "in vec2 TexCoord;\n"
-        "in vec4 Color;\n"
+        "layout (location = 0) in vec2 Position;\n"
+        "layout (location = 1) in vec2 TexCoord;\n"
+        "layout (location = 2) in vec4 Color;\n"
         "out vec2 Frag_UV;\n"
         "out vec4 Frag_Color;\n"
         "void main() {\n"
@@ -101,7 +97,6 @@ gs_nk_device_create(gs_nk_ctx_t* gs)
         "out vec4 Out_Color;\n"
         "void main(){\n"
         "   Out_Color = Frag_Color * texture(Texture, Frag_UV.st);\n"
-        "   Out_Color = vec4(1.0, 0.0, 0.0, 1.0);\n"
         "}\n";
 
     // Initialize commands
@@ -175,7 +170,7 @@ gs_nk_device_create(gs_nk_ctx_t* gs)
         &(gs_graphics_pipeline_desc_t) {
             .raster = {
                 .shader = gs->shader,
-                .index_buffer_element_size = sizeof(uint32_t)   // unsigned short in size
+                .index_buffer_element_size = sizeof(uint32_t)
             },
             .blend = {
                 .func = GS_GRAPHICS_BLEND_EQUATION_ADD,
@@ -369,7 +364,6 @@ gs_nk_new_frame(gs_nk_ctx_t* gs)
 
     gs->text_len = 0;
     gs_platform_mouse_wheel(&gs->scroll.x, &gs->scroll.y);
-    gs_println("%.2f, %.2f", gs->scroll.x, gs->scroll.y);
 }
 
 NK_API void
@@ -386,8 +380,8 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
     };
     ortho[0][0] /= (float)gs->width;
     ortho[1][1] /= (float)gs->height;
-    gs_mat4 m = gs_mat4_identity();
-    // gs_mat4 m = gs_mat4_elem((float*)ortho);
+    // gs_mat4 m = gs_mat4_identity();
+    gs_mat4 m = gs_mat4_elem((float*)ortho);
 
     // m = gs_mat4_mul_list(2, 
     //     gs_mat4_translate(100.f, 100.f, 0.f),
@@ -470,10 +464,8 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
             &(gs_graphics_buffer_desc_t){
                 .type = GS_GRAPHICS_BUFFER_VERTEX,
                 .usage = GS_GRAPHICS_BUFFER_USAGE_STREAM,
-                // .data = vertices,
-                // .size = GS_NK_MAX_VERTEX_BUFFER
-                .data = v_data,
-                .size = sizeof(v_data)
+                .data = vertices,
+                .size = GS_NK_MAX_VERTEX_BUFFER
             }
         );
 
@@ -484,10 +476,8 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
             &(gs_graphics_buffer_desc_t){
                 .type = GS_GRAPHICS_BUFFER_INDEX,
                 .usage = GS_GRAPHICS_BUFFER_USAGE_STREAM,
-                // .data = indices,
-                // .size = GS_NK_MAX_INDEX_BUFFER
-                .data = i_data,
-                .size = sizeof(i_data)
+                .data = indices,
+                .size = GS_NK_MAX_INDEX_BUFFER
             }
         );
 
@@ -506,10 +496,7 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
             // Global bindings for pipeline
             gs_graphics_bind_bindings(cb, binds, sizeof(binds));
 
-            gs_graphics_draw(cb, 0, 6);
-
             // Iterate and draw all commands
-            /*
             nk_draw_foreach(cmd, &gs->nk_ctx, &gs->cmds)
             {
                 if (!cmd->elem_count) continue;
@@ -533,13 +520,11 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
                 );
 
                 // Draw elements
-                // gs_graphics_draw(cb, (size_t)offset, (uint32_t)cmd->elem_count);
-                gs_graphics_draw(cb, 0, 6);
+                gs_graphics_draw(cb, (size_t)offset, (uint32_t)cmd->elem_count);
 
                 // Increment offset for commands
                 offset += cmd->elem_count;
             }
-            */
 
         gs_graphics_end_render_pass(cb);
 
