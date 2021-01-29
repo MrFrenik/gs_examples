@@ -3864,23 +3864,30 @@ typedef struct gs_platform_key_event_t
     gs_platform_key_action_type action;
 } gs_platform_key_event_t;
 
+typedef enum gs_platform_mousebutton_action_type
+{
+    GS_PLATFORM_MBUTTON_PRESSED,
+    GS_PLATFORM_MBUTTON_DOWN,
+    GS_PLATFORM_MBUTTON_RELEASED
+} gs_platform_mousebutton_action_type;
+
 typedef struct gs_platform_mouse_event_t 
 {
     int32_t codepoint;
     gs_platform_mouse_button_code button;
+    gs_platform_mousebutton_action_type action;
 } gs_platform_mouse_event_t;
 
 // Platform events
 typedef struct gs_platform_event_t
 {
     gs_platform_event_type type;
-
     union {
         gs_platform_key_event_t key;
         gs_platform_mouse_event_t mouse;
         // gs_platform_window_event_t window;
     };
-
+    uint32_t idx;
 } gs_platform_event_t;
 
 // Necessary function pointer typedefs
@@ -3936,7 +3943,7 @@ GS_API_DECL void gs_platform_enable_vsync(int32_t enabled);
 
 // Platform UUID
 GS_API_DECL gs_uuid_t gs_platform_generate_uuid();
-GS_API_DECL void      gs_platform_uuid_to_string(char* temp_buffer, const gs_uuid_t* uuid); // Expects a temp buffer with at leat 32 bytes
+GS_API_DECL void      gs_platform_uuid_to_string(char* temp_buffer, const gs_uuid_t* uuid); // Expects a temp buffer with at least 32 bytes
 GS_API_DECL uint32_t  gs_platform_hash_uuid(const gs_uuid_t* uuid);
 
 // Platform Input
@@ -3961,6 +3968,8 @@ GS_API_DECL gs_vec2   gs_platform_mouse_positionv();
 GS_API_DECL void      gs_platform_mouse_position(int32_t* x, int32_t* y);
 GS_API_DECL void      gs_platform_mouse_wheel(float* x, float* y);
 GS_API_DECL bool      gs_platform_mouse_moved();
+
+GS_API_DECL bool      gs_platform_poll_event(gs_platform_event_t* evt);
 
 // Platform Window
 GS_API_DECL uint32_t gs_platform_create_window(const char* title, uint32_t width, uint32_t height);

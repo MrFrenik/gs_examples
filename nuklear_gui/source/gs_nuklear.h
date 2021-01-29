@@ -263,6 +263,9 @@ gs_nk_new_frame(gs_nk_ctx_t* gs)
     int32_t x, y;
     struct nk_context* ctx = &gs->nk_ctx;
 
+    // Cache platform pointer
+    gs_platform_i* platform = gs_engine_subsystem(platform);
+
     // Get window size
     gs_platform_window_size(gs->window_hndl, &gs->width, &gs->height);
     // Get frame buffer size
@@ -274,7 +277,29 @@ gs_nk_new_frame(gs_nk_ctx_t* gs)
 
     nk_input_begin(ctx);
     {
-        // Update text based on key presses
+        gs_platform_event_t evt = gs_default_val();
+        while(gs_platform_poll_event(&evt))
+        {
+            switch(evt.type)
+            {
+                default: break;
+
+                case GS_PLATFORM_EVENT_KEYBOARD:
+                {
+                    switch (evt.key.action)
+                    {
+                        case GS_PLATFORM_KEY_PRESSED:
+                        {
+                            if (gs->text_len < GS_NK_TEXT_MAX)
+                                gs->text[gs->text_len++] = evt.key.codepoint;
+
+                        } break;
+
+                        default: break;
+                    }
+                } break;
+            }
+        }
 
         for (i = 0; i < gs->text_len; ++i)
             nk_input_unicode(ctx, gs->text[i]);

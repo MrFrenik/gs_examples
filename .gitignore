@@ -35,3 +35,4 @@ nuklear_gui/external/Nuklear/.gitmodules
 nuklear_gui/bin/.vs/App/v15/Browse.VC.db
 nuklear_gui/bin/.vs/App/v15/Browse.VC.opendb
 nuklear_gui/output.txt
+.vs/VSWorkspaceState.json
