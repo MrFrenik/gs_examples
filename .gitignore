@@ -36,3 +36,7 @@ nuklear_gui/bin/.vs/App/v15/Browse.VC.db
 nuklear_gui/bin/.vs/App/v15/Browse.VC.opendb
 nuklear_gui/output.txt
 .vs/VSWorkspaceState.json
+imgui/bin/impl.obj
+imgui/bin/main.obj
+imgui/external/imgui/.editorconfig
+imgui/external/imgui/.gitattributes
