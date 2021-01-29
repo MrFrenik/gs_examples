@@ -285,7 +285,7 @@ gs_nk_new_frame(gs_nk_ctx_t* gs)
             {
                 default: break;
 
-                case GS_PLATFORM_EVENT_KEYBOARD:
+                case GS_PLATFORM_EVENT_KEY:
                 {
                     switch (evt.key.action)
                     {
@@ -368,7 +368,8 @@ gs_nk_new_frame(gs_nk_ctx_t* gs)
     nk_input_end(ctx);
 
     gs->text_len = 0;
-    gs->scroll = nk_vec2(0,0);
+    gs_platform_mouse_wheel(&gs->scroll.x, &gs->scroll.y);
+    gs_println("%.2f, %.2f", gs->scroll.x, gs->scroll.y);
 }
 
 NK_API void

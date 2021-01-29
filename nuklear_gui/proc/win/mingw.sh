@@ -13,12 +13,13 @@ flags=(
 
 # Include directories
 inc=(
-	-I ../../third_party/include/			# Gunslinger includes
+	-I ../../third_party/include/	# Gunslinger includes
+    -I ../external/           		# External includes
 )
 
 # Source files
 src=(
-	../source/main.c
+	../source/*.c
 )
 
 libs=(
