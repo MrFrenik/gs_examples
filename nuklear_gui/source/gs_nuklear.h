@@ -101,6 +101,7 @@ gs_nk_device_create(gs_nk_ctx_t* gs)
         "out vec4 Out_Color;\n"
         "void main(){\n"
         "   Out_Color = Frag_Color * texture(Texture, Frag_UV.st);\n"
+        "   Out_Color = vec4(1.0, 0.0, 0.0, 1.0);\n"
         "}\n";
 
     // Initialize commands
@@ -384,7 +385,13 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
     };
     ortho[0][0] /= (float)gs->width;
     ortho[1][1] /= (float)gs->height;
-    gs_mat4 m = gs_mat4_elem((float*)ortho);
+    gs_mat4 m = gs_mat4_identity();
+    // gs_mat4 m = gs_mat4_elem((float*)ortho);
+
+    // m = gs_mat4_mul_list(2, 
+    //     gs_mat4_translate(100.f, 100.f, 0.f),
+    //     gs_mat4_scale(100.f, 100.f, 100.f)
+    // );
 
     // Set up data binds
     gs_graphics_bind_desc_t binds[] = {
@@ -433,6 +440,28 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
             nk_convert(&gs->nk_ctx, &gs->cmds, &vbuf, &ibuf, &config);
         }
 
+        // typedef struct gs_nk_vertex_t 
+        // {
+        //     float position[2];
+        //     float uv[2];
+        //     nk_byte col[4];
+        // } gs_nk_vertex_t;
+
+        gs_nk_vertex_t v_data[] = 
+        {
+                            // position    uv          col
+            (gs_nk_vertex_t){-0.5f, -0.5f, 0.0f, 0.0f, 255, 255, 255, 255}, // Top Left
+            (gs_nk_vertex_t){ 0.5f, -0.5f, 1.0f, 0.0f, 255, 255, 255, 255}, // Top Right 
+            (gs_nk_vertex_t){-0.5f,  0.5f, 0.0f, 1.0f, 255, 255, 255, 255}, // Bottom Left
+            (gs_nk_vertex_t){ 0.5f,  0.5f, 1.0f, 1.0f, 255, 255, 255, 255}   // Bottom Right
+        };
+
+        u32 i_data[] = 
+        {
+            0, 3, 2,    // First Triangle
+            0, 1, 3     // Second Triangle
+        };
+
         // Request update vertex data
         gs_graphics_buffer_request_update(
             cb, 
@@ -440,8 +469,10 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
             &(gs_graphics_buffer_desc_t){
                 .type = GS_GRAPHICS_BUFFER_VERTEX,
                 .usage = GS_GRAPHICS_BUFFER_USAGE_STREAM,
-                .data = vertices,
-                .size = GS_NK_MAX_VERTEX_BUFFER
+                // .data = vertices,
+                // .size = GS_NK_MAX_VERTEX_BUFFER
+                .data = v_data,
+                .size = sizeof(v_data)
             }
         );
 
@@ -452,8 +483,10 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
             &(gs_graphics_buffer_desc_t){
                 .type = GS_GRAPHICS_BUFFER_INDEX,
                 .usage = GS_GRAPHICS_BUFFER_USAGE_STREAM,
-                .data = indices,
-                .size = GS_NK_MAX_INDEX_BUFFER
+                // .data = indices,
+                // .size = GS_NK_MAX_INDEX_BUFFER
+                .data = i_data,
+                .size = sizeof(i_data)
             }
         );
 
@@ -472,7 +505,10 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
             // Global bindings for pipeline
             gs_graphics_bind_bindings(cb, binds, sizeof(binds));
 
+            gs_graphics_draw(cb, 0, 6);
+
             // Iterate and draw all commands
+            /*
             nk_draw_foreach(cmd, &gs->nk_ctx, &gs->cmds)
             {
                 if (!cmd->elem_count) continue;
@@ -496,11 +532,13 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
                 );
 
                 // Draw elements
-                gs_graphics_draw(cb, (size_t)offset, (uint32_t)cmd->elem_count);
+                // gs_graphics_draw(cb, (size_t)offset, (uint32_t)cmd->elem_count);
+                gs_graphics_draw(cb, 0, 6);
 
                 // Increment offset for commands
                 offset += cmd->elem_count;
             }
+            */
 
         gs_graphics_end_render_pass(cb);
 
