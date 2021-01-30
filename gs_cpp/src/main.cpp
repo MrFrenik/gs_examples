@@ -4,7 +4,7 @@
 
     A Bare bones application for getting started using `gunslinger`.
     Creates an appplication context, an engine context, and then 
-    opens a main window for you using the rendering context.
+    opens a main window for you using the rendering context in cpp.
 
     Press `esc` to exit the application.
 =================================================================*/
