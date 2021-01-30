@@ -40,3 +40,5 @@ nuklear_gui/bin/App
 immediate_draw/bin/App
 simple_texture/bin/App
 containers/bin/App
+asset_manager/bin/App
+gs_cpp/output.txt

@@ -8,12 +8,12 @@ proj_name=App
 proj_root_dir=$(pwd)/../
 
 flags=(
-	-std=c++14 -x objective-c++ -O0 -w 
+	-std=c++11 -x objective-c++ -O0 -w 
 )
 
 # Include directories
 inc=(
-	-I ../../third_party/include/ -I ../include/
+	-I ../../third_party/include/ -I ../external/
 )
 
 # Source files
