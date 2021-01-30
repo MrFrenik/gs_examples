@@ -13,12 +13,12 @@ flags=(
 
 # Include directories
 inc=(
-	-I ../../third_party/ -I ../include/
+	-I ../../third_party/
 )
 
 # Source files
 src=(
-	../src/*.cpp
+	../src/main.cpp
 )
 
 # Build

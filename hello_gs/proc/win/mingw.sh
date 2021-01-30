@@ -4,7 +4,7 @@ rm -rf bin
 mkdir bin
 cd bin
 
-proj_name=ImmediateDraw
+proj_name=App
 proj_root_dir=$(pwd)/../
 
 flags=(
