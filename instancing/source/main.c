@@ -25,8 +25,6 @@ gs_handle(gs_graphics_buffer_t)   inst_vbo = {0};
 gs_handle(gs_graphics_pipeline_t) pip      = {0};
 gs_handle(gs_graphics_shader_t)   shader   = {0};
 
-#define ROW_COL_CT  10
-
 const char* v_src = "\n"
 "#version 330 core\n"
 "layout(location = 0) in vec2 a_pos;\n"
