@@ -53,3 +53,5 @@ instancing/bin/main.obj
 meta_class/bin/main.obj
 meta_class/bin/main.obj
 simple_triangle/bin/main.obj
+instancing/bin/.vs/App/v15/Browse.VC.db
+instancing/bin/.vs/App/v15/Browse.VC.opendb
