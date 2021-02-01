@@ -8,6 +8,7 @@
     Included: 
         * Construct vertex/instanced data buffers from user defined declarations
         * Construct shaders from source
+        * Drawing instances
         * Rendering via command buffers
 
     Press `esc` to exit the application.
