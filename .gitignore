@@ -47,3 +47,4 @@ imgui/bin/main.obj
 imgui/external/imgui/.editorconfig
 imgui/external/imgui/.gitattributes
 gs_cpp/bin/App
+hello_gs/bin/App
