@@ -1,16 +1,13 @@
 /*================================================================
     * Copyright: 2020 John Jackson
-    * simple_texture
+    * instanced_drawing
 
-    The purpose of this example is to demonstrate how to create a 
-    dynamic texture and explicitly construct GPU resources to use 
-    for your application.
+    The purpose of this example is to demonstrate how to create do 
+    instanced drawing using gunslinger.
 
     Included: 
-        * Constructing textures via tetxure despcriptors 
-        * Construct vertex/index buffers from user defined declarations
+        * Construct vertex/instanced data buffers from user defined declarations
         * Construct shaders from source
-        * Construct sampler buffers for binding and uploading texture data to shader
         * Rendering via command buffers
 
     Press `esc` to exit the application.
@@ -141,7 +138,7 @@ void update()
     // Render pass action for clearing the screen
     gs_graphics_render_pass_action_t action = (gs_graphics_render_pass_action_t){.color = {0.1f, 0.1f, 0.1f, 1.f}};
 
-    // Bindings for all of our vertex data, uniform buffers, etc.
+    // Bindings for buffers (order needs to match vertex layout buffer index layout up above for pipeline)
     gs_graphics_bind_desc_t binds[] = {
         (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_VERTEX_BUFFER, .buffer = vbo},
         (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_VERTEX_BUFFER, .buffer = inst_vbo}
