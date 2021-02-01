@@ -35,7 +35,8 @@ const char* v_src = "\n"
 "out vec3 f_color;\n"
 "void main()\n"
 "{\n"
-"   gl_Position = vec4(a_pos + a_offset, 0.0, 1.0);\n"
+"   vec2 pos = a_pos * (gl_InstanceID / 100.0);\n"
+"   gl_Position = vec4(pos + a_offset, 0.0, 1.0);\n"
 "   f_color = a_color;\n"
 "}";
 
