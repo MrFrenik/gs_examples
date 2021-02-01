@@ -3742,7 +3742,7 @@ static const unsigned char *stb_decompress_token(const unsigned char *i)
     return i;
 }
 
-static unsigned int stb_adler32(unsigned int adler32, unsigned char *buffer, unsigned int buflen)
+unsigned int stb_adler32(unsigned int adler32, unsigned char *buffer, unsigned int buflen)
 {
     const unsigned long ADLER_MOD = 65521;
     unsigned long s1 = adler32 & 0xffff, s2 = adler32 >> 16;
@@ -3786,7 +3786,7 @@ static unsigned int stb_decompress(unsigned char *output, const unsigned char *i
     stb__dout = output;
     for (;;) {
         const unsigned char *old_i = i;
-        i = stb_decompress_token(i);
+        i = stb_decompress_token((stb_uchar*)i);
         if (i == old_i) {
             if (*i == 0x05 && i[1] == 0xfa) {
                 IM_ASSERT(stb__dout == output + olen);

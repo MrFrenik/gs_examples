@@ -15,6 +15,7 @@ typedef struct gs_imgui_t
     gs_handle(gs_graphics_texture_t) font_tex; 
     gs_handle(gs_graphics_buffer_t) u_tex;
     gs_handle(gs_graphics_buffer_t) u_proj;
+    ImGuiContext* ctx;
 } gs_imgui_t;
 
 typedef struct gs_imgui_vertex_t 
@@ -26,10 +27,12 @@ typedef struct gs_imgui_vertex_t
 
 #define GS_IMGUI_SHADER_VERSION "#version 330 core\n"
 
-IMGUI_IMPL_API bool     gs_imgui_init(gs_imgui_t* gs, uint32_t hndl, bool install_callbacks);
-IMGUI_IMPL_API void     gs_imgui_device_create(gs_imgui_t* gs);
+IMGUI_IMPL_API gs_imgui_t   gs_imgui_new(uint32_t hndl, bool install_callbacks);
+IMGUI_IMPL_API void         gs_imgui_device_create(gs_imgui_t* gs);
+IMGUI_IMPL_API bool         gs_imgui_create_fonts_texture(gs_imgui_t* gs);
+IMGUI_IMPL_API void         gs_imgui_render(gs_imgui_t* gs, gs_command_buffer_t* cb);
 
-IMGUI_IMPL_API void     gs_imgui_new_frame(gs_imgui_t* gs);
+IMGUI_IMPL_API void         gs_imgui_new_frame(gs_imgui_t* gs);
 
 /*===============================
 //      Implementation
@@ -66,91 +69,98 @@ gs_imgui_device_create(gs_imgui_t* gs)
         "}\n";
 
     // Shader source description
-    gs_graphics_shader_source_desc_t sources[] = {
-        (gs_graphics_shader_source_desc_t){.type = GS_GRAPHICS_SHADER_STAGE_VERTEX, .source = imgui_vertsrc},
-        (gs_graphics_shader_source_desc_t){.type = GS_GRAPHICS_SHADER_STAGE_FRAGMENT, .source = imgui_fragsrc}
-    };
+    gs_graphics_shader_source_desc_t sources[2] = {};
+    sources[0].type = GS_GRAPHICS_SHADER_STAGE_VERTEX; sources[0].source = imgui_vertsrc;
+    sources[1].type = GS_GRAPHICS_SHADER_STAGE_FRAGMENT; sources[1].source = imgui_fragsrc;
+
+    // Shader desc
+    gs_graphics_shader_desc_t sdesc = {};
+    sdesc.sources = sources;
+    sdesc.size = sizeof(sources);
+    sdesc.name = "imgui";
 
     // Create shader
-    gs->shader = gs_graphics_shader_create (
-        &(gs_graphics_shader_desc_t) {
-            .sources = sources, 
-            .size = sizeof(sources),
-            .name = "imgui"
-        }
-    );
+    gs->shader = gs_graphics_shader_create (&sdesc);
 
     // Sampler buffer desc
-    gs_graphics_sampler_desc_t sdesc = {
-        .type = GS_GRAPHICS_SAMPLER_2D
-    };
+    gs_graphics_sampler_desc_t samplerdesc = {};
+    samplerdesc.type = GS_GRAPHICS_SAMPLER_2D;
+
+    // Buffer description for Texture
+    gs_graphics_buffer_desc_t utexdesc = {};
+    utexdesc.type = GS_GRAPHICS_BUFFER_SAMPLER;
+    utexdesc.data = &samplerdesc;
+    utexdesc.size = sizeof(samplerdesc);
+    utexdesc.name = "Texture";
 
     // Construct sampler buffer
-    gs->u_tex = gs_graphics_buffer_create(
-        &(gs_graphics_buffer_desc_t) {
-            .type = GS_GRAPHICS_BUFFER_SAMPLER,
-            .data = &sdesc,
-            .size = sizeof(sdesc),
-            .name = "Texture"
-        }
-    );
+    gs->u_tex = gs_graphics_buffer_create(&utexdesc);
 
-    gs->u_proj = gs_graphics_buffer_create (
-        &(gs_graphics_buffer_desc_t) {
-            .type = GS_GRAPHICS_BUFFER_UNIFORM,                                         // Type of buffer (uniform)
-            .data = &(gs_graphics_uniform_desc_t){.type = GS_GRAPHICS_UNIFORM_MAT4},    // Description of internal uniform data
-            .size = sizeof(gs_graphics_uniform_desc_t),                                 // Size of uniform description (used for counts, if uniform block used)
-            .name = "ProjMtx"                                                           // Name of uniform (used for linkage)
-        }
-    );
+    // Uniform description
+    gs_graphics_uniform_desc_t udesc = {};
+    udesc.type = GS_GRAPHICS_UNIFORM_MAT4; 
+
+    // Buffer Desc for ProjMtx
+    gs_graphics_buffer_desc_t ubufdesc = {};
+    ubufdesc.type = GS_GRAPHICS_BUFFER_UNIFORM;
+    ubufdesc.data = &udesc;
+    ubufdesc.size = sizeof(udesc);
+    ubufdesc.name = "ProjMtx";
+
+    // Construct project matrix uniform
+    gs->u_proj = gs_graphics_buffer_create (&ubufdesc);
+
+    // Vertex buffer description
+    gs_graphics_buffer_desc_t vbufdesc = {};
+    vbufdesc.type = GS_GRAPHICS_BUFFER_VERTEX;
+    vbufdesc.usage = GS_GRAPHICS_BUFFER_USAGE_STREAM;
+    vbufdesc.data = NULL;
 
     // Construct vertex buffer
-    gs->vbo = gs_graphics_buffer_create(
-        &(gs_graphics_buffer_desc_t) {
-            .type = GS_GRAPHICS_BUFFER_VERTEX,
-            .usage = GS_GRAPHICS_BUFFER_USAGE_STREAM,
-            .data = NULL
-        }
-    );
+    gs->vbo = gs_graphics_buffer_create (&vbufdesc);
+
+    // Index buffer desc
+    gs_graphics_buffer_desc_t ibufdesc = {};
+    ibufdesc.type = GS_GRAPHICS_BUFFER_INDEX;
+    ibufdesc.usage = GS_GRAPHICS_BUFFER_USAGE_STREAM;
+    ibufdesc.data = NULL;
 
     // Create index buffer
-    gs->ibo = gs_graphics_buffer_create(
-        &(gs_graphics_buffer_desc_t) {
-            .type = GS_GRAPHICS_BUFFER_INDEX,
-            .usage = GS_GRAPHICS_BUFFER_USAGE_STREAM,
-            .data = NULL
-        }
-    );
+    gs->ibo = gs_graphics_buffer_create(&ibufdesc);
 
-    gs_graphics_vertex_attribute_type layout[] = {
-        GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2,        // Position
-        GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2,        // UV
-        GS_GRAPHICS_VERTEX_ATTRIBUTE_BYTE4          // Color
-    };
+    // Vertex attr layout
+    gs_graphics_vertex_attribute_desc_t vattrs[3] = {};
+    vattrs[0].format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2;   // Position
+    vattrs[1].format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2;   // UV
+    vattrs[2].format = GS_GRAPHICS_VERTEX_ATTRIBUTE_BYTE4;    // Color
+
+    // Pipeline desc
+    gs_graphics_pipeline_desc_t pdesc = {};
+    pdesc.raster.shader = gs->shader;
+    pdesc.raster.index_buffer_element_size = (sizeof(ImDrawIdx) == 2) ? sizeof(uint16_t) : sizeof(uint32_t);
+    pdesc.blend.func = GS_GRAPHICS_BLEND_EQUATION_ADD;
+    pdesc.blend.src = GS_GRAPHICS_BLEND_MODE_SRC_ALPHA;
+    pdesc.blend.dst = GS_GRAPHICS_BLEND_MODE_ONE_MINUS_SRC_ALPHA;
+    pdesc.layout.attrs = vattrs;
+    pdesc.layout.size = sizeof(vattrs);
 
     // Create pipeline
-    gs->pip = gs_graphics_pipeline_create (
-        &(gs_graphics_pipeline_desc_t) {
-            .raster = {
-                .shader = gs->shader,
-                .index_buffer_element_size = sizeof(uint32_t)
-            },
-            .blend = {
-                .func = GS_GRAPHICS_BLEND_EQUATION_ADD,
-                .src = GS_GRAPHICS_BLEND_MODE_SRC_ALPHA,
-                .dst = GS_GRAPHICS_BLEND_MODE_ONE_MINUS_SRC_ALPHA              
-            },
-            .layout = layout,
-            .size = sizeof(layout)
-        }
-    );
+    gs->pip = gs_graphics_pipeline_create (&pdesc);
+
+    // Create default fonts texture
+    gs_imgui_create_fonts_texture(gs);
 }
 
-IMGUI_IMPL_API bool     
-gs_imgui_init(gs_imgui_t* gs, uint32_t hndl, bool install_callbacks)
+gs_imgui_t     
+gs_imgui_new(uint32_t hndl, bool install_callbacks)
 {
-    gs->win_hndl = hndl;
-    gs->time = 0.0;
+    gs_imgui_t gs = {};
+
+    gs.ctx = ImGui::CreateContext();
+    ImGui::SetCurrentContext(gs.ctx);
+
+    gs.win_hndl = hndl;
+    gs.time = 0.0;
 
     // Setup backend capabilities flags
     ImGuiIO& io = ImGui::GetIO();
@@ -185,7 +195,7 @@ gs_imgui_init(gs_imgui_t* gs, uint32_t hndl, bool install_callbacks)
     // Rendering
     io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
 
-    gs_imgui_device_create(gs);
+    gs_imgui_device_create(&gs);
 
 //     io.SetClipboardTextFn = ImGui_ImplGlfw_SetClipboardText;
 //     io.GetClipboardTextFn = ImGui_ImplGlfw_GetClipboardText;
@@ -232,6 +242,33 @@ gs_imgui_init(gs_imgui_t* gs, uint32_t hndl, bool install_callbacks)
     // }
 
     // g_ClientApi = client_api;
+
+    return gs;
+
+}
+
+IMGUI_IMPL_API bool     
+gs_imgui_create_fonts_texture(gs_imgui_t* gs)
+{
+    // Build texture atlas
+    ImGuiIO& io = ImGui::GetIO();
+    unsigned char* pixels;
+    int32_t width, height;
+    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);   // Load as RGBA 32-bit (75% of the memory is wasted, but default font is so small) because it is more likely to be compatible with user's existing shaders. If your ImTextureId represent a higher-level concept than just a GL texture id, consider calling GetTexDataAsAlpha8() instead to save on GPU memory.
+
+    // Create font texture
+    gs_graphics_texture_desc_t tdesc = {};
+    tdesc.width = width;
+    tdesc.height = height;
+    tdesc.format = GS_GRAPHICS_TEXTURE_FORMAT_RGBA8;
+    tdesc.min_filter = GS_GRAPHICS_TEXTURE_FILTER_LINEAR; 
+    tdesc.mag_filter = GS_GRAPHICS_TEXTURE_FILTER_LINEAR; 
+    tdesc.data = (void*)pixels;
+
+    gs->font_tex = gs_graphics_texture_create(&tdesc);
+
+    // Store our identifier
+    io.Fonts->TexID = (ImTextureID)(intptr_t)gs->font_tex.id;
 
     return true;
 }
@@ -285,55 +322,27 @@ void gs_imgui_update_mouse_and_keys(gs_imgui_t* ctx)
     io.KeyAlt    = gs_platform_key_down(GS_KEYCODE_LALT) || gs_platform_key_down(GS_KEYCODE_RALT);
     io.KeySuper  = false;
 
-// #ifdef GS_PLATFORM_WIN
-//     io.KeySuper = false;
-// #else
-//     io.KeySuper = 
-// #endif
-
     // Update buttons
     io.MouseDown[0] = gs_platform_mouse_down(GS_MOUSE_LBUTTON);
-    io.MouseDown[1] = gs_platform_mouse_down(GS_MOUSE_MBUTTON);
-    io.MouseDown[2] = gs_platform_mouse_down(GS_MOUSE_RBUTTON);
+    io.MouseDown[1] = gs_platform_mouse_down(GS_MOUSE_RBUTTON);
+    io.MouseDown[2] = gs_platform_mouse_down(GS_MOUSE_MBUTTON);
 
+    // Mouse position
     int32_t mpx = 0, mpy = 0;
     gs_platform_mouse_position(&mpx, &mpy);
     io.MousePos = ImVec2((float)mpx, (float)mpy);
 
-    // Update buttons
-//     for (int i = 0; i < IM_ARRAYSIZE(io.MouseDown); i++)
-//     {
-//         // If a mouse press event came, always pass it as "mouse held this frame", so we don't miss click-release events that are shorter than 1 frame.
-//         io.MouseDown[i] = g_MouseJustPressed[i] || glfwGetMouseButton(g_Window, i) != 0;
-//         g_MouseJustPressed[i] = false;
-//     }
-
-//     // Update mouse position
-//     const ImVec2 mouse_pos_backup = io.MousePos;
-//     io.MousePos = ImVec2(-FLT_MAX, -FLT_MAX);
-// #ifdef __EMSCRIPTEN__
-//     const bool focused = true; // Emscripten
-// #else
-//     const bool focused = glfwGetWindowAttrib(g_Window, GLFW_FOCUSED) != 0;
-// #endif
-//     if (focused)
-//     {
-//         if (io.WantSetMousePos)
-//         {
-//             glfwSetCursorPos(g_Window, (double)mouse_pos_backup.x, (double)mouse_pos_backup.y);
-//         }
-//         else
-//         {
-//             double mouse_x, mouse_y;
-//             glfwGetCursorPos(g_Window, &mouse_x, &mouse_y);
-//             io.MousePos = ImVec2((float)mouse_x, (float)mouse_y);
-//         }
-//     }
+    // Mouse wheel
+    gs_platform_mouse_wheel(&io.MouseWheelH, &io.MouseWheel);
 }
 
 IMGUI_IMPL_API void     
 gs_imgui_new_frame(gs_imgui_t* gs)
 {
+    gs_assert(gs->ctx != nullptr);
+    ImGui::SetCurrentContext(gs->ctx);
+    gs_assert(ImGui::GetCurrentContext() != nullptr);
+
     ImGuiIO& io = ImGui::GetIO();
     IM_ASSERT(io.Fonts->IsBuilt() && "Font atlas not built! It is generally built by the renderer backend. Missing call to renderer _NewFrame() function? e.g. ImGui_ImplOpenGL3_NewFrame().");
 
@@ -356,11 +365,154 @@ gs_imgui_new_frame(gs_imgui_t* gs)
 
     gs_imgui_update_mouse_and_keys(gs);
 
-    // ImGui_ImplGlfw_UpdateMousePosAndButtons();
-    // ImGui_ImplGlfw_UpdateMouseCursor();
+    ImGui::NewFrame();
+}
 
-    // Update game controllers (if enabled and available)
-    // ImGui_ImplGlfw_UpdateGamepads();
+IMGUI_IMPL_API void         
+gs_imgui_render(gs_imgui_t* gs, gs_command_buffer_t* cb)
+{
+	// Set current context
+	ImGui::SetCurrentContext(gs->ctx);
+
+    // Do da drawing   
+    ImGui::Render();
+
+    // Cache draw data
+    ImDrawData* draw_data = ImGui::GetDrawData();
+
+    // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
+    int fb_width = (int)(draw_data->DisplaySize.x * draw_data->FramebufferScale.x);
+    int fb_height = (int)(draw_data->DisplaySize.y * draw_data->FramebufferScale.y);
+    if (fb_width <= 0 || fb_height <= 0)
+        return;
+
+    // Setup viewport, orthographic projection matrix
+    float l = draw_data->DisplayPos.x;
+    float r = draw_data->DisplayPos.x + draw_data->DisplaySize.x;
+    float t = draw_data->DisplayPos.y;
+    float b = draw_data->DisplayPos.y + draw_data->DisplaySize.y; 
+
+    const float ortho[4][4] =
+    {
+        { 2.0f/(r-l),   0.0f,         0.0f,   0.0f },
+        { 0.0f,         2.0f/(t-b),   0.0f,   0.0f },
+        { 0.0f,         0.0f,        -1.0f,   0.0f },
+        { (r+l)/(l-r),  (t+b)/(b-t),  0.0f,   1.0f },
+    };
+
+    // gs_mat4 m = gs_mat4_identity();
+    gs_mat4 m = gs_mat4_elem((float*)ortho);
+
+    // Set up data binds
+    gs_graphics_bind_desc_t binds[3] = {};
+    binds[0].type = GS_GRAPHICS_BIND_VERTEX_BUFFER; binds[0].buffer = gs->vbo;
+    binds[1].type = GS_GRAPHICS_BIND_INDEX_BUFFER; binds[1].buffer = gs->ibo;
+    binds[2].type = GS_GRAPHICS_BIND_UNIFORM_BUFFER; binds[2].buffer = gs->u_proj; binds[2].data = &m;
+
+    // Will project scissor/clipping rectangles into framebuffer space
+    ImVec2 clip_off = draw_data->DisplayPos;         // (0,0) unless using multi-viewports
+    ImVec2 clip_scale = draw_data->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
+
+    // Render pass action for clearing the screen
+    gs_graphics_render_pass_action_t action = {}; 
+    action.color[0] = 0.0f; 
+    action.color[1] = 0.0f; 
+    action.color[2] = 0.0f; 
+    action.color[3] = 1.0f;
+
+    // Default action pass
+    gs_handle(gs_graphics_render_pass_t) def_pass = {};
+	def_pass.id = 0;
+
+    // Render pass action for clearing screen (could handle this if you wanted to render gui into a separate frame buffer)
+    gs_graphics_begin_render_pass(cb, def_pass, &action, sizeof(action));
+    {
+        // Bind pipeline
+        gs_graphics_bind_pipeline(cb, gs->pip);
+
+        // Set viewport
+        gs_graphics_set_viewport(cb, 0, 0, fb_width, fb_height);
+
+        // Global bindings for pipeline
+        gs_graphics_bind_bindings(cb, binds, sizeof(binds));
+
+         // Render command lists
+        for (int n = 0; n < draw_data->CmdListsCount; n++)
+        {
+            const ImDrawList* cmd_list = draw_data->CmdLists[n];
+
+            // Update vertex buffer
+            gs_graphics_buffer_desc_t vdesc = {};
+            vdesc.type = GS_GRAPHICS_BUFFER_VERTEX;
+            vdesc.usage = GS_GRAPHICS_BUFFER_USAGE_STREAM;
+            vdesc.data = cmd_list->VtxBuffer.Data;
+            vdesc.size = cmd_list->VtxBuffer.Size * sizeof(ImDrawVert);
+            gs_graphics_buffer_request_update(cb, gs->vbo, &vdesc);
+
+            // Update index buffer
+            gs_graphics_buffer_desc_t idesc = {};
+            idesc.type = GS_GRAPHICS_BUFFER_INDEX;
+            idesc.usage = GS_GRAPHICS_BUFFER_USAGE_STREAM;
+            idesc.data = cmd_list->IdxBuffer.Data;
+            idesc.size = cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx);
+            gs_graphics_buffer_request_update(cb, gs->ibo, &idesc);
+
+            // Iterate through command buffer
+            for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
+            {
+                const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
+                if (pcmd->UserCallback != NULL)
+                {
+                    // User callback, registered via ImDrawList::AddCallback()
+                    // (ImDrawCallback_ResetRenderState is a special callback value used by the user to request the renderer to reset render state.)
+                    if (pcmd->UserCallback == ImDrawCallback_ResetRenderState)
+                    {
+                        // Could add something here...not sure what though
+                        // ImGui_ImplOpenGL3_SetupRenderState(draw_data, fb_width, fb_height, vertex_array_object);
+                    }
+                    else
+                        pcmd->UserCallback(cmd_list, pcmd);
+                }
+                else
+                {
+                    // Project scissor/clipping rectangles into framebuffer space
+                    ImVec4 clip_rect;
+                    clip_rect.x = (pcmd->ClipRect.x - clip_off.x) * clip_scale.x;
+                    clip_rect.y = (pcmd->ClipRect.y - clip_off.y) * clip_scale.y;
+                    clip_rect.z = (pcmd->ClipRect.z - clip_off.x) * clip_scale.x;
+                    clip_rect.w = (pcmd->ClipRect.w - clip_off.y) * clip_scale.y;
+
+                    // Render
+                    if (clip_rect.x < fb_width && clip_rect.y < fb_height && clip_rect.z >= 0.0f && clip_rect.w >= 0.0f)
+                    {
+                        // Set view scissor
+                        gs_graphics_set_view_scissor(cb, 
+                            (int)clip_rect.x, 
+                            (int)(fb_height - clip_rect.w), 
+                            (int)(clip_rect.z - clip_rect.x), 
+                            (int)(clip_rect.w - clip_rect.y)
+                        );
+
+                        // Grab handle from command texture id
+                        gs_handle(gs_graphics_texture_t) tex = gs_handle_create(gs_graphics_texture_t, (uint32_t)pcmd->TextureId);
+
+                        gs_graphics_bind_desc_t sbind = {};
+                        sbind.type = GS_GRAPHICS_BIND_SAMPLER_BUFFER;
+                        sbind.buffer = gs->u_tex;
+                        sbind.data = &tex;
+                        sbind.binding = 0;
+
+                        // Bind individual texture bind
+                        gs_graphics_bind_bindings(cb, &sbind, sizeof(sbind));
+
+                        // Draw elements
+                        gs_graphics_draw(cb, (size_t)(intptr_t)(pcmd->IdxOffset * sizeof(ImDrawIdx)), (size_t)pcmd->ElemCount, 1); 
+                    }
+                }
+            }
+        }
+    }
+    gs_graphics_end_render_pass(cb);
 }
 
 #endif // GS_IMGUI_IMPL
