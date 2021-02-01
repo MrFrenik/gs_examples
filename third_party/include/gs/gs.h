@@ -633,7 +633,7 @@ typedef bool32_t          bool32;
         }\
     } while (0)
 
-#define gs_int_2_voidp(I) (void*)(uintptr_t)(I)
+#define gs_int2voidp(I) (void*)(uintptr_t)(I)
 
 /*===================================
 // Memory Allocation Utils
@@ -4519,15 +4519,28 @@ typedef struct gs_graphics_raster_state_desc_t
     size_t index_buffer_element_size;             // Element size of index buffer (used for parsing internal data)
 } gs_graphics_raster_state_desc_t;
 
+/* Graphics Vertex Attribute Desc */
+typedef struct gs_graphics_vertex_attribute_desc_t {
+    gs_graphics_vertex_attribute_type format;           // Format for vertex attribute
+    size_t stride;                                      // Total stride of vertex layout (optional, calculated by default)
+    size_t offset;                                      // Offset of this vertex from base pointer of data (optional, calaculated by default)
+    size_t divisor;                                     // Used for instancing. (optional, default = 0x00 for no instancing)
+} gs_graphics_vertex_attribute_desc_t;
+
+/* Graphics Vertex Layout Desc */
+typedef struct gs_graphics_vertex_layout_desc_t {
+    gs_graphics_vertex_attribute_desc_t* attrs;      // Vertex attribute array
+    size_t size;                                    // Size in bytes of vertex attribute array
+} gs_graphics_vertex_layout_desc_t;
+
 /* Graphics Pipeline Desc */
 typedef struct gs_graphics_pipeline_desc_t
 {
-    gs_graphics_blend_state_desc_t blend;      // Blend state desc for pipeline
-    gs_graphics_depth_state_desc_t depth;      // Depth state desc for pipeline
-    gs_graphics_raster_state_desc_t raster;    // Raster state desc for pipeline
-    gs_graphics_stencil_state_desc_t stencil;  // Stencil state desc for pipeline
-    gs_graphics_vertex_attribute_type* layout; // Array of vertex attributes for layout
-    size_t size;                               // Size in bytes of vertex attribute array
+    gs_graphics_blend_state_desc_t blend;       // Blend state desc for pipeline
+    gs_graphics_depth_state_desc_t depth;       // Depth state desc for pipeline
+    gs_graphics_raster_state_desc_t raster;     // Raster state desc for pipeline
+    gs_graphics_stencil_state_desc_t stencil;   // Stencil state desc for pipeline
+    gs_graphics_vertex_layout_desc_t layout; // Vertex layout desc for pipeline
 } gs_graphics_pipeline_desc_t;
 
 /*==========================

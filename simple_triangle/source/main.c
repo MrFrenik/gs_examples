@@ -74,8 +74,8 @@ void init()
         }
     );
 
-    gs_graphics_vertex_attribute_type layout[] = {
-        GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2
+    gs_graphics_vertex_attribute_desc_t vattrs[] = {
+        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2}
     };
 
     pip = gs_graphics_pipeline_create (
@@ -83,8 +83,10 @@ void init()
             .raster = {
                 .shader = shader
             },
-            .layout = layout,
-            .size = sizeof(layout)
+            .layout = {
+                .attrs = vattrs,
+                .size = sizeof(vattrs)
+            }
         }
     );
 }

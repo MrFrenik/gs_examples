@@ -159,10 +159,11 @@ gs_nk_device_create(gs_nk_ctx_t* gs)
         }
     );
 
-    gs_graphics_vertex_attribute_type layout[] = {
-        GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2,        // Position
-        GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2,        // UV
-        GS_GRAPHICS_VERTEX_ATTRIBUTE_BYTE4          // Color
+    // Vertex attr layout
+    gs_graphics_vertex_attribute_desc_t gsnk_vattrs[] = {
+        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2},       // Position
+        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2},       // UV
+        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_BYTE4}         // Color
     };
 
     // Create pipeline
@@ -177,8 +178,10 @@ gs_nk_device_create(gs_nk_ctx_t* gs)
                 .src = GS_GRAPHICS_BLEND_MODE_SRC_ALPHA,
                 .dst = GS_GRAPHICS_BLEND_MODE_ONE_MINUS_SRC_ALPHA              
             },
-            .layout = layout,
-            .size = sizeof(layout)
+            .layout = {
+                .attrs = gsnk_vattrs,
+                .size = sizeof(gsnk_vattrs)
+            }
         }
     );
 }

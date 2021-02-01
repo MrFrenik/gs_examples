@@ -145,21 +145,19 @@ void init()
         }
     );
 
-    gs_graphics_vertex_attribute_desc_t vattrs[] = {
-        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2},
-        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2}
+    gs_graphics_vertex_attribute_type layout[] = {
+        GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2,
+        GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2
     };
 
     pip = gs_graphics_pipeline_create (
         &(gs_graphics_pipeline_desc_t) {
             .raster = {
                 .shader = shader,
-                .index_buffer_element_size = sizeof(uint32_t) 
+                .index_buffer_element_size = sizeof(u32) 
             },
-            .layout = {
-                .attrs = vattrs,
-                .size = sizeof(vattrs)
-            }
+            .layout = layout,
+            .size = sizeof(layout)
         }
     );
 }

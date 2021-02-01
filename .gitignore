@@ -48,3 +48,8 @@ imgui/external/imgui/.editorconfig
 imgui/external/imgui/.gitattributes
 gs_cpp/bin/App
 hello_gs/bin/App
+hello_gs/bin/main.obj
+instancing/bin/main.obj
+meta_class/bin/main.obj
+meta_class/bin/main.obj
+simple_triangle/bin/main.obj
