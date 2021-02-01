@@ -5,6 +5,8 @@
     The purpose of this example is to demonstrate how to create do 
     instanced drawing using gunslinger.
 
+    Modified from: https://learnopengl.com/Advanced-OpenGL/Instancing
+
     Included: 
         * Construct vertex/instanced data buffers from user defined declarations
         * Construct shaders from source
