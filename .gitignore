@@ -55,3 +55,5 @@ meta_class/bin/main.obj
 simple_triangle/bin/main.obj
 instancing/bin/.vs/App/v15/Browse.VC.db
 instancing/bin/.vs/App/v15/Browse.VC.opendb
+non_interleaved_data/bin/main.obj
+frame_buffer/bin/main.obj
