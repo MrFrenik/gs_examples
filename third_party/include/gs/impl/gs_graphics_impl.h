@@ -1378,6 +1378,9 @@ void gs_graphics_submit_command_buffer(gs_command_buffer_t* cb)
 
                 // Enable vertex attrib pointers based on pipeline layout
                 // TODO(john): allow user to specify offset and stride for layout decl
+                // Pass in multiple layouts for buffers?
+                // What if buffer is interleaved? What if it's partly interleaved?
+                
                 uint32_t total_size = gsgl_calculate_vertex_size_in_bytes(pip->layout, gs_dyn_array_size(pip->layout)); 
                 for (uint32_t i = 0; i < gs_dyn_array_size(pip->layout); ++i)
                 {
