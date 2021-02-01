@@ -494,7 +494,7 @@ gs_imgui_render(gs_imgui_t* gs, gs_command_buffer_t* cb)
                         );
 
                         // Grab handle from command texture id
-                        gs_handle(gs_graphics_texture_t) tex = gs_handle_create(gs_graphics_texture_t, (uint32_t)pcmd->TextureId);
+                        gs_handle(gs_graphics_texture_t) tex = gs_handle_create(gs_graphics_texture_t, (uint32_t)(intptr_t)pcmd->TextureId);
 
                         gs_graphics_bind_desc_t sbind = {};
                         sbind.type = GS_GRAPHICS_BIND_SAMPLER_BUFFER;

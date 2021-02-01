@@ -31,9 +31,6 @@ void app_update()
 
 	ImGui::ShowDemoWindow(&show_demo_window);
 
-    ImGui::Begin("Hello, world!");  
-    ImGui::End();
-
     gs_imgui_render(&gsimgui, &gcb);
 
     gs_graphics_submit_command_buffer(&gcb);
