@@ -153,7 +153,8 @@ void update()
 
     // Render pass action for clearing the screen
     gs_graphics_render_pass_action_t action = (gs_graphics_render_pass_action_t){.color = {0.1f, 0.1f, 0.1f, 1.f}};
-    gs_vec2 ws = gs_platform_window_sizev(gs_platform_main_window());
+    const gs_vec2 fbs = gs_platform_framebuffer_sizev(gs_platform_main_window());
+    const gs_vec2 ws = gs_platform_window_sizev(gs_platform_main_window());
 
     // MVP Matrix
     gs_mat4 mvp = gs_mat4_perspective(60.f, ws.x / ws.y, 0.1f, 100.f);
@@ -177,6 +178,7 @@ void update()
 
     /* Render */
     gs_graphics_begin_render_pass(&cb, (gs_handle(gs_graphics_render_pass_t)){0}, &action, sizeof(action));
+        gs_graphics_set_viewport(&cb, 0, 0, (int32_t)fbs.x, (int32_t)fbs.y);
         gs_graphics_bind_pipeline(&cb, pip);
         gs_graphics_bind_bindings(&cb, binds, sizeof(binds));
         gs_graphics_draw(&cb, 0, 36, 1);

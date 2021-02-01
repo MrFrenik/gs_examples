@@ -137,6 +137,8 @@ void update()
 {
     if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_engine_quit();
 
+    const gs_vec2 fbs = gs_platform_framebuffer_sizev(gs_platform_main_window());
+
     // Render pass action for clearing the screen
     gs_graphics_render_pass_action_t action = (gs_graphics_render_pass_action_t){.color = {0.1f, 0.1f, 0.1f, 1.f}};
 
@@ -148,6 +150,7 @@ void update()
 
     /* Render */
     gs_graphics_begin_render_pass(&cb, (gs_handle(gs_graphics_render_pass_t)){0}, &action, sizeof(action));
+        gs_graphics_set_viewport(&cb, 0, 0, (int32_t)fbs.x, (int32_t)fbs.y);
         gs_graphics_bind_pipeline(&cb, pip);
         gs_graphics_bind_bindings(&cb, binds, sizeof(binds));
         gs_graphics_draw(&cb, 0, 6, 100);
