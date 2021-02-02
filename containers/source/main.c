@@ -10,6 +10,7 @@
         * gs_hash_table(K, V): hash table of key 'K' : value 'V'
         * gs_slot_array(T): double indirection array of type 'T'
         * gs_slot_map(K, V): indirection array of type 'V' with custom key type 'K'
+        * gs_byte_buffer_t: uint8_t data buffer, capable of storing any type of mixed data
 
     Press `esc` to exit the application.
 ================================================================*/
