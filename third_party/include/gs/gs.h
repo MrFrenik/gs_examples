@@ -4681,6 +4681,7 @@ typedef struct gs_asset_mesh_decl_t
 {
     gs_asset_mesh_layout_t* layout;        // Mesh attribute layout array
     size_t layout_size;                    // Size of mesh attribute layout array in bytes
+    size_t index_buffer_element_size;      // Size of index data size in bytes
 } gs_asset_mesh_decl_t;
 
 typedef struct gs_asset_mesh_primitive_t
@@ -4695,7 +4696,33 @@ typedef struct gs_asset_mesh_t
     gs_dyn_array(gs_asset_mesh_primitive_t) primitives;
 } gs_asset_mesh_t;
 
+// Structured/packed raw mesh data
+typedef struct gs_asset_mesh_raw_data_t 
+{
+    uint32_t prim_count;
+    size_t* vertex_sizes;
+    size_t* index_sizes;
+    void** vertices;
+    void** indices;
+} gs_asset_mesh_raw_data_t;
+
 GS_API_DECL void gs_asset_mesh_load_from_file(const char* path, void* out, gs_asset_mesh_decl_t* decl, void* data_out, size_t data_size);
+
+/*
+    // Could pass in a mesh decl? Then it'll just give you back packed vertex/index data for each primitive?
+    GS_API_DECL gs_util_load_gltf_from_file(const char* path, gs_asset_mesh_decl_t* decl, uint32_t* primitive_count, void*** verticies, size_t** vertex_sizes, void*** indices, size_t** index_sizes);
+    
+    To use: 
+
+    // For primitives
+    uint32_t prim_count = 0;
+    size_t* vertex_sizes = NULL;
+    size_t* index_sizes = NULL;
+    float** vertices = NULL;
+    uint32_t** indices = NULL;
+
+    gs_util_load_gltf_from_file("path", &decl, &prim_count, &vertices, &vertex_sizes, &indices, &index_sizes);
+*/
 
 /*==========================
 // GS_ENGINE / GS_APP
