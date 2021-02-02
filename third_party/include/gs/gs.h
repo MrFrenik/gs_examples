@@ -1823,7 +1823,6 @@ gs_force_inline
 uint32_t __gs_find_first_valid_iterator(void* data, size_t key_len, size_t val_len, uint32_t idx, size_t stride, size_t klpvl)
 {
     uint32_t it = (uint32_t)idx;
-    gs_println("idx: %zu", it);
     for (; it < (uint32_t)gs_dyn_array_capacity(data); ++it)
     {
         size_t offset = (it * stride);
@@ -1871,10 +1870,10 @@ void __gs_hash_table_iter_advance_func(void** data, size_t key_len, size_t val_l
 #define gs_hash_table_iter_getp(__HT, __IT)\
     (&(gs_hash_table_geti(__HT, __IT)))
 
-#define gs_hash_table_iter_get_key(__HT, __IT)\
+#define gs_hash_table_iter_getk(__HT, __IT)\
     (gs_hash_table_getk(__HT, __IT))
 
-#define gs_hash_table_iter_get_keyp(__HT, __IT)\
+#define gs_hash_table_iter_getkp(__HT, __IT)\
     (&(gs_hash_table_getk(__HT, __IT)))
 
 /*===================================
@@ -2049,6 +2048,8 @@ uint32_t gs_slot_array_insert_func(void** indices, void** data, void* val, size_
 // Slot array iterator new
 typedef uint32_t gs_slot_array_iter;
 
+#define gs_slot_array_iter_new(__SA) 0
+
 #define gs_slot_array_iter_valid(__SA, __IT)\
     ((__IT) < (uint32_t)gs_slot_array_size((__SA)))
 
@@ -2102,8 +2103,8 @@ void** gs_slot_map_init(void** sm)
 #define gs_slot_map_insert(__SM, __SMK, __SMV)\
     do {\
         gs_slot_map_init(&(__SM));\
-        uint32_t __h = gs_slot_array_insert((__SM)->sa, ((__SMV)));\
-        gs_hash_table_insert((__SM)->ht, (__SMK), __h);\
+        uint32_t __H = gs_slot_array_insert((__SM)->sa, ((__SMV)));\
+        gs_hash_table_insert((__SM)->ht, (__SMK), __H);\
     } while (0)
 
 #define gs_slot_map_get(__SM, __SMK)\
@@ -2140,6 +2141,9 @@ void** gs_slot_map_init(void** sm)
         }\
     } while (0)
 
+#define gs_slot_map_capacity(__SM)\
+    (gs_hash_table_capacity((__SM)->ht))
+
 /*=== Slot Map Iterator ===*/
 
 typedef uint32_t gs_slot_map_iter;
@@ -2148,23 +2152,29 @@ typedef uint32_t gs_slot_map_iter;
 #define gs_slot_map_iter_new(__SM)\
     gs_hash_table_iter_new((__SM)->ht)
 
-#define gs_slot_map_iter_valid(__SM, __it)\
-    ((__it) < gs_hash_table_capacity((__SM)->ht))
+#define gs_slot_map_iter_valid(__SM, __IT)\
+    ((__IT) < gs_hash_table_capacity((__SM)->ht))
 
-#define gs_slot_map_iter_advance(__SM, __it)\
-    __gs_hash_table_iter_advance_func((__SM)->ht->data, sizeof((__SM)->ht->tmp_key), sizeof((__SM)->ht->tmp_val), &(__it))
+#define gs_slot_map_iter_advance(__SM, __IT)\
+    __gs_hash_table_iter_advance_func((void**)&((__SM)->ht->data), sizeof((__SM)->ht->tmp_key), sizeof((__SM)->ht->tmp_val), &(__IT), (__SM)->ht->stride, (__SM)->ht->klpvl)
 
-#define gs_slot_map_iter_getk(__SM, __it)\
-    (gs_hash_table_find_valid_iter(__SM->ht, __it), gs_hash_table_geti((__SM)->ht, (__it)))
+#define gs_slot_map_iter_getk(__SM, __IT)\
+    gs_hash_table_iter_getk((__SM)->ht, (__IT))
+    //(gs_hash_table_find_valid_iter(__SM->ht, __IT), gs_hash_table_geti((__SM)->ht, (__IT)))
 
-#define gs_slot_map_iter_getkp(__SM, __it)\
-    (gs_hash_table_find_valid_iter(__SM->ht, __it), &(gs_hash_table_geti((__SM)->ht, (__it))))
+#define gs_slot_map_iter_getkp(__SM, __IT)\
+    (gs_hash_table_find_valid_iter(__SM->ht, __IT), &(gs_hash_table_geti((__SM)->ht, (__IT))))
 
-#define gs_slot_map_iter_getv(__SM, __it)\
-    (gs_hash_table_find_valid_iter(__SM->ht, __it), (__SM)->sa->data[gs_hash_table_geti((__SM)->ht, (__it))])
+#define gs_slot_map_iter_get(__SM, __IT)\
+    ((__SM)->sa->data[gs_hash_table_iter_get((__SM)->ht, (__IT))])
 
-#define gs_slot_map_iter_getvp(__SM, __it)\
-    (gs_hash_table_find_valid_iter(__SM->ht, __it), &((__SM)->sa->data[gs_hash_table_geti((__SM)->ht, (__it))]))
+    // ((__SM)->sa->data[gs_hash_table_geti((__SM)->ht, (__IT))])
+    // (gs_hash_table_find_valid_iter(__SM->ht, __IT), (__SM)->sa->data[gs_hash_table_geti((__SM)->ht, (__IT))])
+
+#define gs_slot_map_iter_getp(__SM, __IT)\
+    (&((__SM)->sa->data[gs_hash_table_geti((__SM)->ht, (__IT))]))
+
+    // (gs_hash_table_find_valid_iter(__SM->ht, __IT), &((__SM)->sa->data[gs_hash_table_geti((__SM)->ht, (__IT))]))
 
 typedef uint32_t gs_slot_map_iter;
 
