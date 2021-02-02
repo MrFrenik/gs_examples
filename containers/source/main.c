@@ -40,6 +40,7 @@ gs_hash_table(float, uint32_t) ht = NULL;         // Hash table
 gs_hash_table(custom_key_t, uint32_t) htc = NULL; // Hash table with custom key struct
 gs_slot_array(double) sa = NULL;                  // Slot array
 gs_slot_map(uint64_t, uint32_t) sm = NULL;        // Slot map (hashed str64 bit key)
+gs_byte_buffer_t bb = {0};                        // Byte buffer
 
 // Keys for slot map
 const char* smkeys[ITER_CT] = 
@@ -53,6 +54,12 @@ const char* smkeys[ITER_CT] =
 
 void init()
 {
+    // Construct byte buffer
+    bb = gs_byte_buffer_new();
+
+    // Write total amount to be written into byte buffer
+    gs_byte_buffer_write(&bb, uint32_t, ITER_CT);
+
     // Insertion
     for (uint32_t i = 0; i < ITER_CT; ++i) 
     {
@@ -71,7 +78,13 @@ void init()
 
         // Slot map
         gs_slot_map_insert(sm, gs_hash_str64(smkeys[i]), i);
+
+        // Byte buffer write
+        gs_byte_buffer_write(&bb, uint32_t, i);
     }
+
+    // Rewind byte buffer to beginning for reading
+    gs_byte_buffer_seek_to_beg(&bb);
 
     print_console();
 }
@@ -166,6 +179,26 @@ void update()
         }
         gs_println("]");
     }
+
+    if (gs_platform_key_pressed(GS_KEYCODE_SIX))
+    {
+        // Find data by hashed string key
+        gs_println("gs_byte_buffer_t: [");
+
+        // Read count from byte buffer (construct new variable with readc function)
+        gs_byte_buffer_readc(&bb, uint32_t, ct);
+
+        for (uint32_t i = 0; i < ct; ++i)
+        {
+            // Read back uint32_t from buffer
+            gs_byte_buffer_readc(&bb, uint32_t, v);
+            gs_println("v: %zu", v);
+        }
+        gs_println("]");
+
+        // Seek back to beginning to read again
+        gs_byte_buffer_seek_to_beg(&bb);
+    }
 }
 
 void cleanup()
@@ -183,6 +216,7 @@ void cleanup()
     gs_hash_table_free(htc);
     gs_slot_array_free(sa);
     gs_slot_map_free(sm);
+    gs_byte_buffer_free(&bb);
 }
 
 gs_app_desc_t gs_main(int32_t argc, char** argv)
