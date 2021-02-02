@@ -60,4 +60,4 @@ frame_buffer/bin/main.obj
 imgui/bin
 instancing/bin
 non_interleaved_data/bin
-framebuffer/bin
+frame_buffer/bin
