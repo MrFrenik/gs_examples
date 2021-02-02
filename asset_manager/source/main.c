@@ -67,15 +67,15 @@ void init()
     gsi = gs_immediate_draw_new();
     gsa = gs_asset_manager_new();
 
-    // Loading assets provided with framework
-    tex_hndl = gs_assets_load_from_file(&gsa, gs_asset_texture_t, "./assets/champ.png");
-    aud_hndl = gs_assets_load_from_file(&gsa, gs_asset_audio_t, "./assets/jump.wav");
-    fnt_hndl = gs_assets_load_from_file(&gsa, gs_asset_font_t, "./assets/font.ttf", 32);
-
     // Registering custom asset importer
     gs_assets_register_importer(&gsa, custom_asset_t, &(gs_asset_importer_desc_t){
         .load_from_file = load_custom_asset_from_file
     });
+
+    // Loading assets provided with framework
+    tex_hndl = gs_assets_load_from_file(&gsa, gs_asset_texture_t, "./assets/champ.png", NULL, false);
+    aud_hndl = gs_assets_load_from_file(&gsa, gs_asset_audio_t, "./assets/jump.wav");
+    fnt_hndl = gs_assets_load_from_file(&gsa, gs_asset_font_t, "./assets/font.ttf", 32);
 
     // Create asset and get handle for custom data placed into asset manager
     custom_asset_t custom = {
@@ -108,10 +108,10 @@ void update()
     custom_asset_t* cp0 = gs_assets_getp(&gsa, custom_asset_t, cust_hndl0);
 
     gsi_camera3D(&gsi);
+    gsi_face_cull_enabled(&gsi, true);
     gsi_transf(&gsi, 0.f, 0.f, -5.f);
     gsi_rotatefv(&gsi, -gs_platform_elapsed_time() * 0.001f, GS_YAXIS);
     gsi_sphere(&gsi, 0.f, 0.f, 0.f, 1.5f, 20, 50, 150, 100, GS_GRAPHICS_PRIMITIVE_LINES);
-    gsi_face_cull_enabled(&gsi, true);
     gsi_texture(&gsi, tp->hndl);
     gsi_sphere(&gsi, 0.f, 0.f, 0.f, 1.5f, 255, 255, 255, 255, GS_GRAPHICS_PRIMITIVE_TRIANGLES);
 
