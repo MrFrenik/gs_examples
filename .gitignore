@@ -57,3 +57,6 @@ instancing/bin/.vs/App/v15/Browse.VC.db
 instancing/bin/.vs/App/v15/Browse.VC.opendb
 non_interleaved_data/bin/main.obj
 frame_buffer/bin/main.obj
+imgui/bin
+instancing/bin
+non_interleaved_data/bin
