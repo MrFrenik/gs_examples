@@ -39,13 +39,13 @@ void init()
     // Construct color render target
     rt = gs_graphics_texture_create(
         &(gs_graphics_texture_desc_t) {
-            .width = gs_platform_window_width(gs_platform_main_window()),   // Width of texture in pixels
-            .height = gs_platform_window_height(gs_platform_main_window()), // Height of texture in pixels
-            .format = GS_GRAPHICS_TEXTURE_FORMAT_RGBA8,                     // Format of texture data (rgba32, rgba8, rgba32f, r8, depth32f, etc...)
-            .wrap_s = GS_GRAPHICS_TEXTURE_WRAP_REPEAT,                      // Wrapping type for s axis of texture
-            .wrap_t = GS_GRAPHICS_TEXTURE_WRAP_REPEAT,                      // Wrapping type for t axis of texture
-            .min_filter = GS_GRAPHICS_TEXTURE_FILTER_LINEAR,                // Minification filter for texture
-            .mag_filter = GS_GRAPHICS_TEXTURE_FILTER_LINEAR,                // Magnification filter for texture
+            .width = gs_platform_framebuffer_width(gs_platform_main_window()),   // Width of texture in pixels
+            .height = gs_platform_framebuffer_height(gs_platform_main_window()), // Height of texture in pixels
+            .format = GS_GRAPHICS_TEXTURE_FORMAT_RGBA8,                          // Format of texture data (rgba32, rgba8, rgba32f, r8, depth32f, etc...)
+            .wrap_s = GS_GRAPHICS_TEXTURE_WRAP_REPEAT,                           // Wrapping type for s axis of texture
+            .wrap_t = GS_GRAPHICS_TEXTURE_WRAP_REPEAT,                           // Wrapping type for t axis of texture
+            .min_filter = GS_GRAPHICS_TEXTURE_FILTER_LINEAR,                     // Minification filter for texture
+            .mag_filter = GS_GRAPHICS_TEXTURE_FILTER_LINEAR,                     // Magnification filter for texture
             .render_target = true
         }
     );
