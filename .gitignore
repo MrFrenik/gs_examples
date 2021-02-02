@@ -62,3 +62,4 @@ instancing/bin
 non_interleaved_data/bin
 frame_buffer/bin
 containers/bin/main.obj
+asset_manager/bin
