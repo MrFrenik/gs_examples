@@ -74,12 +74,12 @@ void init()
         .load_from_file = load_custom_asset_from_file
     });
 
-    // Mesh layout for loading mesh to use with 
-    // immediate rendering (if not provided, will construct layout based on mesh data when loaded from file)
+    // Mesh layout for loading mesh to use with immediate rendering 
+    // (if not provided, will construct layout based on mesh data when loaded from file)
     gs_asset_mesh_layout_t mesh_layout[] = {
-        (gs_asset_mesh_layout_t){.type = GS_ASSET_MESH_ATTRIBUTE_TYPE_POSITION},
-        (gs_asset_mesh_layout_t){.type = GS_ASSET_MESH_ATTRIBUTE_TYPE_TEXCOORD},
-        (gs_asset_mesh_layout_t){.type = GS_ASSET_MESH_ATTRIBUTE_TYPE_COLOR}
+        (gs_asset_mesh_layout_t){.type = GS_ASSET_MESH_ATTRIBUTE_TYPE_POSITION},  // Float3
+        (gs_asset_mesh_layout_t){.type = GS_ASSET_MESH_ATTRIBUTE_TYPE_TEXCOORD},  // Float2
+        (gs_asset_mesh_layout_t){.type = GS_ASSET_MESH_ATTRIBUTE_TYPE_COLOR}      // Byte4
     };
 
     gs_asset_mesh_decl_t mesh_decl = {
