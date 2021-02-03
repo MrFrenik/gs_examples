@@ -4597,6 +4597,8 @@ typedef struct gs_graphics_pipeline_desc_t
     gs_graphics_vertex_layout_desc_t layout; // Vertex layout desc for pipeline
 } gs_graphics_pipeline_desc_t;
 
+#define GS_GRAPHICS_RENDER_PASS_DEFAULT ((gs_handle(gs_graphics_render_pass_t)){0})
+
 /*==========================
 // Graphics Interface
 ==========================*/

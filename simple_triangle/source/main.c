@@ -103,11 +103,15 @@ void update()
         .vertex_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = vbo}}
     };
 
-    // Render
-    gs_graphics_begin_render_pass(&cb, (gs_handle(gs_graphics_render_pass_t)){0}, &action, sizeof(action));
+    // Begin render pass (default render pass draws to back buffer)
+    gs_graphics_begin_render_pass(&cb, GS_GRAPHICS_RENDER_PASS_DEFAULT, &action, sizeof(action));
+        // Bind our triangle pipeline for rendering
         gs_graphics_bind_pipeline(&cb, pip);
+        // Bind all bindings (just vertex buffer)
         gs_graphics_bind_bindings(&cb, &binds);
+        // Draw the triangle
         gs_graphics_draw(&cb, 0, 3, 1);
+    // End the render pass
     gs_graphics_end_render_pass(&cb);
 
     // Submit command buffer (syncs to GPU, MUST be done on main thread where you have your GPU context created)
