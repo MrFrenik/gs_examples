@@ -63,3 +63,4 @@ non_interleaved_data/bin
 frame_buffer/bin
 containers/bin/main.obj
 asset_manager/bin
+non-interleave-instancing/bin/main.obj

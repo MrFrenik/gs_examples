@@ -2232,6 +2232,7 @@ void gs_command_buffer_free(gs_command_buffer_t* cb)
 #define gs_v2(...)  gs_vec2_ctor(__VA_ARGS__)
 #define gs_v3(...)  gs_vec3_ctor(__VA_ARGS__)
 #define gs_v4(...)  gs_vec4_ctor(__VA_ARGS__)
+#define gs_quat(...) gs_quat_ctor(__VA_ARGS__)
 
 #define gs_v2s(__S)  gs_vec2_ctor((__S), (__S))
 #define gs_v3s(__S)  gs_vec3_ctor((__S), (__S), (__S))
@@ -4296,6 +4297,12 @@ gs_enum_decl(gs_graphics_buffer_usage_type,
     GS_GRAPHICS_BUFFER_USAGE_DYNAMIC
 );
 
+/* Buffer Update Type */
+gs_enum_decl(gs_graphics_buffer_update_type,
+    GS_GRAPHICS_BUFFER_UPDATE_RECREATE,
+    GS_GRAPHICS_BUFFER_UPDATE_SUBDATA
+);
+
 /* Texture Format */
 gs_enum_decl(gs_graphics_texture_format_type,
     GS_GRAPHICS_TEXTURE_FORMAT_RGBA8,
@@ -4452,6 +4459,10 @@ typedef struct gs_graphics_buffer_desc_t
     void* data;                                 // Array of buffer data
     size_t size;                                // Size in bytes of buffer data array
     const char* name;                           // Name of buffer (required for sampler/uniform buffers)
+    struct {
+        size_t offset;
+        gs_graphics_buffer_update_type type;
+    } update;
 } gs_graphics_buffer_desc_t;
 
 typedef gs_graphics_buffer_desc_t gs_graphics_vertex_buffer_desc_t;
@@ -5305,6 +5316,9 @@ void gs_util_load_gltf_data_from_file(const char* path, gs_asset_mesh_decl_t* de
         return;
     }
 
+    // Type of index data
+    size_t index_element_size = decl ? decl->index_buffer_element_size : 0;
+
     // Temporary structures
     gs_dyn_array(gs_vec3) positions = NULL;
     gs_dyn_array(gs_vec3) normals = NULL;
@@ -5347,7 +5361,7 @@ void gs_util_load_gltf_data_from_file(const char* path, gs_asset_mesh_decl_t* de
             #define __GLTF_PUSH_ATTR(ATTR, TYPE, COUNT, ARR, ARR_TYPE, LAYOUTS, LAYOUT_TYPE)\
                 do {\
                     int32_t N = 0;\
-                    float* BUF = (float*)ATTR->buffer_view->buffer->data + ATTR->buffer_view->offset/sizeof(float) + ATTR->offset/sizeof(float);\
+                    TYPE* BUF = (TYPE*)ATTR->buffer_view->buffer->data + ATTR->buffer_view->offset/sizeof(TYPE) + ATTR->offset/sizeof(TYPE);\
                     gs_assert(BUF);\
                     TYPE V[COUNT] = gs_default_val();\
                     /* For each vertex */\
@@ -5425,21 +5439,25 @@ void gs_util_load_gltf_data_from_file(const char* path, gs_asset_mesh_decl_t* de
             // Indices for primitive
             cgltf_accessor* acc = data->meshes[i].primitives[p].indices;
 
-            #define __GLTF_PUSH_IDX(BB, ACC, RTYPE, WTYPE)\
+            #define __GLTF_PUSH_IDX(BB, ACC, TYPE)\
                 do {\
                     int32_t n = 0;\
-                    RTYPE* buf = (RTYPE*)acc->buffer_view->buffer->data + acc->buffer_view->offset/sizeof(RTYPE) + acc->offset/sizeof(RTYPE);\
+                    TYPE* buf = (TYPE*)acc->buffer_view->buffer->data + acc->buffer_view->offset/sizeof(TYPE) + acc->offset/sizeof(TYPE);\
                     gs_assert(buf);\
-                    WTYPE v = 0;\
+                    TYPE v = 0;\
                     /* For each index */\
                     for (uint32_t k = 0; k < acc->count; k++) {\
                         /* For each element */\
                         for (int l = 0; l < 1; l++) {\
                             v = buf[n + l];\
                         }\
-                        n += (int32_t)(acc->stride/sizeof(RTYPE));\
+                        n += (int32_t)(acc->stride/sizeof(TYPE));\
                         /* Add to temp positions array */\
-                        gs_byte_buffer_write(BB, WTYPE, v);\
+                        switch (index_element_size) {\
+                            case 0: gs_byte_buffer_write(BB, uint16_t, (uint16_t)v); break;\
+                            case 2: gs_byte_buffer_write(BB, uint16_t, (uint16_t)v); break;\
+                            case 4: gs_byte_buffer_write(BB, uint32_t, (uint32_t)v); break;\
+                        }\
                     }\
                 } while (0)
 
@@ -5448,8 +5466,12 @@ void gs_util_load_gltf_data_from_file(const char* path, gs_asset_mesh_decl_t* de
             {
                 switch (acc->component_type) 
                 {
-                    case cgltf_component_type_r_16u: __GLTF_PUSH_IDX(&i_data, acc, uint16_t, uint16_t);  break;
-                    case cgltf_component_type_r_32u: __GLTF_PUSH_IDX(&i_data, acc, uint32_t, uint16_t);  break;
+                    case cgltf_component_type_r_8:   __GLTF_PUSH_IDX(&i_data, acc, int8_t);   break;
+                    case cgltf_component_type_r_8u:  __GLTF_PUSH_IDX(&i_data, acc, uint8_t);  break;
+                    case cgltf_component_type_r_16:  __GLTF_PUSH_IDX(&i_data, acc, int16_t);  break;
+                    case cgltf_component_type_r_16u: __GLTF_PUSH_IDX(&i_data, acc, uint16_t); break;
+                    case cgltf_component_type_r_32u: __GLTF_PUSH_IDX(&i_data, acc, uint32_t); break;
+                    case cgltf_component_type_r_32f: __GLTF_PUSH_IDX(&i_data, acc, float);    break;
 
                     // Shouldn't hit here
                     default: {
@@ -5459,8 +5481,15 @@ void gs_util_load_gltf_data_from_file(const char* path, gs_asset_mesh_decl_t* de
             else 
             {
                 // Iterate over positions size, then just push back indices
-                for (uint32_t i = 0; i < gs_dyn_array_size(positions); ++i) {
-                    gs_byte_buffer_write(&i_data, uint16_t, (uint16_t)i);
+                for (uint32_t i = 0; i < gs_dyn_array_size(positions); ++i) 
+                {
+                    switch (index_element_size)
+                    {
+                        default:
+                        case 0: gs_byte_buffer_write(&i_data, uint16_t, (uint16_t)i); break;
+                        case 2: gs_byte_buffer_write(&i_data, uint16_t, (uint16_t)i); break;
+                        case 4: gs_byte_buffer_write(&i_data, uint32_t, (uint32_t)i); break;
+                    }
                 }
             }
 
