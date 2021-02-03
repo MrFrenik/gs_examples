@@ -22,7 +22,9 @@
 =================================================================*/
 
 #define GS_IMPL
+#define STB_DEFINE
 #include <gs/gs.h>
+#include <gs/external/stb/stb.h>
 #include <stdio.h>
 
 #define NUM_OFFSETS 1000000         // One MILLION offsets! Mwahahaha.
@@ -100,9 +102,9 @@ void init()
 
     for (int32_t i = 0; i < NUM_OFFSETS; ++i) {
 
-        offsets[i].x = 10.0f * i;
-        offsets[i].y = 10.0f * i;
-        offsets[i].z = 10.0f * i;
+        offsets[i].x = 4000.0f * stb_frand() -2000.0f;
+        offsets[i].y = 4000.0f * stb_frand() -2000.0f;
+        offsets[i].z = 4000.0f * stb_frand() -2000.0f;
     }
 
     // Construct vertex buffer
