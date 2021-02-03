@@ -144,8 +144,8 @@ void update()
 
     // Bindings for buffers (order needs to match vertex layout buffer index layout up above for pipeline)
     gs_graphics_bind_desc_t binds[] = {
-        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_VERTEX_BUFFER, .buffer = vbo},
-        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_VERTEX_BUFFER, .buffer = inst_vbo}
+        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_VERTEX_BUFFER, .buffer = vbo},           // Vertex buffer 0
+        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_VERTEX_BUFFER, .buffer = inst_vbo}       // Vertex buffer 1
     };
 
     /* Render */
