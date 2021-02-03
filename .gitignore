@@ -67,3 +67,4 @@ non-interleave-instancing/bin/main.obj
 non_interleave_instancing/bin/main.obj
 non_interleave_instancing/bin/.vs/App/v15/Browse.VC.db
 non_interleave_instancing/bin/.vs/App/v15/Browse.VC.opendb
+compute_shader/bin/main.obj
