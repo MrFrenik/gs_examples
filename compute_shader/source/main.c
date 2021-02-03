@@ -73,10 +73,10 @@ void app_init()
     // Create uniform
     u_roll = gs_graphics_buffer_create (
         &(gs_graphics_buffer_desc_t) {
-            .type = GS_GRAPHICS_BUFFER_UNIFORM,                                         // Type of buffer (uniform)
-            .data = &(gs_graphics_uniform_desc_t){.type = GS_GRAPHICS_UNIFORM_FLOAT},   // Description of internal uniform data
-            .size = sizeof(gs_graphics_uniform_desc_t),                                 // Size of uniform description (used for counts, if uniform block used)
-            .name = "u_roll"                                                            // Name of uniform (used for linkage)
+            .type = GS_GRAPHICS_BUFFER_UNIFORM,                                       
+            .data = &(gs_graphics_uniform_desc_t){.type = GS_GRAPHICS_UNIFORM_FLOAT},
+            .size = sizeof(gs_graphics_uniform_desc_t),                              
+            .name = "u_roll"                                                         
         }
     );
 
@@ -85,10 +85,10 @@ void app_init()
         &(gs_graphics_texture_desc_t) {
             .width = TEX_WIDTH,
             .height = TEX_HEIGHT, 
-            .wrap_s = GS_GRAPHICS_TEXTURE_WRAP_CLAMP_TO_EDGE,
-            .wrap_t = GS_GRAPHICS_TEXTURE_WRAP_CLAMP_TO_EDGE,
-            .min_filter = GS_GRAPHICS_TEXTURE_FILTER_LINEAR,
-            .mag_filter = GS_GRAPHICS_TEXTURE_FILTER_LINEAR,
+            .wrap_s = GS_GRAPHICS_TEXTURE_WRAP_REPEAT,
+            .wrap_t = GS_GRAPHICS_TEXTURE_WRAP_REPEAT,
+            .min_filter = GS_GRAPHICS_TEXTURE_FILTER_NEAREST,
+            .mag_filter = GS_GRAPHICS_TEXTURE_FILTER_NEAREST,
             .format = GS_GRAPHICS_TEXTURE_FORMAT_RGBA32F,
             .data = NULL
         }
