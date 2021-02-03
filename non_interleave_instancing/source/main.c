@@ -226,6 +226,7 @@ void update()
     const gs_vec2 ws = gs_platform_window_sizev(gs_platform_main_window());
     const gs_vec2 mouse_delta = gs_platform_mouse_deltav();
 
+    // Update fly camera
     if (gs_platform_mouse_down(GS_MOUSE_LBUTTON)) {
         gs_camera_offset_orientation(&camera, -mouse_delta.x, -mouse_delta.y);
     }
@@ -259,9 +260,7 @@ void update()
         gs_graphics_set_viewport(&cb, 0, 0, (int32_t)fbs.x, (int32_t)fbs.y);
         gs_graphics_bind_pipeline(&cb, pip);
         gs_graphics_bind_bindings(&cb, binds, sizeof(binds));
-
         gs_graphics_draw(&cb, 0, 36, NUM_OFFSETS);
-
     gs_graphics_end_render_pass(&cb);
 
     // Submit command buffer (syncs to GPU, MUST be done on main thread where you have your GPU context created)
