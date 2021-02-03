@@ -24,7 +24,9 @@
 #define GS_IMPL
 #include <gs/gs.h>
 #include <stdio.h>
-#define NUM_POS 5
+
+#define NUM_OFFSETS 1000000         // One MILLION offsets! Mwahahaha.
+
 gs_command_buffer_t               cb      = {0};
 gs_handle(gs_graphics_buffer_t)   vbo     = {0};
 gs_handle(gs_graphics_buffer_t)   ibo     = {0};
@@ -75,7 +77,9 @@ gs_global float colors[] = {
     1.0, 1.0, 0.5, 1.0,  1.0, 1.0, 0.5, 1.0,  1.0, 1.0, 0.5, 1.0,  1.0, 1.0, 0.5, 1.0,
 };
 
-gs_vec3 offsets[NUM_POS];
+
+gs_vec3 offsets[NUM_OFFSETS         // One MILLION offsets! Mwahahaha.];
+
 
 void init()
 {
@@ -89,7 +93,9 @@ void init()
     camera.transform.position = gs_v3(-15.89f, 4.45f, -0.08f);
     camera.transform.rotation = gs_quat(0.02f, -0.79f, 0.02f, 0.61f);
     
-    for (int32_t i = 0; i < NUM_POS; ++i) {
+
+    for (int32_t i =            // One MILLION offsets! Mwahahaha. 0; i < NUM_OFFSETS; ++i) {
+
         offsets[i].x = 10.0f * i;
         offsets[i].y = 10.0f * i;
         offsets[i].z = 10.0f * i;
@@ -255,7 +261,9 @@ void update()
         gs_graphics_set_viewport(&cb, 0, 0, (int32_t)fbs.x, (int32_t)fbs.y);
         gs_graphics_bind_pipeline(&cb, pip);
         gs_graphics_bind_bindings(&cb, binds, sizeof(binds));
-        gs_graphics_draw(&cb, 0, 36, NUM_POS);
+
+        gs_graphics_draw(&cb,           // One MILLION offsets! Mwahahaha. 0, 36, NUM_OFFSETS);
+
     gs_graphics_end_render_pass(&cb);
 
     // Submit command buffer (syncs to GPU, MUST be done on main thread where you have your GPU context created)
