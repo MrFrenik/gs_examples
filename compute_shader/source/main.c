@@ -39,9 +39,9 @@ const char* comp_src =
     "layout (local_size_x = 16, local_size_y = 16) in;\n"
     "void main() {\n"
         "ivec2 storePos = ivec2(gl_GlobalInvocationID.xy);\n"
-        "float localCoef = length(vec2(ivec2(gl_LocalInvocationID.xy)-8)/8.0);\n"
-        "float globalCoef = sin(float(gl_WorkGroupID.x+gl_WorkGroupID.y)*0.1 + u_roll)*0.5;\n"
-        "imageStore(destTex, storePos, vec4(1.0-globalCoef*localCoef, globalCoef * localCoef, 0.0, 1.0));\n"
+        "float localCoef = length(vec2(ivec2(gl_LocalInvocationID.xy) - 8 ) / 8.0);\n"
+        "float globalCoef = sin(float(gl_WorkGroupID.x + gl_WorkGroupID.y) * 0.1 + u_roll) * 0.5;\n"
+        "imageStore(destTex, storePos, vec4(1.0 - globalCoef * localCoef, globalCoef * localCoef, 0.0, 1.0));\n"
     "}";
 
 void app_init()
