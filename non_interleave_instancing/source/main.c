@@ -77,9 +77,7 @@ gs_global float colors[] = {
     1.0, 1.0, 0.5, 1.0,  1.0, 1.0, 0.5, 1.0,  1.0, 1.0, 0.5, 1.0,  1.0, 1.0, 0.5, 1.0,
 };
 
-
-gs_vec3 offsets[NUM_OFFSETS         // One MILLION offsets! Mwahahaha.];
-
+gs_global gs_vec3 offsets[NUM_OFFSETS];
 
 void init()
 {
@@ -94,7 +92,7 @@ void init()
     camera.transform.rotation = gs_quat(0.02f, -0.79f, 0.02f, 0.61f);
     
 
-    for (int32_t i =            // One MILLION offsets! Mwahahaha. 0; i < NUM_OFFSETS; ++i) {
+    for (int32_t i = 0; i < NUM_OFFSETS; ++i) {
 
         offsets[i].x = 10.0f * i;
         offsets[i].y = 10.0f * i;
@@ -262,7 +260,7 @@ void update()
         gs_graphics_bind_pipeline(&cb, pip);
         gs_graphics_bind_bindings(&cb, binds, sizeof(binds));
 
-        gs_graphics_draw(&cb,           // One MILLION offsets! Mwahahaha. 0, 36, NUM_OFFSETS);
+        gs_graphics_draw(&cb, 0, 36, NUM_OFFSETS);
 
     gs_graphics_end_render_pass(&cb);
 
