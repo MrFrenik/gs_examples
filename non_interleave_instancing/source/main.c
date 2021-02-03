@@ -1,16 +1,22 @@
 /*================================================================
     * Copyright: 2020 John Jackson
-    * non_interleaved_data
+    * non_interleave_instancing
 
-    The purpose of this example is to demonstrate how to create vertex
-    data that's non-interleaved.
+    The purpose of this example is to demonstrate how to use both 
+    non-interleaved data with instanced drawing in gunslinger.
 
-    Modified from: https://github.com/floooh/sokol-samples/blob/master/glfw/noninterleaved-glfw.c
+    Thanks to discord user 'chillagen' for the initial example idea.
 
     Included: 
-        * Construct non-interleaved vertex data buffers from user defined declarations
-        * Construct shaders from source
+        * Construct vertex/instanced data buffers from user defined declarations
+        * Update vertex buffer subregions using separate data arrays
+        * Drawing instances
         * Rendering via command buffers
+
+    Controls: 
+        * Hold left mouse button to activate fly camera
+        * Mouse to rotate camera view
+        * WASD to move camera
 
     Press `esc` to exit the application.
 =================================================================*/
