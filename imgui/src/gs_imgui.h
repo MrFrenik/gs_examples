@@ -404,10 +404,24 @@ gs_imgui_render(gs_imgui_t* gs, gs_command_buffer_t* cb)
     gs_mat4 m = gs_mat4_elem((float*)ortho);
 
     // Set up data binds
-    gs_graphics_bind_desc_t binds[3] = {};
-    binds[0].type = GS_GRAPHICS_BIND_VERTEX_BUFFER; binds[0].buffer = gs->vbo;
-    binds[1].type = GS_GRAPHICS_BIND_INDEX_BUFFER; binds[1].buffer = gs->ibo;
-    binds[2].type = GS_GRAPHICS_BIND_UNIFORM_BUFFER; binds[2].buffer = gs->u_proj; binds[2].data = &m;
+    gs_graphics_bind_buffer_desc_t vbuffers = {};
+    vbuffers.buffer = gs->vbo;
+
+    gs_graphics_bind_buffer_desc_t ibuffers = {};
+    ibuffers.buffer = gs->ibo;
+
+    gs_graphics_bind_buffer_desc_t ubuffers = {};
+    ubuffers.buffer = gs->u_proj;
+    ubuffers.data = &m;
+
+    // Set up data binds
+    gs_graphics_bind_desc_t binds = {};
+    binds.vertex_buffers.decl = &vbuffers;
+    binds.vertex_buffers.size = sizeof(vbuffers);
+    binds.index_buffers.decl = &ibuffers;
+    binds.index_buffers.size = sizeof(ibuffers);
+    binds.uniform_buffers.decl = &ubuffers;
+    binds.uniform_buffers.size = sizeof(ubuffers);
 
     // Will project scissor/clipping rectangles into framebuffer space
     ImVec2 clip_off = draw_data->DisplayPos;         // (0,0) unless using multi-viewports
@@ -434,7 +448,7 @@ gs_imgui_render(gs_imgui_t* gs, gs_command_buffer_t* cb)
         gs_graphics_set_viewport(cb, 0, 0, fb_width, fb_height);
 
         // Global bindings for pipeline
-        gs_graphics_bind_bindings(cb, binds, sizeof(binds));
+        gs_graphics_bind_bindings(cb, &binds);
 
          // Render command lists
         for (int n = 0; n < draw_data->CmdListsCount; n++)
@@ -496,14 +510,17 @@ gs_imgui_render(gs_imgui_t* gs, gs_command_buffer_t* cb)
                         // Grab handle from command texture id
                         gs_handle(gs_graphics_texture_t) tex = gs_handle_create(gs_graphics_texture_t, (uint32_t)(intptr_t)pcmd->TextureId);
 
+                        gs_graphics_bind_buffer_desc_t sbuffer = {};
+                        sbuffer.buffer = gs->u_tex;
+                        sbuffer.data = &tex;
+                        sbuffer.binding = 0;
+
                         gs_graphics_bind_desc_t sbind = {};
-                        sbind.type = GS_GRAPHICS_BIND_SAMPLER_BUFFER;
-                        sbind.buffer = gs->u_tex;
-                        sbind.data = &tex;
-                        sbind.binding = 0;
+                        sbind.sampler_buffers.decl = &sbuffer;
+                        sbind.sampler_buffers.size = sizeof(sbuffer);
 
                         // Bind individual texture bind
-                        gs_graphics_bind_bindings(cb, &sbind, sizeof(sbind));
+                        gs_graphics_bind_bindings(cb, &sbind);
 
                         // Draw elements
                         gs_graphics_draw(cb, (size_t)(intptr_t)(pcmd->IdxOffset * sizeof(ImDrawIdx)), (size_t)pcmd->ElemCount, 1); 

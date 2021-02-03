@@ -171,17 +171,17 @@ void update()
     // Render pass action for clearing the screen
     gs_graphics_render_pass_action_t action = (gs_graphics_render_pass_action_t){.color = {0.1f, 0.1f, 0.1f, 1.f}};
 
-    // Bindings for all of our vertex data, uniform buffers, etc.
-    gs_graphics_bind_desc_t binds[] = {
-        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_VERTEX_BUFFER, .buffer = vbo},
-        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_INDEX_BUFFER, .buffer = ibo},
-        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_SAMPLER_BUFFER, .buffer = u_tex, .data = &tex, .binding = 0}
+    // Bindings for all buffers: vertex, index, sampler
+    gs_graphics_bind_desc_t binds = {
+        .vertex_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = vbo}},
+        .index_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = ibo}},
+        .sampler_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = u_tex, .data = &tex, .binding = 0}}
     };
 
     /* Render */
     gs_graphics_begin_render_pass(&cb, (gs_handle(gs_graphics_render_pass_t)){0}, &action, sizeof(action));
         gs_graphics_bind_pipeline(&cb, pip);
-        gs_graphics_bind_bindings(&cb, binds, sizeof(binds));
+        gs_graphics_bind_bindings(&cb, &binds);
         gs_graphics_draw(&cb, 0, 6, 1);
     gs_graphics_end_render_pass(&cb);
 

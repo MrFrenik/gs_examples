@@ -386,10 +386,10 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
     gs_mat4 m = gs_mat4_elem((float*)ortho);
 
     // Set up data binds
-    gs_graphics_bind_desc_t binds[] = {
-        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_VERTEX_BUFFER, .buffer = gs->vbo},
-        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_INDEX_BUFFER, .buffer = gs->ibo},
-        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_UNIFORM_BUFFER, .buffer = gs->u_proj, .data = &m}
+    gs_graphics_bind_desc_t binds = {
+        .vertex_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = gs->vbo}},
+        .index_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = gs->ibo}},
+        .uniform_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = gs->u_proj, .data = &m}}
     };
 
     gs_assert(gs->tmp_vertex_data);
@@ -469,7 +469,7 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
             gs_graphics_set_viewport(cb, 0, 0, (uint32_t)gs->display_width, (uint32_t)gs->display_height);
 
             // Global bindings for pipeline
-            gs_graphics_bind_bindings(cb, binds, sizeof(binds));
+            gs_graphics_bind_bindings(cb, &binds);
 
             // Iterate and draw all commands
             nk_draw_foreach(cmd, &gs->nk_ctx, &gs->cmds)
@@ -479,12 +479,13 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
                 // Grab handle from command texture id
                 gs_handle(gs_graphics_texture_t) tex = gs_handle_create(gs_graphics_texture_t, cmd->texture.id);
 
-                gs_graphics_bind_desc_t sbind[] = {
-                    (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_SAMPLER_BUFFER, .buffer = gs->u_tex, .data = &tex, .binding = 0},
+                // Bind texture
+                gs_graphics_bind_desc_t sbind = {
+                    .sampler_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = gs->u_tex, .data = &tex, .binding = 0}}
                 };
 
                 // Bind individual texture binding
-                gs_graphics_bind_bindings(cb, sbind, sizeof(sbind));
+                gs_graphics_bind_bindings(cb, &sbind);
 
                 // Set view scissor
                 gs_graphics_set_view_scissor(cb, 

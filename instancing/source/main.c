@@ -143,16 +143,21 @@ void update()
     gs_graphics_render_pass_action_t action = (gs_graphics_render_pass_action_t){.color = {0.1f, 0.1f, 0.1f, 1.f}};
 
     // Bindings for buffers (order needs to match vertex layout buffer index layout up above for pipeline)
-    gs_graphics_bind_desc_t binds[] = {
-        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_VERTEX_BUFFER, .buffer = vbo},           // Vertex buffer 0
-        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_VERTEX_BUFFER, .buffer = inst_vbo}       // Vertex buffer 1
+    gs_graphics_bind_buffer_desc_t vbos[] = {
+        {.buffer = vbo},                        // Vertex buffer 0
+        {.buffer = inst_vbo}                    // Vertex buffer 1
+    };
+
+    // Construct binds
+    gs_graphics_bind_desc_t binds = {
+        .vertex_buffers = {.decl = vbos, .size = sizeof(vbos)}
     };
 
     /* Render */
     gs_graphics_begin_render_pass(&cb, (gs_handle(gs_graphics_render_pass_t)){0}, &action, sizeof(action));
         gs_graphics_set_viewport(&cb, 0, 0, (int32_t)fbs.x, (int32_t)fbs.y);
         gs_graphics_bind_pipeline(&cb, pip);
-        gs_graphics_bind_bindings(&cb, binds, sizeof(binds));
+        gs_graphics_bind_bindings(&cb, &binds);
         gs_graphics_draw(&cb, 0, 6, 100);
     gs_graphics_end_render_pass(&cb);
 

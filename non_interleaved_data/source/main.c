@@ -168,19 +168,24 @@ void update()
         gs_mat4_scale(0.5f, 0.5f, 0.5f)
     );
 
-    // Bindings for buffers (order needs to match vertex layout buffer index layout up above for pipeline)
-    gs_graphics_bind_desc_t binds[] = {
-        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_VERTEX_BUFFER, .buffer = vbo, .data_type = GS_GRAPHICS_VERTEX_DATA_NONINTERLEAVED, .offset = 0},
-        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_VERTEX_BUFFER, .buffer = vbo, .data_type = GS_GRAPHICS_VERTEX_DATA_NONINTERLEAVED, .offset = 24 * 3 * sizeof(float)},
-        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_INDEX_BUFFER, .buffer = ibo},
-        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_UNIFORM_BUFFER, .buffer = u_mvp, .data = &mvp}
+    // Declare all binds
+    gs_graphics_bind_buffer_desc_t vbos[] = {
+        (gs_graphics_bind_buffer_desc_t){.buffer = vbo, .data_type = GS_GRAPHICS_VERTEX_DATA_NONINTERLEAVED, .offset = 0},                      // Vertex Buffer Idx 0
+        (gs_graphics_bind_buffer_desc_t){.buffer = vbo, .data_type = GS_GRAPHICS_VERTEX_DATA_NONINTERLEAVED, .offset = 24 * 3 * sizeof(float)}, // Vertex Buffer Idx 1
+    };
+
+    // Binding descriptor
+    gs_graphics_bind_desc_t binds = {
+        .vertex_buffers = {.decl = vbos, .size = sizeof(vbos)},
+        .index_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = ibo}},
+        .uniform_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = u_mvp, .data = &mvp}}
     };
 
     /* Render */
     gs_graphics_begin_render_pass(&cb, (gs_handle(gs_graphics_render_pass_t)){0}, &action, sizeof(action));
         gs_graphics_set_viewport(&cb, 0, 0, (int32_t)fbs.x, (int32_t)fbs.y);
         gs_graphics_bind_pipeline(&cb, pip);
-        gs_graphics_bind_bindings(&cb, binds, sizeof(binds));
+        gs_graphics_bind_bindings(&cb, &binds);
         gs_graphics_draw(&cb, 0, 36, 1);
     gs_graphics_end_render_pass(&cb);
 

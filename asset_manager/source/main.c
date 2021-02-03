@@ -189,15 +189,17 @@ void update()
         {
             gs_asset_mesh_primitive_t* prim = &mp->primitives[i];
 
-            // Submit draw
-            gs_graphics_bind_desc_t binds[] = {
-                (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_VERTEX_BUFFER, .buffer = prim->vbo, .clear_previous = true},
-                (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_INDEX_BUFFER, .buffer = prim->ibo},
-                (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_UNIFORM_BUFFER, .buffer = gsi.uniforms, .data = &mvp},
-                (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_SAMPLER_BUFFER, .buffer = gsi.samplers, .data = &dtp->hndl, .binding = 0}
+            // Bindings for all buffers: vertex, index, uniform, sampler
+            gs_graphics_bind_desc_t binds = {
+                .vertex_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = prim->vbo}},
+                .index_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = prim->ibo}},
+                .uniform_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = gsi.uniforms, .data = &mvp}},
+                .sampler_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = gsi.samplers, .data = &dtp->hndl, .binding = 0}}
             };
 
-            gs_graphics_bind_bindings(&gcb, binds, sizeof(binds));    // Clears any previous bindings
+            // Bind bindings
+            gs_graphics_bind_bindings(&gcb, &binds);    // Clears any previous bindings
+            // Draw
             gs_graphics_draw(&gcb, 0, prim->count, 1);
         }
 

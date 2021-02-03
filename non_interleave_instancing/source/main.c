@@ -27,17 +27,24 @@
 
 #define NUM_OFFSETS 1000000         // One MILLION offsets! Mwahahaha.
 
-gs_command_buffer_t               cb      = {0};
-gs_handle(gs_graphics_buffer_t)   vbo     = {0};
-gs_handle(gs_graphics_buffer_t)   ibo     = {0};
-gs_handle(gs_graphics_buffer_t)   u_mvp   = {0};
-gs_handle(gs_graphics_pipeline_t) pip     = {0};
-gs_handle(gs_graphics_shader_t)   shader  = {0};
-gs_handle(gs_graphics_buffer_t)   inst_vbo = {0};
-gs_camera_t camera;
+typedef struct fps_camera_t
+{
+    gs_camera_t camera;
+    gs_vec2 prev_mouse_position;
+} fps_camera_t;
 
-const char* v_src = "\n"
-"#version 330 core\n"
+void fps_camera_update(fps_camera_t* cam);
+
+gs_command_buffer_t               cb       = {0};
+gs_handle(gs_graphics_buffer_t)   vbo      = {0};
+gs_handle(gs_graphics_buffer_t)   ibo      = {0};
+gs_handle(gs_graphics_buffer_t)   u_mvp    = {0};
+gs_handle(gs_graphics_pipeline_t) pip      = {0};
+gs_handle(gs_graphics_shader_t)   shader   = {0};
+gs_handle(gs_graphics_buffer_t)   inst_vbo = {0};
+fps_camera_t                      fps      = {0};
+
+const char* v_src = "#version 330 core\n"
 "layout(location = 0) in vec3 a_pos;\n"
 "layout(location = 1) in vec4 a_color;\n"
 "layout(location = 2) in vec3 i_position;\n"
@@ -85,12 +92,11 @@ void init()
     cb = gs_command_buffer_new();
 
     // Construct camera
-    camera = gs_camera_perspective();
-
-    // Set up camera to a pleasing starting position/orientation
-    camera.transform.position = gs_v3(-15.89f, 4.45f, -0.08f);
-    camera.transform.rotation = gs_quat(0.02f, -0.79f, 0.02f, 0.61f);
-    
+    const gs_vec2 ws = gs_platform_window_sizev(gs_platform_main_window());
+    fps.camera = gs_camera_perspective();
+    fps.prev_mouse_position = gs_vec2_scale(gs_v2(ws.x, ws.y), 0.5f);
+    fps.camera.transform.position = gs_v3(-15.89f, 4.45f, -0.08f);
+    fps.camera.transform.rotation = gs_quat(0.02f, -0.79f, 0.02f, 0.61f);
 
     for (int32_t i = 0; i < NUM_OFFSETS; ++i) {
 
@@ -224,47 +230,70 @@ void update()
     gs_graphics_render_pass_action_t action = (gs_graphics_render_pass_action_t){.color = {0.1f, 0.1f, 0.1f, 1.f}};
     const gs_vec2 fbs = gs_platform_framebuffer_sizev(gs_platform_main_window());
     const gs_vec2 ws = gs_platform_window_sizev(gs_platform_main_window());
-    const gs_vec2 mouse_delta = gs_platform_mouse_deltav();
 
-    // Update fly camera
-    if (gs_platform_mouse_down(GS_MOUSE_LBUTTON)) {
-        gs_camera_offset_orientation(&camera, -mouse_delta.x, -mouse_delta.y);
-    }
+    // Update camera
+    fps_camera_update(&fps);
 
-    if (gs_platform_key_down(GS_KEYCODE_W)) {
-        camera.transform.position = gs_vec3_add(gs_camera_forward(&camera), camera.transform.position);
-    }
-    if (gs_platform_key_down(GS_KEYCODE_S)) {
-        camera.transform.position = gs_vec3_add(gs_camera_backward(&camera), camera.transform.position);
-    }
-    if (gs_platform_key_down(GS_KEYCODE_A)) {
-        camera.transform.position = gs_vec3_add(gs_camera_left(&camera), camera.transform.position);
-    }
-    if (gs_platform_key_down(GS_KEYCODE_D)) {
-        camera.transform.position = gs_vec3_add(gs_camera_right(&camera), camera.transform.position);
-    }
-    
-    gs_mat4 mvp = gs_camera_get_view_projection(&camera, (int32_t)ws.x ,(int32_t)ws.y);
-    // Bindings for buffers (order needs to match vertex layout buffer index layout up above for pipeline)
-    gs_graphics_bind_desc_t binds[] = {
-        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_VERTEX_BUFFER, .buffer = vbo, .data_type = GS_GRAPHICS_VERTEX_DATA_NONINTERLEAVED, .offset = 0},                  // Positions
-        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_VERTEX_BUFFER, .buffer = vbo, .data_type = GS_GRAPHICS_VERTEX_DATA_NONINTERLEAVED, .offset = sizeof(positions)},  // Colors
-        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_VERTEX_BUFFER, .buffer = inst_vbo, .data_type = GS_GRAPHICS_VERTEX_DATA_NONINTERLEAVED, .offset = 0},             // Instance Offsets
-        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_UNIFORM_BUFFER, .buffer = u_mvp, .data = &mvp},
-        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_INDEX_BUFFER, .buffer = ibo},
-        
+    // Calculate mvp matrix
+    gs_mat4 mvp = gs_camera_get_view_projection(&fps.camera, (int32_t)ws.x ,(int32_t)ws.y);
+
+    // Declare all binds
+    gs_graphics_bind_buffer_desc_t vbuffers[] = {
+        {.buffer = vbo, .data_type = GS_GRAPHICS_VERTEX_DATA_NONINTERLEAVED, .offset = 0},                  // Vertex Buffer Idx 0
+        {.buffer = vbo, .data_type = GS_GRAPHICS_VERTEX_DATA_NONINTERLEAVED, .offset = sizeof(positions)},  // Vertex Buffer Idx 1
+        {.buffer = inst_vbo, .data_type = GS_GRAPHICS_VERTEX_DATA_NONINTERLEAVED, .offset = 0}              // Vertex Buffer Idx 2
+    };
+
+    gs_graphics_bind_desc_t binds = {
+        .vertex_buffers = {.decl = vbuffers, .size = sizeof(vbuffers)},
+        .index_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = ibo}},
+        .uniform_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = u_mvp, .data = &mvp}}
     };
 
     /* Render */
     gs_graphics_begin_render_pass(&cb, (gs_handle(gs_graphics_render_pass_t)){0}, &action, sizeof(action));
         gs_graphics_set_viewport(&cb, 0, 0, (int32_t)fbs.x, (int32_t)fbs.y);
         gs_graphics_bind_pipeline(&cb, pip);
-        gs_graphics_bind_bindings(&cb, binds, sizeof(binds));
+        gs_graphics_bind_bindings(&cb, &binds);
         gs_graphics_draw(&cb, 0, 36, NUM_OFFSETS);
     gs_graphics_end_render_pass(&cb);
 
     // Submit command buffer (syncs to GPU, MUST be done on main thread where you have your GPU context created)
     gs_graphics_submit_command_buffer(&cb);
+}
+
+void fps_camera_update(fps_camera_t* fps)
+{
+    const gs_vec2 ws = gs_platform_window_sizev(gs_platform_main_window());
+    const gs_vec2 mp = gs_platform_mouse_positionv();
+
+    // First pressed
+    if (gs_platform_mouse_pressed(GS_MOUSE_LBUTTON)) {
+        fps->prev_mouse_position = mp;
+    }
+
+    // Update fly camera
+    if (gs_platform_mouse_down(GS_MOUSE_LBUTTON)) {
+        gs_vec2 ds = gs_v2(mp.x - fps->prev_mouse_position.x, mp.y - fps->prev_mouse_position.y);
+        gs_camera_offset_orientation(&fps->camera, -ds.x, -ds.y);
+        gs_platform_mouse_set_position(gs_platform_main_window(), fps->prev_mouse_position.x, fps->prev_mouse_position.y);
+    }
+
+    if (gs_platform_key_down(GS_KEYCODE_W)) {
+        fps->camera.transform.position = gs_vec3_add(gs_camera_forward(&fps->camera), fps->camera.transform.position);
+    }
+
+    if (gs_platform_key_down(GS_KEYCODE_S)) {
+        fps->camera.transform.position = gs_vec3_add(gs_camera_backward(&fps->camera), fps->camera.transform.position);
+    }
+
+    if (gs_platform_key_down(GS_KEYCODE_A)) {
+        fps->camera.transform.position = gs_vec3_add(gs_camera_left(&fps->camera), fps->camera.transform.position);
+    }
+
+    if (gs_platform_key_down(GS_KEYCODE_D)) {
+        fps->camera.transform.position = gs_vec3_add(gs_camera_right(&fps->camera), fps->camera.transform.position);
+    }
 }
 
 gs_app_desc_t gs_main(int32_t argc, char** argv)
