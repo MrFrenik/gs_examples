@@ -29,6 +29,9 @@ gs_handle(gs_graphics_texture_t)  cmptex  = {0};
 gs_handle(gs_graphics_pipeline_t) cmdpip  = {0};
 gs_handle(gs_graphics_shader_t)   cmpshd  = {0};
 
+#define TEX_WIDTH  512
+#define TEX_HEIGHT 512
+
 const char* comp_src =
     "#version 430\n"
     "uniform float u_roll;\n"
@@ -80,8 +83,8 @@ void app_init()
     // Texture for compute shader output
     cmptex = gs_graphics_texture_create (
         &(gs_graphics_texture_desc_t) {
-            .width = 512,
-            .height = 512, 
+            .width = TEX_WIDTH,
+            .height = TEX_HEIGHT, 
             .wrap_s = GS_GRAPHICS_TEXTURE_WRAP_CLAMP_TO_EDGE,
             .wrap_t = GS_GRAPHICS_TEXTURE_WRAP_CLAMP_TO_EDGE,
             .min_filter = GS_GRAPHICS_TEXTURE_FILTER_LINEAR,
@@ -127,13 +130,13 @@ void app_update()
         // Bind compute bindings
         gs_graphics_bind_bindings(&cb, &binds);
         // Dispatch compute shader
-        gs_graphics_dispatch_compute(&cb, 512/16, 512/16, 1);
+        gs_graphics_dispatch_compute(&cb, TEX_WIDTH / 16, TEX_HEIGHT / 16, 1);
     }
 
     // Use immediate mode rendering to display texture
     gsi_camera2D(&gsi);
     gsi_texture(&gsi, cmptex);
-    gsi_rectvd(&gsi, gs_v2(0.f, 0.f), gs_v2(512.f, 512.f), gs_v2(0.f, 0.f), gs_v2(1.f, 1.f), GS_COLOR_WHITE, GS_GRAPHICS_PRIMITIVE_TRIANGLES);
+    gsi_rectvd(&gsi, gs_v2(0.f, 0.f), gs_v2((float)TEX_WIDTH, (float)TEX_HEIGHT), gs_v2(0.f, 0.f), gs_v2(1.f, 1.f), GS_COLOR_WHITE, GS_GRAPHICS_PRIMITIVE_TRIANGLES);
     gsi_render_pass_submit(&gsi, &cb, gs_color(10, 10, 10, 255));
 
     // Submit command buffer (syncs to GPU, MUST be done on main thread where you have your GPU context created)
@@ -145,8 +148,9 @@ gs_app_desc_t gs_main(int32_t argc, char** argv)
     return (gs_app_desc_t){
         .init = app_init,
         .update = app_update,
-        .window_width = 512,
-        .window_height = 512
+        .window_width = TEX_WIDTH,
+        .window_height = TEX_HEIGHT,
+        .window_flags = GS_WINDOW_FLAGS_NO_RESIZE
     };
 }   
 
