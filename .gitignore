@@ -83,3 +83,5 @@ compute_shader/bin/main.obj
 14_immediate_draw/bin/App
 15_meta_class/bin/App
 16_nuklear_gui/bin/App
+11_compute_shader/bin/main.obj
+00_hello_gs/bin/main.obj
