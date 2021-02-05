@@ -85,3 +85,4 @@ compute_shader/bin/main.obj
 16_nuklear_gui/bin/App
 11_compute_shader/bin/main.obj
 00_hello_gs/bin/main.obj
+04_simple_texture/bin/main.obj
