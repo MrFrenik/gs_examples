@@ -87,3 +87,5 @@ compute_shader/bin/main.obj
 00_hello_gs/bin/main.obj
 04_simple_texture/bin/main.obj
 17_gs_static_lib/lib/libgs.a
+18_flecs/bin/flecs.obj
+18_flecs/bin/main.obj
