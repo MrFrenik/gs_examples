@@ -19,7 +19,7 @@ inc=(
 
 # Source files
 src=(
-	../source/main.c ../external/flecs/flecs.h
+	../source/main.c ../external/flecs/flecs.c
 )
 
 libs=(
@@ -32,7 +32,7 @@ libs=(
 )
 
 # Build
-gcc -O0 ${inc[*]} ${src[*]} ${flags[*]} ${libs[*]} -lm -o ${proj_name}
+gcc -O3 ${inc[*]} ${src[*]} ${flags[*]} ${libs[*]} -lm -o ${proj_name}
 
 cd ..
 
