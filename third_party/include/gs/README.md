@@ -1,4 +1,4 @@
-![gunslinger](https://raw.githubusercontent.com/MrFrenik/gunslinger/master/docs/gs_logo.png)
+![gunslinger](https://raw.githubusercontent.com/MrFrenik/gunslinger/master/docs/gs_logo2.png)
 ![GitHub](https://img.shields.io/github/license/mrfrenik/gunslinger)
 [![Discord](https://img.shields.io/discord/485178488203116567?label=discord&logo=discord)](https://discord.gg/QXwpETB)
 ![GitHub top language](https://img.shields.io/github/languages/top/mrfrenik/gunslinger?label=c99)
@@ -20,13 +20,19 @@ Gunslinger is a fast, lightweight, ([stb-style](https://github.com/nothings/stb)
 ## Documentation
 
 * [Getting Started](https://github.com/MrFrenik/gunslinger/blob/master/docs/getting_started.md)
-* [Platform](https://github.com/MrFrenik/gunslinger/blob/master/docs/platform.md)
-* [Graphics](https://github.com/MrFrenik/gunslinger/blob/master/docs/graphics.md)
-* [Audio](https://github.com/MrFrenik/gunslinger/blob/master/docs/audio.md)
-* [Math](https://github.com/MrFrenik/gunslinger/blob/master/docs/math.md)
 * [Containers](https://github.com/MrFrenik/gunslinger/blob/master/docs/containers.md)
-* [Utils](https://github.com/MrFrenik/gunslinger/blob/master/docs/utils.md)
 * [Examples](https://github.com/MrFrenik/gs_examples)
+* Platform: WIP
+* Audio: WIP
+* Graphics: WIP
+* Math: WIP
+* Utils: WIP
+
+[//]: # "(* [Platform](https://github.com/MrFrenik/gunslinger/blob/master/docs/platform.md) )"
+[//]: # "(* [Graphics](https://github.com/MrFrenik/gunslinger/blob/master/docs/graphics.md) )" 
+[//]: # "(* [Audio](https://github.com/MrFrenik/gunslinger/blob/master/docs/audio.md) )" 
+[//]: # "(* [Math](https://github.com/MrFrenik/gunslinger/blob/master/docs/math.md) )" 
+[//]: # "(* [Utils](https://github.com/MrFrenik/gunslinger/blob/master/docs/utils.md) )" 
 
 ## Basic Example
 A simple c99 'Hello World' example using gunslinger: 
