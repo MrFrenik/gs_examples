@@ -99,7 +99,7 @@ void app_init()
     ECS_SYSTEM(app->world, move_system, EcsOnUpdate, position_t, velocity_t, bounds_t);
     ECS_SYSTEM(app->world, render_system, EcsOnUpdate, position_t, bounds_t, color_t);
 
-    // Create entities are various random positions
+    // Create entities with random data
     for (uint32_t i = 0; i < MAX_ENTITY_COUNT; ++i)
     {
         ecs_entity_t e = ecs_new_w_type(app->world, 0);
