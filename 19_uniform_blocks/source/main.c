@@ -419,10 +419,18 @@ void update()
         (gs_graphics_bind_buffer_desc_t){.buffer = u_model, .data = &model}
     };
 
+    /*
+        // Could do something like this?
+        gs_graphics_bind_data_desc_t constants[] = {
+            (gs_graphics_bind_data_desc_t){.hndl = u_model, .data = &model}
+        };
+    */
+
     // Binding descriptor for vertex buffer
     gs_graphics_bind_desc_t binds = {
         .vertex_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = vbo}},
-        .uniform_buffers = {.decl = ubuffers, sizeof(ubuffers)}
+        .uniform_buffers = {.decl = ubuffers, .size = sizeof(ubuffers)}
+        // .constants = {.desc = constants, .size = sizeof(constants)} 
     };
 
     /* Render */
