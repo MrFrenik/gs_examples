@@ -523,7 +523,10 @@ gs_imgui_render(gs_imgui_t* gs, gs_command_buffer_t* cb)
                         gs_graphics_bind_bindings(cb, &sbind);
 
                         // Draw elements
-                        gs_graphics_draw(cb, (size_t)(intptr_t)(pcmd->IdxOffset * sizeof(ImDrawIdx)), (size_t)pcmd->ElemCount, 1); 
+                        gs_graphics_draw_desc_t draw = {};
+                        draw.start = (size_t)(intptr_t)(pcmd->IdxOffset * sizeof(ImDrawIdx));
+                        draw.count = (size_t)pcmd->ElemCount;
+                        gs_graphics_draw(cb, &draw); 
                     }
                 }
             }

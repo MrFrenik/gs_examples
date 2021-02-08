@@ -110,7 +110,7 @@ void update()
         // Bind all bindings (just vertex buffer)
         gs_graphics_bind_bindings(&cb, &binds);
         // Draw the triangle
-        gs_graphics_draw(&cb, 0, 3, 1);
+        gs_graphics_draw(&cb, &(gs_graphics_draw_desc_t){.start = 0, .count = 3});
     // End the render pass
     gs_graphics_end_render_pass(&cb);
 

@@ -200,7 +200,7 @@ void update()
             // Bind bindings
             gs_graphics_bind_bindings(&gcb, &binds);    // Clears any previous bindings
             // Draw
-            gs_graphics_draw(&gcb, 0, prim->count, 1);
+            gs_graphics_draw(&gcb, &(gs_graphics_draw_desc_t){.start = 0, .count = prim->count});
         }
 
     gs_graphics_end_render_pass(&gcb);

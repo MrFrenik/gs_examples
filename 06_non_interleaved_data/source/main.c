@@ -186,7 +186,7 @@ void update()
         gs_graphics_set_viewport(&cb, 0, 0, (int32_t)fbs.x, (int32_t)fbs.y);
         gs_graphics_bind_pipeline(&cb, pip);
         gs_graphics_bind_bindings(&cb, &binds);
-        gs_graphics_draw(&cb, 0, 36, 1);
+        gs_graphics_draw(&cb, &(gs_graphics_draw_desc_t){.start = 0, .count = 36});
     gs_graphics_end_render_pass(&cb);
 
     // Submit command buffer (syncs to GPU, MUST be done on main thread where you have your GPU context created)

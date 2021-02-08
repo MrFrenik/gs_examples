@@ -1,6 +1,6 @@
 /*================================================================
     * Copyright: 2020 John Jackson
-    * simple_triangle
+    * uniforms
 
     The purpose of this example is to demonstrate how to bind and upload 
     uniform data to the GPU using pipelines and uniform buffers.
@@ -139,18 +139,23 @@ void update()
     gs_mat4 scl = gs_mat4_scalev(gs_v3(st, st, st));
     gs_mat4 model = gs_mat4_mul_list(2, scl, rot);
 
-    // Bindings for all of our vertex data, uniform buffers, etc.
-    gs_graphics_bind_desc_t binds[] = {
-        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_VERTEX_BUFFER, .buffer = vbo},
-        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_UNIFORM_BUFFER, .buffer = u_color, .data = &color},  // Bind uniform buffer along with uniform data
-        (gs_graphics_bind_desc_t){.type = GS_GRAPHICS_BIND_UNIFORM_BUFFER, .buffer = u_model, .data = &model}   // Bind uniform buffer along with uniform data
+    // Uniform buffer array
+    gs_graphics_bind_buffer_desc_t uniforms[] = {
+        (gs_graphics_bind_buffer_desc_t){.buffer = u_color, .data = &color},
+        (gs_graphics_bind_buffer_desc_t){.buffer = u_model, .data = &model},
+    };
+
+    // Binding descriptor for vertex buffer
+    gs_graphics_bind_desc_t binds = {
+        .vertex_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = vbo}},
+        .uniform_buffers = {.decl = uniforms, .size = sizeof(uniforms)}
     };
 
     /* Render */
     gs_graphics_begin_render_pass(&cb, (gs_handle(gs_graphics_render_pass_t)){0}, &action, sizeof(action));
         gs_graphics_bind_pipeline(&cb, pip);
-        gs_graphics_bind_bindings(&cb, binds, sizeof(binds));
-        gs_graphics_draw(&cb, 0, 3, 1);
+        gs_graphics_bind_bindings(&cb, &binds);
+        gs_graphics_draw(&cb, &(gs_graphics_draw_desc_t){.start = 0, .count = 3});
     gs_graphics_end_render_pass(&cb);
 
     // Submit command buffer (syncs to GPU, MUST be done on main thread where you have your GPU context created)

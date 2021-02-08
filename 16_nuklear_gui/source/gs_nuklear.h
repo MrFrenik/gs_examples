@@ -496,7 +496,7 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
                 );
 
                 // Draw elements
-                gs_graphics_draw(cb, (size_t)offset, (uint32_t)cmd->elem_count, 1);
+                gs_graphics_draw(cb, &(gs_graphics_draw_desc_t){.start = (size_t)offset, .count = (uint32_t)cmd->elem_count});
 
                 // Increment offset for commands
                 offset += cmd->elem_count;
