@@ -86,3 +86,6 @@ compute_shader/bin/main.obj
 11_compute_shader/bin/
 17_gs_static_lib/lib/
 18_flecs/bin/
+19_uniform_blocks/bin/.vs/App/v15/Browse.VC.db
+19_uniform_blocks/bin/.vs/App/v15/Browse.VC.opendb
+19_uniform_blocks/bin/main.obj

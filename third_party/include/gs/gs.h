@@ -4256,6 +4256,9 @@ gs_enum_decl(gs_graphics_shader_language_type,
     GS_GRAPHICS_SHADER_LANGUAGE_GLSL
 );
 
+/* Push Constant Type */
+// Really don't want to handle "auto-merging" of data types
+
 /* Uniform Type */
 gs_enum_decl(gs_graphics_uniform_type,
     GS_GRAPHICS_UNIFORM_FLOAT,
@@ -4263,7 +4266,8 @@ gs_enum_decl(gs_graphics_uniform_type,
     GS_GRAPHICS_UNIFORM_VEC2,
     GS_GRAPHICS_UNIFORM_VEC3,
     GS_GRAPHICS_UNIFORM_VEC4,
-    GS_GRAPHICS_UNIFORM_MAT4
+    GS_GRAPHICS_UNIFORM_MAT4,
+    GS_GRAPHICS_UNIFORM_BLOCK
 );
 
 /* Uniform Block Usage Type */
@@ -4440,6 +4444,7 @@ typedef struct gs_graphics_uniform_desc_t
     const char* name;               // Name of uniform in shader (used for opengl/es), MUST PROVIDE
     uint32_t type;                  // Type of uniform/sampler
     uint32_t slot;                  // Binding slot for textures to be bound
+    size_t size;                    // Size of uniform data (used for uniform blocks)
 } gs_graphics_uniform_desc_t;
 
 typedef gs_graphics_uniform_desc_t gs_graphics_sampler_desc_t;
@@ -4470,6 +4475,48 @@ typedef struct gs_graphics_texture_desc_t
     void* data;                                     // Texture data to upload (can be null)
     b32 render_target;                              // Default to false (not a render target)
 } gs_graphics_texture_desc_t;
+
+// This buffer description needs to be updated.
+
+/*  
+    // Bind buffer range
+
+    typedef struct gs_graphics_buffer_desc_t
+    {
+        size_t size;                            // Total size of buffer
+        void* data;                             // Data to push
+        gs_graphics_buffer_usage_type usage;    // Usage type of buffer (static, dynamic, stream, draw, read)
+        union
+        {
+            struct {
+            } vertex;
+
+            struct {
+            } index;
+
+            struct {
+
+            } uniform;
+        };
+    }; 
+
+    gs_graphics_buffer_create(
+        &(gs_graphics_buffer_desc_t)
+        {
+            .size = 
+            .data = 
+            .usage = 
+            .vertex = {
+
+            } 
+        }
+    );
+
+    typedef struct gs_graphics_push_constant_desc_t
+    {
+        gs_graphics_uniform_type type;
+    } gs_graphics_push_constant_desc_t;
+*/
 
 /* Graphics Buffer Desc */
 typedef struct gs_graphics_buffer_desc_t

@@ -44,6 +44,7 @@ typedef struct gsgl_uniform_t {
     gsgl_uniform_type type;
     uint32_t location;
     size_t size;                    // Total data size of uniform
+    uint32_t ubo;                   // Uniform Buffer Object 
 } gsgl_uniform_t;
 
 /* Pipeline */
@@ -334,6 +335,7 @@ gsgl_uniform_type gsgl_uniform_type_to_gl_uniform_type(gs_graphics_uniform_type 
         case GS_GRAPHICS_UNIFORM_VEC3: type = GSGL_UNIFORMTYPE_VEC3; break;
         case GS_GRAPHICS_UNIFORM_VEC4: type = GSGL_UNIFORMTYPE_VEC4; break;
         case GS_GRAPHICS_UNIFORM_MAT4: type = GSGL_UNIFORMTYPE_MAT4; break;
+        case GS_GRAPHICS_UNIFORM_BLOCK: type = GSGL_UNIFORMTYPE_UNIFORM_BLOCK; break;
     }
     return type;
 } 
@@ -651,6 +653,13 @@ gs_handle(gs_graphics_buffer_t) gs_graphics_buffer_create(gs_graphics_buffer_des
 
         } break;
 
+    // u_matrices = gs_graphics_buffer_create(
+    //     .type = GS_GRAPHICS_BUFFER_UNIFORM,
+    //     .data = &(gs_graphics_uniform_desc_t){.type = GS_GRAPHICS_UNIFORM_BLOCK, .size = sizeof(matrices_t)},
+    //     .size = sizeof(gs_graphics_uniform_desc_t),
+    //     .name = "u_matrices"
+    // );
+
         case GS_GRAPHICS_BUFFER_UNIFORM:
         {
             // Assert if data isn't named
@@ -667,13 +676,33 @@ gs_handle(gs_graphics_buffer_t) gs_graphics_buffer_create(gs_graphics_buffer_des
             gsgl_uniform_t u = gs_default_val();
             u.name = desc->name;
             // If size > 1, store type as uniform buffer, other store type as type of first element of data description
-            u.type = ct > 1 ? GSGL_UNIFORMTYPE_UNIFORM_BLOCK : 
-                gsgl_uniform_type_to_gl_uniform_type((gs_graphics_uniform_type)((gs_graphics_uniform_desc_t*)desc->data)[0].type); 
+            // u.type = ct > 1 ? GSGL_UNIFORMTYPE_UNIFORM_BLOCK : 
+            //     gsgl_uniform_type_to_gl_uniform_type((gs_graphics_uniform_type)((gs_graphics_uniform_desc_t*)desc->data)[0].type); 
+            // u.location = UINT32_MAX;
+
+            u.type = gsgl_uniform_type_to_gl_uniform_type((gs_graphics_uniform_type)((gs_graphics_uniform_desc_t*)desc->data)[0].type);
             u.location = UINT32_MAX;
 
-            // Calculate size
-            for (uint32_t i = 0; i < ct; ++i) {
-                u.size += gsgl_uniform_data_size_in_bytes((gs_graphics_uniform_type)((gs_graphics_uniform_desc_t*)desc->data)[i].type);
+            if (u.type == GSGL_UNIFORMTYPE_UNIFORM_BLOCK)
+            {
+                u.size = (gs_graphics_uniform_type)((gs_graphics_uniform_desc_t*)desc->data)[0].size;
+            }
+            else
+            {
+                // Calculate size
+                for (uint32_t i = 0; i < ct; ++i) 
+                {
+                    u.size += gsgl_uniform_data_size_in_bytes((gs_graphics_uniform_type)((gs_graphics_uniform_desc_t*)desc->data)[i].type);
+                }
+            }
+
+            // Generate buffer (if needed)
+            if (u.type == GSGL_UNIFORMTYPE_UNIFORM_BLOCK)
+            {
+                glGenBuffers(1, &u.ubo);
+                glBindBuffer(GL_UNIFORM_BUFFER, u.ubo);
+                glBufferData(GL_UNIFORM_BUFFER, u.size, 0, GL_STREAM_DRAW);
+                glBindBuffer(GL_UNIFORM_BUFFER, 0);
             }
 
             hndl = gs_handle_create(gs_graphics_buffer_t, gs_slot_array_insert(ogl->uniforms, u));
@@ -807,6 +836,20 @@ gs_handle(gs_graphics_shader_t) gs_graphics_shader_create(gs_graphics_shader_des
     // Free shaders after use
     for (uint32_t i = 0; i < sid_ct; ++i) {
         glDeleteShader(sids[i]);
+    }
+
+    {
+        char tmp_name[256] = gs_default_val();
+        int32_t count = 0;
+        glGetProgramiv(shader, GL_ACTIVE_UNIFORMS, &count);
+        gs_println("Active Uniforms: %d\n", count);
+
+        for (uint32_t i = 0; i < count; i++) {
+            int32_t sz = 0;
+            uint32_t type;
+            glGetActiveUniform(shader, (GLuint)i, 256, NULL, &sz, &type, tmp_name);
+            gs_println("Uniform #%d Type: %u Name: %s\n", i, type, tmp_name);
+        }
     }
 
     // Add to pool and return handle
@@ -972,18 +1015,15 @@ void gs_graphics_buffer_request_update(gs_command_buffer_t* cb, gs_handle(gs_gra
     });
 }
 
-// struct {
-//     struct {
-//         gs_graphics_bind_buffer_desc_t* decl;
-//         size_t size;
-//     } image_buffers;
-// } compute;
-
 void gs_graphics_bind_bindings(gs_command_buffer_t* cb, gs_graphics_bind_desc_t* binds)
 {
     gsgl_data_t* ogl = (gsgl_data_t*)gs_engine_subsystem(graphics)->user_data;
+
+    // Increment commands
+    gs_byte_buffer_write(&cb->commands, u32, (u32)GS_OPENGL_OP_BIND_BINDINGS);
+    cb->num_commands++;
  
-    __ogl_push_command(cb, GS_OPENGL_OP_BIND_BINDINGS,
+    // __ogl_push_command(cb, GS_OPENGL_OP_BIND_BINDINGS,
     {
         // Get counts from buffers
         uint32_t vct = binds->vertex_buffers.decl ? binds->vertex_buffers.size ? binds->vertex_buffers.size / sizeof(gs_graphics_bind_buffer_desc_t) : 1 : 0;
@@ -1022,15 +1062,12 @@ void gs_graphics_bind_bindings(gs_command_buffer_t* cb, gs_graphics_bind_desc_t*
         {
             gs_graphics_bind_buffer_desc_t* decl = &binds->uniform_buffers.decl[i];
 
-            // if (id && gs_slot_array_exists(ogl->uniforms, id))
-            {
-                uint32_t id = decl->buffer.id;
-                size_t sz = (size_t)(gs_slot_array_getp(ogl->uniforms, id))->size;
-                gs_byte_buffer_write(&cb->commands, gs_graphics_bind_type, GS_GRAPHICS_BIND_UNIFORM_BUFFER);
-                gs_byte_buffer_write(&cb->commands, uint32_t, decl->buffer.id);
-                gs_byte_buffer_write(&cb->commands, size_t, sz);
-                gs_byte_buffer_write_bulk(&cb->commands, decl->data, sz);
-            }
+            uint32_t id = decl->buffer.id;
+            size_t sz = (size_t)(gs_slot_array_getp(ogl->uniforms, id))->size;
+            gs_byte_buffer_write(&cb->commands, gs_graphics_bind_type, GS_GRAPHICS_BIND_UNIFORM_BUFFER);
+            gs_byte_buffer_write(&cb->commands, uint32_t, decl->buffer.id);
+            gs_byte_buffer_write(&cb->commands, size_t, sz);
+            gs_byte_buffer_write_bulk(&cb->commands, decl->data, sz);
         }
 
         // Sampler buffers
@@ -1053,7 +1090,7 @@ void gs_graphics_bind_bindings(gs_command_buffer_t* cb, gs_graphics_bind_desc_t*
             gs_byte_buffer_write(&cb->commands, gs_graphics_access_type, decl->access);
             gs_byte_buffer_write(&cb->commands, gs_graphics_texture_format_type, decl->format);
         }
-    });
+    };
 }
 
 void gs_graphics_bind_pipeline(gs_command_buffer_t* cb, gs_handle(gs_graphics_pipeline_t) hndl)
@@ -1310,8 +1347,22 @@ void gs_graphics_submit_command_buffer(gs_command_buffer_t* cb)
 
                                 gsgl_shader_t shader = gs_slot_array_get(ogl->shaders, sid);
 
-                                // Grab location of uniform
-                                u->location = glGetUniformLocation(shader, u->name ? u->name : "__EMPTY_UNIFORM_NAME");
+                                // Grab uniform location, depending on type (block or single)
+                                switch (u->type)
+                                {
+                                    case GSGL_UNIFORMTYPE_UNIFORM_BLOCK:
+                                    {
+                                        u->location = glGetUniformBlockIndex(shader, u->name ? u->name : "__EMPTY_UNIFORM_NAME");
+
+                                        // Not sure where to put this...
+                                        glUniformBlockBinding(shader, u->location, 0); 
+                                    } break;
+
+                                    default:
+                                    {
+                                        u->location = glGetUniformLocation(shader, u->name ? u->name : "__EMPTY_UNIFORM_NAME");
+                                    } break;
+                                }
 
                                 if (u->location >= UINT32_MAX) {
                                     gs_println("Warning: uniform not found: \"%s\"", u->name);
@@ -1362,6 +1413,14 @@ void gs_graphics_submit_command_buffer(gs_command_buffer_t* cb)
                                     gs_assert(sz == sizeof(gs_mat4));
                                     gs_byte_buffer_read_bulkc(&cb->commands, gs_mat4, v, sz);
                                     glUniformMatrix4fv(u->location, 1, false, (float*)(v.elements));
+                                } break;
+
+                                case GSGL_UNIFORMTYPE_UNIFORM_BLOCK:
+                                {
+                                    glBindBufferRange(GL_UNIFORM_BUFFER, 0, u->ubo, 0, sz); 
+                                    glBindBuffer(GL_UNIFORM_BUFFER, u->ubo);
+                                    glBufferSubData(GL_UNIFORM_BUFFER, 0, sz, (cb->commands.data + cb->commands.position));
+                                    gs_byte_buffer_advance_position(&cb->commands, sz);
                                 } break;
 
                                 default: {
@@ -1687,6 +1746,9 @@ void gs_graphics_submit_command_buffer(gs_command_buffer_t* cb)
                 gs_byte_buffer_readc(&cb->commands, uint32_t, count);
                 gs_byte_buffer_readc(&cb->commands, uint32_t, instance_count);
                 gs_byte_buffer_readc(&cb->commands, uint32_t, base_vertex);
+
+                // If instance count > 1, do instanced drawing
+                is_instanced |= (instance_count > 1);
 
                 uint32_t prim = gsgl_primitive_to_gl_primitive(pip->raster.primitive);
                 uint32_t itype = gsgl_index_buffer_size_to_gl_index_type(pip->raster.index_buffer_element_size);
