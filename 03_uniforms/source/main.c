@@ -22,8 +22,8 @@ gs_command_buffer_t               cb      = {0};
 gs_handle(gs_graphics_buffer_t)   vbo     = {0};
 gs_handle(gs_graphics_pipeline_t) pip     = {0};
 gs_handle(gs_graphics_shader_t)   shader  = {0};
-gs_handle(gs_graphics_buffer_t)   u_color = {0};
-gs_handle(gs_graphics_buffer_t)   u_model = {0};
+gs_handle(gs_graphics_uniform_t)  u_color = {0};
+gs_handle(gs_graphics_uniform_t)  u_model = {0};
 
 const char* v_src = "\n"
 "#version 330 core\n"
@@ -59,47 +59,38 @@ void init()
     vbo = gs_graphics_buffer_create(
         &(gs_graphics_buffer_desc_t) {
             .type = GS_GRAPHICS_BUFFER_VERTEX,
-            .data = v_data,
-            .size = sizeof(v_data)
+            .vertex_buffer = {
+                .data = v_data,
+                .size = sizeof(v_data)
+            }
         }
     );
-
-    // Shader source description
-    gs_graphics_shader_source_desc_t sources[] = {
-        (gs_graphics_shader_source_desc_t){.type = GS_GRAPHICS_SHADER_STAGE_VERTEX, .source = v_src},
-        (gs_graphics_shader_source_desc_t){.type = GS_GRAPHICS_SHADER_STAGE_FRAGMENT, .source = f_src}
-    };
 
     // Create shader
     shader = gs_graphics_shader_create (
         &(gs_graphics_shader_desc_t) {
-            .sources = sources, 
-            .size = sizeof(sources),
+            .sources = (gs_graphics_shader_source_desc_t[]){
+                {.type = GS_GRAPHICS_SHADER_STAGE_VERTEX, .source = v_src},
+                {.type = GS_GRAPHICS_SHADER_STAGE_FRAGMENT, .source = f_src},
+            },
+            .size = 2 * sizeof(gs_graphics_shader_source_desc_t),
             .name = "color_shader"
         }
     );
 
-    u_color = gs_graphics_buffer_create (
-        &(gs_graphics_buffer_desc_t) {
-            .type = GS_GRAPHICS_BUFFER_UNIFORM,                                         // Type of buffer (uniform)
-            .data = &(gs_graphics_uniform_desc_t){.type = GS_GRAPHICS_UNIFORM_VEC3},    // Description of internal uniform data
-            .size = sizeof(gs_graphics_uniform_desc_t),                                 // Size of uniform description (used for counts, if uniform block used)
-            .name = "u_color"                                                           // Name of uniform (used for linkage)
+    u_color = gs_graphics_uniform_create (
+        &(gs_graphics_uniform_desc_t) {
+            .name = "u_color",
+            .layout = &(gs_graphics_uniform_layout_desc_t){.type = GS_GRAPHICS_UNIFORM_VEC3}
         }
     );
 
-    u_model = gs_graphics_buffer_create (
-        &(gs_graphics_buffer_desc_t) {
-            .type = GS_GRAPHICS_BUFFER_UNIFORM,                                         // Type of buffer (uniform)
-            .data = &(gs_graphics_uniform_desc_t){.type = GS_GRAPHICS_UNIFORM_MAT4},    // Description of internal uniform data
-            .size = sizeof(gs_graphics_uniform_desc_t),                                 // Size of uniform description (used for counts, if uniform block used)
-            .name = "u_model"                                                             // Name of uniform (used for linkage)
+    u_model = gs_graphics_uniform_create (
+        &(gs_graphics_uniform_desc_t) {
+            .name = "u_model",
+            .layout = &(gs_graphics_uniform_layout_desc_t){.type = GS_GRAPHICS_UNIFORM_MAT4}
         }
     );
-
-    gs_graphics_vertex_attribute_desc_t vattrs[] = {
-        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2}
-    };
 
     pip = gs_graphics_pipeline_create (
         &(gs_graphics_pipeline_desc_t) {
@@ -112,8 +103,10 @@ void init()
                 .dst = GS_GRAPHICS_BLEND_MODE_ONE_MINUS_SRC_ALPHA              
             },
             .layout = {
-                .attrs = vattrs,
-                .size = sizeof(vattrs)
+                .attrs = (gs_graphics_vertex_attribute_desc_t[]){
+                    {.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2}
+                },
+                .size = sizeof(gs_graphics_vertex_attribute_desc_t)
             }
         }
     );
@@ -141,14 +134,14 @@ void update()
 
     // Uniform buffer array
     gs_graphics_bind_buffer_desc_t uniforms[] = {
-        (gs_graphics_bind_buffer_desc_t){.buffer = u_color, .data = &color},
-        (gs_graphics_bind_buffer_desc_t){.buffer = u_model, .data = &model},
+        (gs_graphics_bind_buffer_desc_t){.uniform = u_color, .data = &color},
+        (gs_graphics_bind_buffer_desc_t){.uniform = u_model, .data = &model},
     };
 
     // Binding descriptor for vertex buffer
     gs_graphics_bind_desc_t binds = {
         .vertex_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = vbo}},
-        .uniform_buffers = {.decl = uniforms, .size = sizeof(uniforms)}
+        .uniforms = {.decl = uniforms, .size = sizeof(uniforms)}
     };
 
     /* Render */

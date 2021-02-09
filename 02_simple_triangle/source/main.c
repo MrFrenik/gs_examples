@@ -50,33 +50,61 @@ void init()
         0.5f, -0.5f
     };
 
+// typedef struct gs_graphics_buffer_desc_t 
+// {
+//     union {
+//         struct {
+//             void* data;
+//             size_t size;
+//             const char* name;
+//         } vertex_buffer;
+//         struct {
+//             void* data;
+//             size_t size;
+//             const char* name;
+//         } index_buffer;
+//         struct {
+//             gs_graphics_shader_stage_type shader_stage;
+//             const char* name;
+//             gs_graphics_uniform_type* layout;
+//             size_t layout_size;
+//         } uniform_constant;
+//         struct {
+//             gs_graphics_shader_stage_type shader_stage;
+//             const char* name;
+//             void* data;
+//             size_t size;
+//         } uniform_buffer;
+//         struct {
+//             gs_graphics_shader_stage_type shader_stage;
+//             gs_graphics_sampler_type type;
+//             const char* name; 
+//         } sampler_buffer;
+//     };
+// } gs_graphics_buffer_desc_t;
+
     // Construct vertex buffer
     vbo = gs_graphics_buffer_create(
         &(gs_graphics_buffer_desc_t) {
             .type = GS_GRAPHICS_BUFFER_VERTEX,
-            .data = v_data,
-            .size = sizeof(v_data)
+            .vertex_buffer = {
+                .data = v_data,
+                .size = sizeof(v_data)
+            }
         }
     );
-
-    // Shader source description
-    gs_graphics_shader_source_desc_t sources[] = {
-        (gs_graphics_shader_source_desc_t){.type = GS_GRAPHICS_SHADER_STAGE_VERTEX, .source = v_src},
-        (gs_graphics_shader_source_desc_t){.type = GS_GRAPHICS_SHADER_STAGE_FRAGMENT, .source = f_src}
-    };
 
     // Create shader
     shader = gs_graphics_shader_create (
         &(gs_graphics_shader_desc_t) {
-            .sources = sources, 
-            .size = sizeof(sources),
+            .sources = (gs_graphics_shader_source_desc_t[]) {
+                {.type = GS_GRAPHICS_SHADER_STAGE_VERTEX, .source = v_src},
+                {.type = GS_GRAPHICS_SHADER_STAGE_FRAGMENT, .source = f_src}
+            }, 
+            .size = 2 * sizeof(gs_graphics_shader_source_desc_t),
             .name = "triangle"
         }
     );
-
-    gs_graphics_vertex_attribute_desc_t vattrs[] = {
-        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2}
-    };
 
     pip = gs_graphics_pipeline_create (
         &(gs_graphics_pipeline_desc_t) {
@@ -84,8 +112,10 @@ void init()
                 .shader = shader
             },
             .layout = {
-                .attrs = vattrs,
-                .size = sizeof(vattrs)
+                .attrs = (gs_graphics_vertex_attribute_desc_t[]){
+                    {.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2}
+                },
+                .size = sizeof(gs_graphics_vertex_attribute_desc_t)
             }
         }
     );
