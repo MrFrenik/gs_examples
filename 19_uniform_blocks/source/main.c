@@ -32,23 +32,28 @@ const char* v_src =
     "layout (std140) uniform u_vp {\n"
     "   mat4 projection;\n"
     "   mat4 view;\n"
+    "   vec4 color;\n"
     "};\n"
     "uniform mat4 u_model;\n"
+    "out vec4 f_color;\n"
     "void main() {\n"
     "   gl_Position = projection * view * u_model * vec4(a_pos, 1.0);\n"
+    "   f_color = color;\n"
     "}\n";
     
 const char* f_src =
     "#version 330\n"
     "layout(location = 0) out vec4 frag_color;\n"
+    "in vec4 f_color;\n"
     "void main() {\n"
-    "   frag_color = vec4(1.0, 0.0, 0.0, 1.0);\n"
+    "   frag_color = f_color;\n"
     "}\n";
 
 typedef struct matrices_t
 {
     gs_mat4 projection;
     gs_mat4 view;
+    gs_vec4 color;
 } matrices_t;
 
 void init()
@@ -125,6 +130,132 @@ void init()
             .name = "color_shader"
         }
     );
+
+    /*
+        // Don't define a type...
+        gs_handle(gs_graphics_parameter_t) u_model = gs_graphics_parameter_create(
+            &(gs_graphics_parameter_desc_t) {
+                .name = "u_model"
+            }
+        );
+
+        // Don't separate the two, maybe? Just place them internally in a logical manner? I dunno...
+
+        gs_graphics_uniform_layout_desc_t uniform_layout[] = {
+            GS_GRAPHICS_UNIFORM_MAT4,
+            GS_GRAPHICS_UNIFORM_MAT4,
+            GS_GRAPHICS_UNIFORM_VEC4
+        };
+
+            // Buffer description with all the possible parameters
+
+        gs_graphics_buffer_desc_t desc = {
+            .vertex_buffer = {
+                .data = v_data,
+                .size = sizeof(v_data)
+            },
+            .index_buffer = {
+                .data = i_data,
+                .size = sizeof(i_data)
+            },
+            .uniform_constant = {
+                .stage =  GS_GRAPHICS_SHADER_STAGE_VERTEX,
+                .name = "u_color",
+                .layout = &(gs_graphics_uniform_type){GS_GRAPHICS_UNIFORM_VEC3}
+                .layout_size = sizeof(gs_graphics_uniform_type)
+            },
+            .uniform_buffer = {
+                .stage = GS_GRAPHICS_SHADER_STAGE_VERTEX,
+                .name = "u_vp",
+                .data = NULL,
+                .size = sizeof(vparams_t)
+                // ...Buffer range stuff as well
+            },
+            .sampler_buffer = {
+                .stage = GS_GRAPHICS_SHADER_STAGE_FRAGMENT,
+                .type = GS_GRAPHICS_SAMPLER_2D,
+                .name = "u_tex"
+            }
+        };
+
+        gs_graphics_buffer_update_desc_t desc = {
+            .uniform_buffer = {
+                .update_type = GS_GRAPHICS_BUFFER_UPDATE_SUBDATA,
+                .buffer = u_vp,
+                .data = data,
+                .size = sizeof(data),
+                .offset = 0x00
+            },
+            .vertex_buffer = {
+                .update_type = GS_GRAPHICS_BUFFER_UPDATE_SUBDATA,
+                .buffer = u_vp,
+                .data = data,
+                .size = sizeof(data),
+                .offset = 0x00
+            },
+            .index_buffer = {
+                .update_type = GS_GRAPHICS_BUFFER_UPDATE_SUBDATA,
+                .buffer = u_vp,
+                .data = data,
+                .size = sizeof(data),
+                .offset = 0x00
+            }
+        };
+
+        // Creating a uniform buffer
+        gs_handle(gs_graphics_buffer_t) u_vp = gs_graphics_buffer_create(
+            &(gs_graphic_buffer_desc_t) {
+                .uniform_buffer = {
+                    .stage = GS_GRAPHICS_SHADER_STAGE_VERTEX,
+                    .name = "u_vp",
+                    .data = NULL,
+                    .size = sizeof(vparams_t)
+                }
+            }
+        );
+
+        gs_handle(gs_graphics_buffer_t) u_vp = gs_graphics_buffer_create(
+            &(gs_graphics_buffer_desc_t) {
+                .type = GS_GRAPHICS_BUFFER_UNIFORM,
+                .data = NULL,
+                .size = sizeof(matrices_t),
+                .name = "u_vp"
+            }
+        );
+
+        // Updating the buffer (sub-buffer update)
+        gs_graphics_buffer_request_update(
+            &cb, 
+            &(gs_graphics_buffer_update_desc_t){
+                .uniform_buffer = {
+                    .buffer = u_vp,
+                    .update_type = GS_BUFFER_UPDATE_SUBDATA,
+                    .data = data,
+                    .size = sizeof(data)
+                }
+            }
+        );
+
+        gs_graphics_bind_data_t ubuffers[] = {
+            (gs_graphics_bind_data_t){.hndl = u_vp, .binding = 0}
+        };
+
+        // Binds
+        gs_graphics_bind_desc_t binds = 
+        {
+            .uniform_buffers = {.desc = ubuffers, .size = sizeof(ubuffers)},
+            .uniform_constants = {.desc = uconstants, .size = sizeof(uconstants)}
+        };
+
+        gs_graphics_bind_desc_t binds = {
+            .uniform_buffers = {.desc = &(gs_graphics_bind_data_desc_t){.buffer = u_vp, .binding = 0}},
+            .uniform_constants = {.desc = &(gs_graphics_bind_data_desc_t){.parameter = u_model, .data = &model}},
+            .vertex_buffers = {.desc = &(gs_graphics_bind_data_desc_t){.buffer = vbo}},
+            .index_buffers = {.desc = &(gs_graphics_bind_data_desc_t){.buffer = ibo}}
+        };
+
+        gs_graphics_set_bindings(&cb, binds);
+    */
 
     // Creates matrices uniform buffer
     u_vp = gs_graphics_buffer_create(
@@ -235,6 +366,9 @@ void init()
             }
         };
 
+        uniform buffer <-> constant buffer
+        uniform <-> parameter
+
         // You can only have a single push constant for vulkan per shader stage, but that's not the case for opengl, so whatevs
 
         gs_graphics_bind_desc_t binds = {
@@ -339,6 +473,10 @@ void init()
     );
     */
 
+    /*
+
+    */
+
     u_model = gs_graphics_buffer_create(
         &(gs_graphics_buffer_desc_t){
             .type = GS_GRAPHICS_BUFFER_UNIFORM,
@@ -411,7 +549,8 @@ void update()
 
     matrices_t vp = {
         .projection = gs_camera_get_projection(&cam, (int32_t)ws.x, (int32_t)ws.y),
-        .view = gs_camera_get_view(&cam)
+        .view = gs_camera_get_view(&cam),
+        .color = gs_v4(1.f, 1.f, 0.f, 1.f)
     };
 
     gs_graphics_bind_buffer_desc_t ubuffers[] = {
