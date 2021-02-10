@@ -97,3 +97,6 @@ compute_shader/bin/main.obj
 03_uniforms/bin/App
 03_uniforms/bin/main.obj
 17_gs_static_lib/bin/App
+19_uniform_buffers/bin/.vs/App/v15/.suo
+19_uniform_buffers/bin/.vs/App/v15/Browse.VC.db
+19_uniform_buffers/bin/main.obj
