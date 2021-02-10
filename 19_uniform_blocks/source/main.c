@@ -27,7 +27,7 @@ const char* v_src =
     "void main() {\n"
     "   gl_Position = projection * view * u_model * vec4(a_pos, 1.0);\n"
     "}\n";
-    
+
 const char* f_red_src =
     "#version 330\n"
     "layout(location = 0) out vec4 frag_color;\n"
@@ -65,7 +65,7 @@ typedef struct vparams_t
 void app_init()
 {
     // Construct new command buffer
-    cb = gs_command_buffer_new(); 
+    cb = gs_command_buffer_new();
 
     // Set up camera
     cam = gs_camera_perspective();
@@ -73,48 +73,48 @@ void app_init()
 
     // Cube positions
     float v_data[] = {
-        // positions         
-        -0.5f, -0.5f, -0.5f, 
-         0.5f, -0.5f, -0.5f,  
-         0.5f,  0.5f, -0.5f,  
-         0.5f,  0.5f, -0.5f,  
-        -0.5f,  0.5f, -0.5f, 
-        -0.5f, -0.5f, -0.5f, 
+        // positions
+        -0.5f, -0.5f, -0.5f,
+         0.5f, -0.5f, -0.5f,
+         0.5f,  0.5f, -0.5f,
+         0.5f,  0.5f, -0.5f,
+        -0.5f,  0.5f, -0.5f,
+        -0.5f, -0.5f, -0.5f,
 
-        -0.5f, -0.5f,  0.5f, 
-         0.5f, -0.5f,  0.5f,  
-         0.5f,  0.5f,  0.5f,  
-         0.5f,  0.5f,  0.5f,  
-        -0.5f,  0.5f,  0.5f, 
-        -0.5f, -0.5f,  0.5f, 
+        -0.5f, -0.5f,  0.5f,
+         0.5f, -0.5f,  0.5f,
+         0.5f,  0.5f,  0.5f,
+         0.5f,  0.5f,  0.5f,
+        -0.5f,  0.5f,  0.5f,
+        -0.5f, -0.5f,  0.5f,
 
-        -0.5f,  0.5f,  0.5f, 
-        -0.5f,  0.5f, -0.5f, 
-        -0.5f, -0.5f, -0.5f, 
-        -0.5f, -0.5f, -0.5f, 
-        -0.5f, -0.5f,  0.5f, 
-        -0.5f,  0.5f,  0.5f, 
+        -0.5f,  0.5f,  0.5f,
+        -0.5f,  0.5f, -0.5f,
+        -0.5f, -0.5f, -0.5f,
+        -0.5f, -0.5f, -0.5f,
+        -0.5f, -0.5f,  0.5f,
+        -0.5f,  0.5f,  0.5f,
 
-         0.5f,  0.5f,  0.5f,  
-         0.5f,  0.5f, -0.5f,  
-         0.5f, -0.5f, -0.5f,  
-         0.5f, -0.5f, -0.5f,  
-         0.5f, -0.5f,  0.5f,  
-         0.5f,  0.5f,  0.5f,  
+         0.5f,  0.5f,  0.5f,
+         0.5f,  0.5f, -0.5f,
+         0.5f, -0.5f, -0.5f,
+         0.5f, -0.5f, -0.5f,
+         0.5f, -0.5f,  0.5f,
+         0.5f,  0.5f,  0.5f,
 
-        -0.5f, -0.5f, -0.5f, 
-         0.5f, -0.5f, -0.5f,  
-         0.5f, -0.5f,  0.5f,  
-         0.5f, -0.5f,  0.5f,  
-        -0.5f, -0.5f,  0.5f, 
-        -0.5f, -0.5f, -0.5f, 
+        -0.5f, -0.5f, -0.5f,
+         0.5f, -0.5f, -0.5f,
+         0.5f, -0.5f,  0.5f,
+         0.5f, -0.5f,  0.5f,
+        -0.5f, -0.5f,  0.5f,
+        -0.5f, -0.5f, -0.5f,
 
-        -0.5f,  0.5f, -0.5f, 
-         0.5f,  0.5f, -0.5f,  
-         0.5f,  0.5f,  0.5f,  
-         0.5f,  0.5f,  0.5f,  
-        -0.5f,  0.5f,  0.5f, 
-        -0.5f,  0.5f, -0.5f, 
+        -0.5f,  0.5f, -0.5f,
+         0.5f,  0.5f, -0.5f,
+         0.5f,  0.5f,  0.5f,
+         0.5f,  0.5f,  0.5f,
+        -0.5f,  0.5f,  0.5f,
+        -0.5f,  0.5f, -0.5f,
     };
 
     // Construct vertex buffer
@@ -131,14 +131,14 @@ void app_init()
             .data = NULL,
             .size = sizeof(vparams_t),
             .name = "u_vp"
-        } 
+        }
     );
 
     // Upload projection matrix into buffer
     gs_vec2 ws = gs_platform_window_sizev(gs_platform_main_window());
     gs_mat4 proj = gs_camera_get_projection(&cam, (int32_t)ws.x, (int32_t)ws.y);
 
-    // Update sub region of uniform buffer data with projection (won't change during runtime) 
+    // Update sub region of uniform buffer data with projection (won't change during runtime)
     gs_graphics_uniform_buffer_request_update(&cb, u_vp,
         &(gs_graphics_uniform_buffer_desc_t){
             .data = &proj,
@@ -172,7 +172,7 @@ void app_init()
                 .sources = (gs_graphics_shader_source_desc_t[]){
                     {.type = GS_GRAPHICS_SHADER_STAGE_VERTEX, .source = v_src},
                     {.type = GS_GRAPHICS_SHADER_STAGE_FRAGMENT, .source = fshaders[i]}
-                }, 
+                },
                 .size = 2 * sizeof(gs_graphics_shader_source_desc_t),
                 .name = "color_shader"
             }
@@ -186,7 +186,7 @@ void app_init()
                 .blend = {
                     .func = GS_GRAPHICS_BLEND_EQUATION_ADD,
                     .src = GS_GRAPHICS_BLEND_MODE_SRC_ALPHA,
-                    .dst = GS_GRAPHICS_BLEND_MODE_ONE_MINUS_SRC_ALPHA              
+                    .dst = GS_GRAPHICS_BLEND_MODE_ONE_MINUS_SRC_ALPHA
                 },
                 .depth = {
                     .func = GS_GRAPHICS_DEPTH_FUNC_LESS
@@ -240,9 +240,9 @@ void app_update()
         gs_graphics_clear(&cb, &clear);
         for (uint32_t i = 0; i < 4; ++i) {
             gs_graphics_bind_desc_t binds = {
-                .vertex_buffers = {&(gs_graphics_vertex_buffer_bind_desc_t){.buffer = vbo}},
-                .uniform_buffers = {&(gs_graphics_uniform_buffer_bind_desc_t){.buffer = u_vp, .binding = 0}},
-                .uniforms = {&(gs_graphics_uniform_bind_desc_t){.uniform = u_model, .data = &models[i]}}
+                .vertex_buffers = {&(gs_graphics_bind_vertex_buffer_desc_t){.buffer = vbo}},
+                .uniform_buffers = {&(gs_graphics_bind_uniform_buffer_desc_t){.buffer = u_vp, .binding = 0}},
+                .uniforms = {&(gs_graphics_bind_uniform_desc_t){.uniform = u_model, .data = &models[i]}}
             };
             gs_graphics_bind_pipeline(&cb, pips[i]);
             gs_graphics_apply_bindings(&cb, &binds);
@@ -260,7 +260,7 @@ gs_app_desc_t gs_main(int32_t argc, char** argv)
         .init = app_init,
         .update = app_update
     };
-}   
+}
 
 
 
