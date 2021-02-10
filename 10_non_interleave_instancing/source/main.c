@@ -28,6 +28,7 @@
 #include <stdio.h>
 
 #define NUM_OFFSETS 1000000         // One MILLION offsets! Mwahahaha.
+#define CAM_SPEED   50
 
 typedef struct fps_camera_t
 {
@@ -256,6 +257,7 @@ void fps_camera_update(fps_camera_t* fps)
 {
     const gs_vec2 ws = gs_platform_window_sizev(gs_platform_main_window());
     const gs_vec2 mp = gs_platform_mouse_positionv();
+    float dt = gs_engine_subsystem(platform)->time.delta;
 
     // First pressed
     if (gs_platform_mouse_pressed(GS_MOUSE_LBUTTON)) {
@@ -269,21 +271,13 @@ void fps_camera_update(fps_camera_t* fps)
         gs_platform_mouse_set_position(gs_platform_main_window(), fps->prev_mouse_position.x, fps->prev_mouse_position.y);
     }
 
-    if (gs_platform_key_down(GS_KEYCODE_W)) {
-        fps->camera.transform.position = gs_vec3_add(gs_camera_forward(&fps->camera), fps->camera.transform.position);
-    }
+    gs_vec3 vel = {0};
+    if (gs_platform_key_down(GS_KEYCODE_W)) vel = gs_vec3_add(vel, gs_camera_forward(&fps->camera));
+    if (gs_platform_key_down(GS_KEYCODE_S)) vel = gs_vec3_add(vel, gs_camera_backward(&fps->camera));
+    if (gs_platform_key_down(GS_KEYCODE_A)) vel = gs_vec3_add(vel, gs_camera_left(&fps->camera));
+    if (gs_platform_key_down(GS_KEYCODE_D)) vel = gs_vec3_add(vel, gs_camera_right(&fps->camera));
 
-    if (gs_platform_key_down(GS_KEYCODE_S)) {
-        fps->camera.transform.position = gs_vec3_add(gs_camera_backward(&fps->camera), fps->camera.transform.position);
-    }
-
-    if (gs_platform_key_down(GS_KEYCODE_A)) {
-        fps->camera.transform.position = gs_vec3_add(gs_camera_left(&fps->camera), fps->camera.transform.position);
-    }
-
-    if (gs_platform_key_down(GS_KEYCODE_D)) {
-        fps->camera.transform.position = gs_vec3_add(gs_camera_right(&fps->camera), fps->camera.transform.position);
-    }
+    fps->camera.transform.position = gs_vec3_add(fps->camera.transform.position, gs_vec3_scale(gs_vec3_norm(vel), dt * CAM_SPEED));
 }
 
 gs_app_desc_t gs_main(int32_t argc, char** argv)
