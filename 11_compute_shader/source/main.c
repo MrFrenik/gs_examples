@@ -118,7 +118,7 @@ void app_update()
         // Bindings for compute shader
         gs_graphics_bind_desc_t binds = {
             .uniforms = {.desc = &(gs_graphics_bind_uniform_desc_t){.uniform = u_roll, .data = &roll}},
-            .image_buffers = {.desc = &(gs_graphics_bind_image_buffer_desc_t){.tex = cmptex, .access = GS_GRAPHICS_ACCESS_WRITE_ONLY, .binding = 0, .format = GS_GRAPHICS_TEXTURE_FORMAT_RGBA32F}}
+            .image_buffers = {.desc = &(gs_graphics_bind_image_buffer_desc_t){.tex = cmptex, .access = GS_GRAPHICS_ACCESS_WRITE_ONLY, .binding = 0}}
         };
 
         // Bind compute pipeline
