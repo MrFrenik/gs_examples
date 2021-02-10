@@ -24,7 +24,7 @@
 
 gs_command_buffer_t               cb      = {0};
 gs_immediate_draw_t               gsi     = {0};
-gs_handle(gs_graphics_buffer_t)   u_roll  = {0};
+gs_handle(gs_graphics_uniform_t)  u_roll  = {0};
 gs_handle(gs_graphics_texture_t)  cmptex  = {0};
 gs_handle(gs_graphics_pipeline_t) cmdpip  = {0};
 gs_handle(gs_graphics_shader_t)   cmpshd  = {0};
@@ -71,12 +71,10 @@ void app_init()
     );
 
     // Create uniform
-    u_roll = gs_graphics_buffer_create (
-        &(gs_graphics_buffer_desc_t) {
-            .type = GS_GRAPHICS_BUFFER_UNIFORM,                                       
-            .data = &(gs_graphics_uniform_desc_t){.type = GS_GRAPHICS_UNIFORM_FLOAT},
-            .size = sizeof(gs_graphics_uniform_desc_t),                              
-            .name = "u_roll"                                                         
+    u_roll = gs_graphics_uniform_create (
+        &(gs_graphics_uniform_desc_t) {
+            .name = "u_roll",                                                         
+            .layout = &(gs_graphics_uniform_layout_desc_t){.type = GS_GRAPHICS_UNIFORM_FLOAT}
         }
     );
 
@@ -119,16 +117,14 @@ void app_update()
 
         // Bindings for compute shader
         gs_graphics_bind_desc_t binds = {
-            .uniform_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = u_roll, .data = &roll}},
-            .compute = {
-                .image_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.data = &cmptex, .access = GS_GRAPHICS_ACCESS_WRITE_ONLY, .binding = 0, .format = GS_GRAPHICS_TEXTURE_FORMAT_RGBA32F}}
-            }
+            .uniforms = {.desc = &(gs_graphics_bind_uniform_desc_t){.uniform = u_roll, .data = &roll}},
+            .image_buffers = {.desc = &(gs_graphics_bind_image_buffer_desc_t){.tex = cmptex, .access = GS_GRAPHICS_ACCESS_WRITE_ONLY, .binding = 0, .format = GS_GRAPHICS_TEXTURE_FORMAT_RGBA32F}}
         };
 
         // Bind compute pipeline
         gs_graphics_bind_pipeline(&cb, cmdpip);
         // Bind compute bindings
-        gs_graphics_bind_bindings(&cb, &binds);
+        gs_graphics_apply_bindings(&cb, &binds);
         // Dispatch compute shader
         gs_graphics_dispatch_compute(&cb, TEX_WIDTH / 16, TEX_HEIGHT / 16, 1);
     }

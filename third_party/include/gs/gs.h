@@ -4591,6 +4591,13 @@ typedef struct gs_graphics_bind_sampler_buffer_desc_t {
     uint32_t binding;
 } gs_graphics_bind_sampler_buffer_desc_t;
 
+typedef struct gs_graphics_bind_image_buffer_desc_t {
+    gs_handle(gs_graphics_texture_t) tex;
+    uint32_t binding;
+    gs_graphics_access_type access;
+    gs_graphics_texture_format_type format;
+} gs_graphics_bind_image_buffer_desc_t;
+
 typedef struct gs_graphics_bind_uniform_buffer_desc_t {
     gs_handle(gs_graphics_uniform_buffer_t) buffer;
     uint32_t binding;
@@ -4633,12 +4640,10 @@ typedef struct gs_graphics_bind_desc_t
         size_t size;                                    // Size of array in bytes (optional if only one)
     } sampler_buffers;
 
-    // struct {
-    //     struct {
-    //         gs_graphics_bind_buffer_desc_t* decl;
-    //         size_t size;
-    //     } image_buffers;
-    // } compute;
+    struct {
+        gs_graphics_bind_image_buffer_desc_t* desc;
+        size_t size;
+    } image_buffers;
 } gs_graphics_bind_desc_t;
 
 /* Graphics Blend State Desc */

@@ -1204,11 +1204,10 @@ void gs_graphics_apply_bindings(gs_command_buffer_t* cb, gs_graphics_bind_desc_t
         uint32_t uct = binds->uniform_buffers.desc ? binds->uniform_buffers.size ? binds->uniform_buffers.size / sizeof(gs_graphics_bind_uniform_buffer_desc_t) : 1 : 0;
         uint32_t sct = binds->sampler_buffers.desc ? binds->sampler_buffers.size ? binds->sampler_buffers.size / sizeof(gs_graphics_bind_sampler_buffer_desc_t) : 1 : 0;
         uint32_t pct = binds->uniforms.desc ? binds->uniforms.size ? binds->uniforms.size / sizeof(gs_graphics_bind_uniform_desc_t) : 1 : 0;
-        // uint32_t ibc = binds->compute.image_buffers.desc ? binds->compute.image_buffers.size ? binds->compute.image_buffers.size / sizeof(gs_graphics_bind_buffer_desc_t) : 1 : 0;
+        uint32_t ibc = binds->image_buffers.desc ? binds->image_buffers.size ? binds->image_buffers.size / sizeof(gs_graphics_bind_image_buffer_desc_t) : 1 : 0;
 
         // Determine total count to write into command buffer
-        // uint32_t ct = vct + ict + uct + sct + ibc + pct;
-        uint32_t ct = vct + ict + uct + pct + sct;
+        uint32_t ct = vct + ict + uct + sct + ibc + pct;
         gs_byte_buffer_write(&cb->commands, uint32_t, ct);
 
         // Determine if need to clear any previous vertex buffers (if vct != 0)
@@ -1256,18 +1255,16 @@ void gs_graphics_apply_bindings(gs_command_buffer_t* cb, gs_graphics_bind_desc_t
             gs_byte_buffer_write(&cb->commands, uint32_t, decl->binding);
         }
 
-        /*
         // Image buffers
         for (uint32_t i = 0; i < ibc; ++i)
         {
-            gs_graphics_bind_buffer_desc_t* decl = &binds->compute.image_buffers.decl[i];
+            gs_graphics_bind_image_buffer_desc_t* decl = &binds->image_buffers.desc[i];
             gs_byte_buffer_write(&cb->commands, gs_graphics_bind_type, GS_GRAPHICS_BIND_IMAGE_BUFFER);
-            gs_byte_buffer_write(&cb->commands, uint32_t, ((gs_handle(gs_graphics_texture_t)*)decl->data)->id);
+            gs_byte_buffer_write(&cb->commands, uint32_t, decl->tex.id);
             gs_byte_buffer_write(&cb->commands, uint32_t, decl->binding);
             gs_byte_buffer_write(&cb->commands, gs_graphics_access_type, decl->access);
             gs_byte_buffer_write(&cb->commands, gs_graphics_texture_format_type, decl->format);
         }
-        */
 
         // Uniforms
         for (uint32_t i = 0; i < pct; ++i)
@@ -1786,9 +1783,6 @@ void gs_graphics_submit_command_buffer(gs_command_buffer_t* cb)
                             uint32_t gl_format = gsgl_texture_format_to_gl_texture_format(format);
 
                             // Bind image texture
-                            // Activate texture slot (don't know if these are necessary)
-                            // glActiveTexture(GL_TEXTURE0 + binding);
-                            // glBindTexture(GL_TEXTURE_2D, tex);
                             glBindImageTexture(0, tex, 0, GL_FALSE, 0, gl_access, gl_format);
                         } break;
 
