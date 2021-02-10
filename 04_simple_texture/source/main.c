@@ -19,13 +19,13 @@
 #define GS_IMPL
 #include <gs/gs.h>
 
-gs_command_buffer_t               cb      = {0};
-gs_handle(gs_graphics_buffer_t)   vbo     = {0};
-gs_handle(gs_graphics_buffer_t)   ibo     = {0};
-gs_handle(gs_graphics_pipeline_t) pip     = {0};
-gs_handle(gs_graphics_shader_t)   shader  = {0};
-gs_handle(gs_graphics_buffer_t)   u_tex   = {0};
-gs_handle(gs_graphics_texture_t)  tex     = {0};
+gs_command_buffer_t                      cb      = {0};
+gs_handle(gs_graphics_vertex_buffer_t)   vbo     = {0};
+gs_handle(gs_graphics_index_buffer_t)    ibo     = {0};
+gs_handle(gs_graphics_pipeline_t)        pip     = {0};
+gs_handle(gs_graphics_shader_t)          shader  = {0};
+gs_handle(gs_graphics_sampler_buffer_t)  u_tex   = {0};
+gs_handle(gs_graphics_texture_t)         tex     = {0};
 
 gs_asset_texture_t texture = {0};
 
@@ -87,18 +87,16 @@ void init()
     };
 
     // Construct sampler buffer
-    u_tex = gs_graphics_buffer_create(
-        &(gs_graphics_buffer_desc_t) {
-            .type = GS_GRAPHICS_BUFFER_SAMPLER,
-            .data = &sdesc,
-            .size = sizeof(sdesc),
+    u_tex = gs_graphics_sampler_buffer_create(
+        &(gs_graphics_sampler_buffer_desc_t) {
+            .type = GS_GRAPHICS_SAMPLER_2D,
+            .stage = GS_GRAPHICS_SHADER_STAGE_FRAGMENT,
             .name = "u_tex"
         }
     );
     
     // Vertex data for quad
-    f32 v_data[] = 
-    {
+    float v_data[] = {
         // Positions  UVs
         -0.5f, -0.5f,  0.0f, 0.0f,  // Top Left
          0.5f, -0.5f,  1.0f, 0.0f,  // Top Right 
@@ -106,49 +104,38 @@ void init()
          0.5f,  0.5f,  1.0f, 1.0f   // Bottom Right
     };
 
-    u32 i_data[] = 
-    {
+    uint32_t i_data[] = {
         0, 3, 2,    // First Triangle
         0, 1, 3     // Second Triangle
     };
 
     // Construct vertex buffer
-    vbo = gs_graphics_buffer_create(
-        &(gs_graphics_buffer_desc_t) {
-            .type = GS_GRAPHICS_BUFFER_VERTEX,
+    vbo = gs_graphics_vertex_buffer_create(
+        &(gs_graphics_vertex_buffer_desc_t) {
             .data = v_data,
             .size = sizeof(v_data)
         }
     );
 
     // Construct index buffer
-    ibo = gs_graphics_buffer_create(
-        &(gs_graphics_buffer_desc_t) {
-            .type = GS_GRAPHICS_BUFFER_INDEX,
+    ibo = gs_graphics_index_buffer_create(
+        &(gs_graphics_index_buffer_desc_t) {
             .data = i_data,
             .size = sizeof(i_data)
         }
     );
 
-    // Shader source description
-    gs_graphics_shader_source_desc_t sources[] = {
-        (gs_graphics_shader_source_desc_t){.type = GS_GRAPHICS_SHADER_STAGE_VERTEX, .source = v_src},
-        (gs_graphics_shader_source_desc_t){.type = GS_GRAPHICS_SHADER_STAGE_FRAGMENT, .source = f_src}
-    };
-
     // Create shader
     shader = gs_graphics_shader_create (
         &(gs_graphics_shader_desc_t) {
-            .sources = sources, 
-            .size = sizeof(sources),
+            .sources = (gs_graphics_shader_source_desc_t[]){
+                {.type = GS_GRAPHICS_SHADER_STAGE_VERTEX, .source = v_src},
+                {.type = GS_GRAPHICS_SHADER_STAGE_FRAGMENT, .source = f_src}
+            }, 
+            .size = 2 * sizeof(gs_graphics_shader_source_desc_t),
             .name = "quad"
         }
     );
-
-    gs_graphics_vertex_attribute_desc_t vattrs[] = {
-        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2},
-        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2}
-    };
 
     pip = gs_graphics_pipeline_create (
         &(gs_graphics_pipeline_desc_t) {
@@ -157,8 +144,11 @@ void init()
                 .index_buffer_element_size = sizeof(uint32_t) 
             },
             .layout = {
-                .attrs = vattrs,
-                .size = sizeof(vattrs)
+                .attrs = (gs_graphics_vertex_attribute_desc_t[]){
+                    {.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2},
+                    {.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2}
+                },
+                .size = 2 * sizeof(gs_graphics_vertex_attribute_desc_t)
             }
         }
     );
@@ -169,21 +159,23 @@ void update()
     if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_engine_quit();
 
     // Render pass action for clearing the screen
-    gs_graphics_render_pass_action_t action = (gs_graphics_render_pass_action_t){.color = {0.1f, 0.1f, 0.1f, 1.f}};
+    gs_graphics_clear_desc_t clear = (gs_graphics_clear_desc_t){.actions = &(gs_graphics_clear_action_t){.color = 0.1f, 0.1f, 0.1f, 1.f}};
+
     const gs_vec2 fbs = gs_platform_framebuffer_sizev(gs_platform_main_window());
 
     // Bindings for all buffers: vertex, index, sampler
     gs_graphics_bind_desc_t binds = {
-        .vertex_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = vbo}},
-        .index_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = ibo}},
-        .sampler_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = u_tex, .data = &tex, .binding = 0}}
+        .vertex_buffers = {.desc = &(gs_graphics_bind_vertex_buffer_desc_t){.buffer = vbo}},
+        .index_buffers = {.desc = &(gs_graphics_bind_index_buffer_desc_t){.buffer = ibo}},
+        .sampler_buffers = {.desc = &(gs_graphics_bind_sampler_buffer_desc_t){.buffer = u_tex, .tex = tex, .binding = 0}}
     };
 
     /* Render */
-    gs_graphics_begin_render_pass(&cb, (gs_handle(gs_graphics_render_pass_t)){0}, &action, sizeof(action));
+    gs_graphics_begin_render_pass(&cb, GS_GRAPHICS_RENDER_PASS_DEFAULT);
         gs_graphics_set_viewport(&cb, 0, 0, (int32_t)fbs.x, (int32_t)fbs.y);
+        gs_graphics_clear(&cb, &clear);
         gs_graphics_bind_pipeline(&cb, pip);
-        gs_graphics_bind_bindings(&cb, &binds);
+        gs_graphics_apply_bindings(&cb, &binds);
         gs_graphics_draw(&cb, &(gs_graphics_draw_desc_t){.start = 0, .count = 6});
     gs_graphics_end_render_pass(&cb);
 

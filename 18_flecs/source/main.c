@@ -15,7 +15,7 @@
 
 #include <flecs/flecs.h>
 
-#define MAX_ENTITY_COUNT    100000
+#define MAX_ENTITY_COUNT    100
 
 typedef gs_vec2 position_t;     // Position component
 typedef gs_vec2 velocity_t;     // Velocity component

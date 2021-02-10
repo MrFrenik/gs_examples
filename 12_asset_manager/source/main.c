@@ -149,15 +149,13 @@ void update()
     gs_snprintfc(cbuff0, 256, "CP0: %s, %zu, %.2f", cp0->name, cp0->udata, cp0->fdata);
     gsi_text(&gsi, 165.f, 550.f, cbuff0, fp, false, 255, 255, 255, 255);
 
-    gs_graphics_render_pass_action_t action = {.color = {0.1f, 0.1f, 0.1f, 255}};
+    gs_graphics_clear_desc_t clear = {.actions = &(gs_graphics_clear_action_t){.color = 0.1f, 0.1f, 0.1f, 255}};
 
     // Bind render pass for backbuffer
-    gs_graphics_begin_render_pass(&gcb, (gs_handle(gs_graphics_render_pass_t)){0}, &action, sizeof(action));
-
+    gs_graphics_begin_render_pass(&gcb, GS_GRAPHICS_RENDER_PASS_DEFAULT);
         gs_graphics_set_viewport(&gcb, 0, 0, (int32_t)fb.x, (int32_t)fb.y);
-
-        // Binds pipelines and submits to graphics command buffer for rendering
-        gsi_draw(&gsi, &gcb);
+        gs_graphics_clear(&gcb, &clear);
+        gsi_draw(&gsi, &gcb); // Binds pipelines and submits to graphics command buffer for rendering
 
         // Get pipeline for mesh from immediate draw backend
         gsi_pipeline_state_attr_t state = {
@@ -169,8 +167,7 @@ void update()
         };
         gs_handle(gs_graphics_pipeline_t) pip = gsi_get_pipeline(&gsi, state);
 
-        // Bind pipeline
-        gs_graphics_bind_pipeline(&gcb, pip);
+        gs_graphics_bind_pipeline(&gcb, pip); // Bind pipeline
 
         // MVP Matrix
         gs_mat4 mvp = gs_mat4_perspective(60.f, ws.x / ws.y, 0.1f, 1000.f);
@@ -191,14 +188,14 @@ void update()
 
             // Bindings for all buffers: vertex, index, uniform, sampler
             gs_graphics_bind_desc_t binds = {
-                .vertex_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = prim->vbo}},
-                .index_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = prim->ibo}},
-                .uniform_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = gsi.uniforms, .data = &mvp}},
-                .sampler_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = gsi.samplers, .data = &dtp->hndl, .binding = 0}}
+                .vertex_buffers = {.desc = &(gs_graphics_bind_vertex_buffer_desc_t){.buffer = prim->vbo}},
+                .index_buffers = {.desc = &(gs_graphics_bind_index_buffer_desc_t){.buffer = prim->ibo}},
+                .uniforms = {.desc = &(gs_graphics_bind_uniform_desc_t){.uniform = gsi.uniform, .data = &mvp}},
+                .sampler_buffers = {.desc = &(gs_graphics_bind_sampler_buffer_desc_t){.buffer = gsi.sampler, .tex = dtp->hndl, .binding = 0}}
             };
 
             // Bind bindings
-            gs_graphics_bind_bindings(&gcb, &binds);    // Clears any previous bindings
+            gs_graphics_apply_bindings(&gcb, &binds);    // Clears any previous bindings
             // Draw
             gs_graphics_draw(&gcb, &(gs_graphics_draw_desc_t){.start = 0, .count = prim->count});
         }

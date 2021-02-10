@@ -20,19 +20,18 @@
 gs_command_buffer_t                  gcb  = {0};
 gs_immediate_draw_t                  gsi  = {0};
 gs_handle(gs_graphics_render_pass_t) rp   = {0};
-gs_handle(gs_graphics_buffer_t)      fbo  = {0};
+gs_handle(gs_graphics_framebuffer_t) fbo  = {0};
 gs_handle(gs_graphics_texture_t)     rt   = {0};
 
-void init()
+void app_init()
 {
     // Construct new command buffer
     gcb = gs_command_buffer_new();
     gsi = gs_immediate_draw_new();
 
     // Construct frame buffer
-    fbo = gs_graphics_buffer_create(
-        &(gs_graphics_buffer_desc_t) {
-            .type = GS_GRAPHICS_BUFFER_FRAME,
+    fbo = gs_graphics_framebuffer_create(
+        &(gs_graphics_framebuffer_desc_t) {
         }
     );
 
@@ -60,7 +59,7 @@ void init()
     );
  }
 
-void update()
+void app_update()
 {
     if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_engine_quit();
 
@@ -68,8 +67,8 @@ void update()
     const gs_vec2 ws = gs_platform_window_sizev(gs_platform_main_window());
 
     // Render pass action for clearing the screen
-    gs_graphics_render_pass_action_t fb_action = (gs_graphics_render_pass_action_t){.color = {0.0f, 0.0f, 0.0f, 1.f}};
-    gs_graphics_render_pass_action_t bb_action = (gs_graphics_render_pass_action_t){.color = {0.1f, 0.1f, 0.1f, 1.f}};
+    gs_graphics_clear_desc_t fb_clear = {.actions = &(gs_graphics_clear_action_t){.color = 0.0f, 0.0f, 0.0f, 1.f}};
+    gs_graphics_clear_desc_t bb_clear = {.actions = &(gs_graphics_clear_action_t){.color = 0.1f, 0.1f, 0.1f, 1.f}};
 
     // Immediate rendering for offscreen buffer
     gsi_camera3D(&gsi);
@@ -80,8 +79,9 @@ void update()
     gsi_box(&gsi, 0.f, 0.f, 0.f, 0.5f, 0.5f, 0.5f, 200, 100, 50, 255, GS_GRAPHICS_PRIMITIVE_LINES);
 
     // Bind render pass for offscreen rendering then draw to buffer
-    gs_graphics_begin_render_pass(&gcb, rp, &fb_action, sizeof(fb_action));
+    gs_graphics_begin_render_pass(&gcb, rp);
         gs_graphics_set_viewport(&gcb, 0, 0, (int32_t)fbs.x, (int32_t)fbs.y);
+        gs_graphics_clear(&gcb, &fb_clear);
         gsi_draw(&gsi, &gcb);
     gs_graphics_end_render_pass(&gcb);
 
@@ -96,8 +96,9 @@ void update()
     gsi_box(&gsi, 0.f, 0.f, 0.f, 0.5f, 0.5f, 0.5f, 255, 255, 255, 255, GS_GRAPHICS_PRIMITIVE_TRIANGLES);
 
     // Render to back buffer
-    gs_graphics_begin_render_pass(&gcb, (gs_handle(gs_graphics_render_pass_t)){0}, &bb_action, sizeof(bb_action));
+    gs_graphics_begin_render_pass(&gcb, GS_GRAPHICS_RENDER_PASS_DEFAULT);
         gs_graphics_set_viewport(&gcb, 0, 0, (int32_t)fbs.x, (int32_t)fbs.y);
+        gs_graphics_clear(&gcb, &bb_clear);
         gsi_draw(&gsi, &gcb);
     gs_graphics_end_render_pass(&gcb);
 
@@ -108,8 +109,8 @@ void update()
 gs_app_desc_t gs_main(int32_t argc, char** argv)
 {
     return (gs_app_desc_t){
-        .init = init,
-        .update = update
+        .init = app_init,
+        .update = app_update
     };
 }   
 

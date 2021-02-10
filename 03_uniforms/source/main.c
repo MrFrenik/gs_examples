@@ -18,12 +18,12 @@
 #define GS_IMPL
 #include <gs/gs.h>
 
-gs_command_buffer_t               cb      = {0};
-gs_handle(gs_graphics_buffer_t)   vbo     = {0};
-gs_handle(gs_graphics_pipeline_t) pip     = {0};
-gs_handle(gs_graphics_shader_t)   shader  = {0};
-gs_handle(gs_graphics_uniform_t)  u_color = {0};
-gs_handle(gs_graphics_uniform_t)  u_model = {0};
+gs_command_buffer_t                      cb      = {0};
+gs_handle(gs_graphics_vertex_buffer_t)   vbo     = {0};
+gs_handle(gs_graphics_pipeline_t)        pip     = {0};
+gs_handle(gs_graphics_shader_t)          shader  = {0};
+gs_handle(gs_graphics_uniform_t)         u_color = {0};
+gs_handle(gs_graphics_uniform_t)         u_model = {0};
 
 const char* v_src = "\n"
 "#version 330 core\n"
@@ -56,13 +56,10 @@ void init()
     };
 
     // Construct vertex buffer
-    vbo = gs_graphics_buffer_create(
-        &(gs_graphics_buffer_desc_t) {
-            .type = GS_GRAPHICS_BUFFER_VERTEX,
-            .vertex_buffer = {
-                .data = v_data,
-                .size = sizeof(v_data)
-            }
+    vbo = gs_graphics_vertex_buffer_create(
+        &(gs_graphics_vertex_buffer_desc_t) {
+            .data = v_data,
+            .size = sizeof(v_data)
         }
     );
 
@@ -117,7 +114,9 @@ void update()
     if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_engine_quit();
 
     // Render pass action for clearing the screen
-    gs_graphics_render_pass_action_t action = (gs_graphics_render_pass_action_t){.color = {0.1f, 0.1f, 0.1f, 1.f}};
+    gs_graphics_clear_desc_t clear = (gs_graphics_clear_desc_t){
+        .actions = &(gs_graphics_clear_action_t){.color = {0.1f, 0.1f, 0.1f, 1.f}}
+    };
 
     // Uniform data to pass up to our shader (make some random colors change over time)
     const float t = gs_platform_elapsed_time() * 0.0001f;
@@ -133,21 +132,21 @@ void update()
     gs_mat4 model = gs_mat4_mul_list(2, scl, rot);
 
     // Uniform buffer array
-    gs_graphics_bind_buffer_desc_t uniforms[] = {
-        (gs_graphics_bind_buffer_desc_t){.uniform = u_color, .data = &color},
-        (gs_graphics_bind_buffer_desc_t){.uniform = u_model, .data = &model},
+    gs_graphics_bind_uniform_desc_t uniforms[] = {
+        (gs_graphics_bind_uniform_desc_t){.uniform = u_color, .data = &color},
+        (gs_graphics_bind_uniform_desc_t){.uniform = u_model, .data = &model},
     };
 
     // Binding descriptor for vertex buffer
     gs_graphics_bind_desc_t binds = {
-        .vertex_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = vbo}},
-        .uniforms = {.decl = uniforms, .size = sizeof(uniforms)}
+        .vertex_buffers = {.desc = &(gs_graphics_bind_vertex_buffer_desc_t){.buffer = vbo}},
+        .uniforms = {.desc = uniforms, .size = sizeof(uniforms)}
     };
 
     /* Render */
-    gs_graphics_begin_render_pass(&cb, (gs_handle(gs_graphics_render_pass_t)){0}, &action, sizeof(action));
+    gs_graphics_begin_render_pass(&cb, GS_GRAPHICS_RENDER_PASS_DEFAULT);
         gs_graphics_bind_pipeline(&cb, pip);
-        gs_graphics_bind_bindings(&cb, &binds);
+        gs_graphics_apply_bindings(&cb, &binds);
         gs_graphics_draw(&cb, &(gs_graphics_draw_desc_t){.start = 0, .count = 3});
     gs_graphics_end_render_pass(&cb);
 

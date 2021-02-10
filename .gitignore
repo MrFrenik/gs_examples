@@ -94,3 +94,6 @@ compute_shader/bin/main.obj
 03_uniforms/bin/.vs/App/v15/Browse.VC.db
 03_uniforms/bin/main.obj
 03_uniforms/bin/main.obj
+03_uniforms/bin/App
+03_uniforms/bin/main.obj
+17_gs_static_lib/bin/App

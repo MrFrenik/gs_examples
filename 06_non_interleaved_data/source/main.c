@@ -18,12 +18,12 @@
 #define GS_IMPL
 #include <gs/gs.h>
 
-gs_command_buffer_t               cb      = {0};
-gs_handle(gs_graphics_buffer_t)   vbo     = {0};
-gs_handle(gs_graphics_buffer_t)   ibo     = {0};
-gs_handle(gs_graphics_buffer_t)   u_mvp   = {0};
-gs_handle(gs_graphics_pipeline_t) pip     = {0};
-gs_handle(gs_graphics_shader_t)   shader  = {0};
+gs_command_buffer_t                     cb      = {0};
+gs_handle(gs_graphics_vertex_buffer_t)  vbo     = {0};
+gs_handle(gs_graphics_index_buffer_t)   ibo     = {0};
+gs_handle(gs_graphics_uniform_t)        u_mvp   = {0};
+gs_handle(gs_graphics_pipeline_t)       pip     = {0};
+gs_handle(gs_graphics_shader_t)         shader  = {0};
 
 const char* v_src = "\n"
 "#version 330 core\n"
@@ -46,7 +46,7 @@ const char* f_src = "\n"
 "   frag_color = f_color;\n"
 "}";
 
-void init()
+void app_init()
 {
     // Construct new command buffer
     cb = gs_command_buffer_new();
@@ -71,9 +71,8 @@ void init()
     };
 
     // Construct vertex buffer
-    vbo = gs_graphics_buffer_create(
-        &(gs_graphics_buffer_desc_t) {
-            .type = GS_GRAPHICS_BUFFER_VERTEX,
+    vbo = gs_graphics_vertex_buffer_create(
+        &(gs_graphics_vertex_buffer_desc_t) {
             .data = v_data,
             .size = sizeof(v_data)
         }
@@ -90,9 +89,8 @@ void init()
     }; 
 
     // Construct index buffer
-    ibo = gs_graphics_buffer_create( 
-        &(gs_graphics_buffer_desc_t) {
-            .type = GS_GRAPHICS_BUFFER_INDEX,
+    ibo = gs_graphics_index_buffer_create( 
+        &(gs_graphics_index_buffer_desc_t) {
             .data = i_data, 
             .size = sizeof(i_data)
         }
@@ -114,12 +112,10 @@ void init()
     );
 
     // Create mvp uniform buffer
-    u_mvp = gs_graphics_buffer_create (
-        &(gs_graphics_buffer_desc_t) {
-            .type = GS_GRAPHICS_BUFFER_UNIFORM,                                        // Type of buffer (uniform)
-            .data = &(gs_graphics_uniform_desc_t){.type = GS_GRAPHICS_UNIFORM_MAT4},   // Description of internal uniform data
-            .size = sizeof(gs_graphics_uniform_desc_t),                                // Size of uniform description (used for counts, if uniform block used)
-            .name = "u_mvp"                                                            // Name of uniform (used for linkage)
+    u_mvp = gs_graphics_uniform_create (
+        &(gs_graphics_uniform_desc_t) {
+            .name = "u_mvp",
+            .layout = &(gs_graphics_uniform_layout_desc_t){.type = GS_GRAPHICS_UNIFORM_MAT4}
         }
     );
 
@@ -147,12 +143,12 @@ void init()
     );
 }
 
-void update()
+void app_update()
 {
     if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_engine_quit();
 
     // Render pass action for clearing the screen
-    gs_graphics_render_pass_action_t action = (gs_graphics_render_pass_action_t){.color = {0.1f, 0.1f, 0.1f, 1.f}};
+    gs_graphics_clear_desc_t clear = {.actions = &(gs_graphics_clear_action_t){.color = 0.1f, 0.1f, 0.1f, 1.f}};
     const gs_vec2 fbs = gs_platform_framebuffer_sizev(gs_platform_main_window());
     const gs_vec2 ws = gs_platform_window_sizev(gs_platform_main_window());
 
@@ -169,23 +165,24 @@ void update()
     );
 
     // Declare all binds
-    gs_graphics_bind_buffer_desc_t vbos[] = {
-        (gs_graphics_bind_buffer_desc_t){.buffer = vbo, .data_type = GS_GRAPHICS_VERTEX_DATA_NONINTERLEAVED, .offset = 0},                      // Vertex Buffer Idx 0
-        (gs_graphics_bind_buffer_desc_t){.buffer = vbo, .data_type = GS_GRAPHICS_VERTEX_DATA_NONINTERLEAVED, .offset = 24 * 3 * sizeof(float)}, // Vertex Buffer Idx 1
+    gs_graphics_bind_vertex_buffer_desc_t vbos[] = {
+        {.buffer = vbo, .data_type = GS_GRAPHICS_VERTEX_DATA_NONINTERLEAVED, .offset = 0},                      // Vertex Buffer Idx 0
+        {.buffer = vbo, .data_type = GS_GRAPHICS_VERTEX_DATA_NONINTERLEAVED, .offset = 24 * 3 * sizeof(float)}, // Vertex Buffer Idx 1
     };
 
     // Binding descriptor
     gs_graphics_bind_desc_t binds = {
-        .vertex_buffers = {.decl = vbos, .size = sizeof(vbos)},
-        .index_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = ibo}},
-        .uniform_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = u_mvp, .data = &mvp}}
+        .vertex_buffers = {.desc = vbos, .size = sizeof(vbos)},
+        .index_buffers = {.desc = &(gs_graphics_bind_index_buffer_desc_t){.buffer = ibo}},
+        .uniforms = {.desc = &(gs_graphics_bind_uniform_desc_t){.uniform = u_mvp, .data = &mvp}}
     };
 
     /* Render */
-    gs_graphics_begin_render_pass(&cb, (gs_handle(gs_graphics_render_pass_t)){0}, &action, sizeof(action));
+    gs_graphics_begin_render_pass(&cb, GS_GRAPHICS_RENDER_PASS_DEFAULT);
         gs_graphics_set_viewport(&cb, 0, 0, (int32_t)fbs.x, (int32_t)fbs.y);
+        gs_graphics_clear(&cb, &clear);
         gs_graphics_bind_pipeline(&cb, pip);
-        gs_graphics_bind_bindings(&cb, &binds);
+        gs_graphics_apply_bindings(&cb, &binds);
         gs_graphics_draw(&cb, &(gs_graphics_draw_desc_t){.start = 0, .count = 36});
     gs_graphics_end_render_pass(&cb);
 
@@ -196,8 +193,8 @@ void update()
 gs_app_desc_t gs_main(int32_t argc, char** argv)
 {
     return (gs_app_desc_t){
-        .init = init,
-        .update = update
+        .init = app_init,
+        .update = app_update
     };
 }   
 

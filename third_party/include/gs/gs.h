@@ -2194,8 +2194,6 @@ typedef uint32_t gs_slot_map_iter;
 
     // (gs_hash_table_find_valid_iter(__SM->ht, __IT), &((__SM)->sa->data[gs_hash_table_geti((__SM)->ht, (__IT))]))
 
-typedef uint32_t gs_slot_map_iter;
-
 /*===================================
 // Command Buffer
 ===================================*/
@@ -4577,59 +4575,63 @@ typedef enum gs_graphics_access_type
     GS_GRAPHICS_ACCESS_READ_WRITE,
 } gs_graphics_access_type;
 
-typedef struct gs_graphics_vertex_buffer_bind_desc_t
-{
+typedef struct gs_graphics_bind_vertex_buffer_desc_t {
     gs_handle(gs_graphics_vertex_buffer_t) buffer;
     size_t offset;
     gs_graphics_vertex_data_type data_type;
-} gs_graphics_vertex_buffer_bind_desc_t;
+} gs_graphics_bind_vertex_buffer_desc_t;
 
-typedef struct gs_graphics_index_buffer_bind_desc_t {
-    gs_handle(gs_graphics_vertex_buffer_t) buffer;
-} gs_graphics_index_buffer_bind_desc_t;
+typedef struct gs_graphics_bind_index_buffer_desc_t {
+    gs_handle(gs_graphics_index_buffer_t) buffer;
+} gs_graphics_bind_index_buffer_desc_t;
 
-typedef struct gs_graphics_uniform_buffer_bind_desc_t {
+typedef struct gs_graphics_bind_sampler_buffer_desc_t {
+    gs_handle(gs_graphics_sampler_buffer_t) buffer;
+    gs_handle(gs_graphics_texture_t) tex;
+    uint32_t binding;
+} gs_graphics_bind_sampler_buffer_desc_t;
+
+typedef struct gs_graphics_bind_uniform_buffer_desc_t {
     gs_handle(gs_graphics_uniform_buffer_t) buffer;
-    void* data;
     uint32_t binding;
     struct {
         size_t offset;      // Specify an offset for ranged binds.
         size_t size;        // Specify size for ranged binds.
     } range;
-} gs_graphics_uniform_buffer_bind_desc_t;
+} gs_graphics_bind_uniform_buffer_desc_t;
 
-typedef struct gs_graphics_uniform_bind_desc_t {
+typedef struct gs_graphics_bind_uniform_desc_t {
     gs_handle(gs_graphics_uniform_t) uniform;
     void* data;
-} gs_graphics_uniform_bind_desc_t;
+} gs_graphics_bind_uniform_desc_t;
 
 /* Graphics Binding Desc */
 typedef struct gs_graphics_bind_desc_t
 {
     struct {
-        gs_graphics_vertex_buffer_bind_desc_t* desc;    // Array of vertex buffer declarations (NULL by default)
+        gs_graphics_bind_vertex_buffer_desc_t* desc;    // Array of vertex buffer declarations (NULL by default)
         size_t size;                                    // Size of array in bytes (optional if only one)
     } vertex_buffers;
 
     struct {
-        gs_graphics_index_buffer_bind_desc_t* desc;  // Array of index buffer declarations (NULL by default)
+        gs_graphics_bind_index_buffer_desc_t* desc;  // Array of index buffer declarations (NULL by default)
         size_t size;                                 // Size of array in bytes (optional if only one)
     } index_buffers;
 
     struct {
-        gs_graphics_uniform_buffer_bind_desc_t* desc;   // Array of uniform buffer declarations (NULL by default)
+        gs_graphics_bind_uniform_buffer_desc_t* desc;   // Array of uniform buffer declarations (NULL by default)
         size_t size;                                    // Size of array in bytes (optional if only one)
     } uniform_buffers;
 
     struct {
-        gs_graphics_uniform_bind_desc_t* desc;   // Array of uniform declarations (NULL by default)
+        gs_graphics_bind_uniform_desc_t* desc;   // Array of uniform declarations (NULL by default)
         size_t size;                             // Size of array in bytes (optional if one)
     } uniforms;
 
-    // struct {
-    //     gs_graphics_bind_buffer_desc_t* decl;   // Array of sampler buffer declarations (NULL by default)
-    //     size_t size;                            // Size of array in bytes (optional if only one)
-    // } sampler_buffers;
+    struct {
+        gs_graphics_bind_sampler_buffer_desc_t* desc;   // Array of sampler buffer declarations (NULL by default)
+        size_t size;                                    // Size of array in bytes (optional if only one)
+    } sampler_buffers;
 
     // struct {
     //     struct {
@@ -4788,7 +4790,7 @@ GS_API_DECL void gs_graphics_set_viewport(gs_command_buffer_t* cb, uint32_t x, u
 GS_API_DECL void gs_graphics_set_view_scissor(gs_command_buffer_t* cb, uint32_t x, uint32_t y, uint32_t w, uint32_t h);
 GS_API_DECL void gs_graphics_clear(gs_command_buffer_t* cb, gs_graphics_clear_desc_t* desc);
 GS_API_DECL void gs_graphics_bind_pipeline(gs_command_buffer_t* cb, gs_handle(gs_graphics_pipeline_t) hndl);
-GS_API_DECL void gs_graphics_set_bindings(gs_command_buffer_t* cb, gs_graphics_bind_desc_t* binds);
+GS_API_DECL void gs_graphics_apply_bindings(gs_command_buffer_t* cb, gs_graphics_bind_desc_t* binds);
 GS_API_DECL void gs_graphics_draw(gs_command_buffer_t* cb, gs_graphics_draw_desc_t* desc);
 GS_API_DECL void gs_graphics_dispatch_compute(gs_command_buffer_t* cb, uint32_t num_x_groups, uint32_t num_y_groups, uint32_t num_z_groups);
 
@@ -6162,7 +6164,6 @@ void gs_engine_quit()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glVertexAttribDivisor(2, 1); // tell OpenGL this is an instanced vertex attribute.
 
-/*
     gltf loading
 
     Mesh Attributes:

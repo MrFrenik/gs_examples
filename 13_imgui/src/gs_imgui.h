@@ -9,12 +9,12 @@ typedef struct gs_imgui_t
     bool32 mouse_just_pressed[ImGuiMouseButton_COUNT]; 
     bool32 mouse_cursors[ImGuiMouseCursor_COUNT];
     gs_handle(gs_graphics_pipeline_t) pip;
-    gs_handle(gs_graphics_buffer_t) vbo;
-    gs_handle(gs_graphics_buffer_t) ibo;
+    gs_handle(gs_graphics_vertex_buffer_t) vbo;
+    gs_handle(gs_graphics_index_buffer_t) ibo;
     gs_handle(gs_graphics_shader_t) shader;
     gs_handle(gs_graphics_texture_t) font_tex; 
-    gs_handle(gs_graphics_buffer_t) u_tex;
-    gs_handle(gs_graphics_buffer_t) u_proj;
+    gs_handle(gs_graphics_sampler_buffer_t) u_tex;
+    gs_handle(gs_graphics_uniform_t) u_proj;
     ImGuiContext* ctx;
 } gs_imgui_t;
 
@@ -87,46 +87,37 @@ gs_imgui_device_create(gs_imgui_t* gs)
     samplerdesc.type = GS_GRAPHICS_SAMPLER_2D;
 
     // Buffer description for Texture
-    gs_graphics_buffer_desc_t utexdesc = {};
-    utexdesc.type = GS_GRAPHICS_BUFFER_SAMPLER;
-    utexdesc.data = &samplerdesc;
-    utexdesc.size = sizeof(samplerdesc);
+    gs_graphics_sampler_buffer_desc_t utexdesc = {};
+    utexdesc.type = GS_GRAPHICS_SAMPLER_2D;
     utexdesc.name = "Texture";
 
     // Construct sampler buffer
-    gs->u_tex = gs_graphics_buffer_create(&utexdesc);
+    gs->u_tex = gs_graphics_sampler_buffer_create(&utexdesc);
 
-    // Uniform description
+    // Construct uniform
+    gs_graphics_uniform_layout_desc_t ulayout = {.type = GS_GRAPHICS_UNIFORM_MAT4};
     gs_graphics_uniform_desc_t udesc = {};
-    udesc.type = GS_GRAPHICS_UNIFORM_MAT4; 
-
-    // Buffer Desc for ProjMtx
-    gs_graphics_buffer_desc_t ubufdesc = {};
-    ubufdesc.type = GS_GRAPHICS_BUFFER_UNIFORM;
-    ubufdesc.data = &udesc;
-    ubufdesc.size = sizeof(udesc);
-    ubufdesc.name = "ProjMtx";
+    udesc.name = "ProjMtx";
+    udesc.layout = &ulayout;
 
     // Construct project matrix uniform
-    gs->u_proj = gs_graphics_buffer_create (&ubufdesc);
+    gs->u_proj = gs_graphics_uniform_create(&udesc);
 
     // Vertex buffer description
-    gs_graphics_buffer_desc_t vbufdesc = {};
-    vbufdesc.type = GS_GRAPHICS_BUFFER_VERTEX;
+    gs_graphics_vertex_buffer_desc_t vbufdesc = {};
     vbufdesc.usage = GS_GRAPHICS_BUFFER_USAGE_STREAM;
     vbufdesc.data = NULL;
 
     // Construct vertex buffer
-    gs->vbo = gs_graphics_buffer_create (&vbufdesc);
+    gs->vbo = gs_graphics_vertex_buffer_create(&vbufdesc);
 
     // Index buffer desc
-    gs_graphics_buffer_desc_t ibufdesc = {};
-    ibufdesc.type = GS_GRAPHICS_BUFFER_INDEX;
+    gs_graphics_index_buffer_desc_t ibufdesc = {};
     ibufdesc.usage = GS_GRAPHICS_BUFFER_USAGE_STREAM;
     ibufdesc.data = NULL;
 
     // Create index buffer
-    gs->ibo = gs_graphics_buffer_create(&ibufdesc);
+    gs->ibo = gs_graphics_index_buffer_create(&ibufdesc);
 
     // Vertex attr layout
     gs_graphics_vertex_attribute_desc_t vattrs[3] = {};
@@ -145,7 +136,7 @@ gs_imgui_device_create(gs_imgui_t* gs)
     pdesc.layout.size = sizeof(vattrs);
 
     // Create pipeline
-    gs->pip = gs_graphics_pipeline_create (&pdesc);
+    gs->pip = gs_graphics_pipeline_create(&pdesc);
 
     // Create default fonts texture
     gs_imgui_create_fonts_texture(gs);
@@ -404,42 +395,44 @@ gs_imgui_render(gs_imgui_t* gs, gs_command_buffer_t* cb)
     gs_mat4 m = gs_mat4_elem((float*)ortho);
 
     // Set up data binds
-    gs_graphics_bind_buffer_desc_t vbuffers = {};
+    gs_graphics_bind_vertex_buffer_desc_t vbuffers = {};
     vbuffers.buffer = gs->vbo;
 
-    gs_graphics_bind_buffer_desc_t ibuffers = {};
+    gs_graphics_bind_index_buffer_desc_t ibuffers = {};
     ibuffers.buffer = gs->ibo;
 
-    gs_graphics_bind_buffer_desc_t ubuffers = {};
-    ubuffers.buffer = gs->u_proj;
+    gs_graphics_bind_uniform_desc_t ubuffers = {};
+    ubuffers.uniform = gs->u_proj;
     ubuffers.data = &m;
 
     // Set up data binds
     gs_graphics_bind_desc_t binds = {};
-    binds.vertex_buffers.decl = &vbuffers;
+    binds.vertex_buffers.desc = &vbuffers;
     binds.vertex_buffers.size = sizeof(vbuffers);
-    binds.index_buffers.decl = &ibuffers;
+    binds.index_buffers.desc = &ibuffers;
     binds.index_buffers.size = sizeof(ibuffers);
-    binds.uniform_buffers.decl = &ubuffers;
-    binds.uniform_buffers.size = sizeof(ubuffers);
+    binds.uniforms.desc = &ubuffers;
+    binds.uniforms.size = sizeof(ubuffers);
 
     // Will project scissor/clipping rectangles into framebuffer space
     ImVec2 clip_off = draw_data->DisplayPos;         // (0,0) unless using multi-viewports
     ImVec2 clip_scale = draw_data->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
 
     // Render pass action for clearing the screen
-    gs_graphics_render_pass_action_t action = {}; 
+    gs_graphics_clear_action_t action = {}; 
     action.color[0] = 0.0f; 
     action.color[1] = 0.0f; 
     action.color[2] = 0.0f; 
     action.color[3] = 1.0f;
+    gs_graphics_clear_desc_t clear = {};
+    clear.actions = &action;
 
     // Default action pass
     gs_handle(gs_graphics_render_pass_t) def_pass = {};
 	def_pass.id = 0;
 
     // Render pass action for clearing screen (could handle this if you wanted to render gui into a separate frame buffer)
-    gs_graphics_begin_render_pass(cb, def_pass, &action, sizeof(action));
+    gs_graphics_begin_render_pass(cb, def_pass);
     {
         // Bind pipeline
         gs_graphics_bind_pipeline(cb, gs->pip);
@@ -447,8 +440,11 @@ gs_imgui_render(gs_imgui_t* gs, gs_command_buffer_t* cb)
         // Set viewport
         gs_graphics_set_viewport(cb, 0, 0, fb_width, fb_height);
 
+        // Clear screen
+        gs_graphics_clear(cb, &clear);
+
         // Global bindings for pipeline
-        gs_graphics_bind_bindings(cb, &binds);
+        gs_graphics_apply_bindings(cb, &binds);
 
          // Render command lists
         for (int n = 0; n < draw_data->CmdListsCount; n++)
@@ -456,20 +452,18 @@ gs_imgui_render(gs_imgui_t* gs, gs_command_buffer_t* cb)
             const ImDrawList* cmd_list = draw_data->CmdLists[n];
 
             // Update vertex buffer
-            gs_graphics_buffer_desc_t vdesc = {};
-            vdesc.type = GS_GRAPHICS_BUFFER_VERTEX;
+            gs_graphics_vertex_buffer_desc_t vdesc = {};
             vdesc.usage = GS_GRAPHICS_BUFFER_USAGE_STREAM;
             vdesc.data = cmd_list->VtxBuffer.Data;
             vdesc.size = cmd_list->VtxBuffer.Size * sizeof(ImDrawVert);
-            gs_graphics_buffer_request_update(cb, gs->vbo, &vdesc);
+            gs_graphics_vertex_buffer_request_update(cb, gs->vbo, &vdesc);
 
             // Update index buffer
-            gs_graphics_buffer_desc_t idesc = {};
-            idesc.type = GS_GRAPHICS_BUFFER_INDEX;
+            gs_graphics_index_buffer_desc_t idesc = {};
             idesc.usage = GS_GRAPHICS_BUFFER_USAGE_STREAM;
             idesc.data = cmd_list->IdxBuffer.Data;
             idesc.size = cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx);
-            gs_graphics_buffer_request_update(cb, gs->ibo, &idesc);
+            gs_graphics_index_buffer_request_update(cb, gs->ibo, &idesc);
 
             // Iterate through command buffer
             for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
@@ -510,17 +504,17 @@ gs_imgui_render(gs_imgui_t* gs, gs_command_buffer_t* cb)
                         // Grab handle from command texture id
                         gs_handle(gs_graphics_texture_t) tex = gs_handle_create(gs_graphics_texture_t, (uint32_t)(intptr_t)pcmd->TextureId);
 
-                        gs_graphics_bind_buffer_desc_t sbuffer = {};
+                        gs_graphics_bind_sampler_buffer_desc_t sbuffer = {};
                         sbuffer.buffer = gs->u_tex;
-                        sbuffer.data = &tex;
+                        sbuffer.tex = tex;
                         sbuffer.binding = 0;
 
                         gs_graphics_bind_desc_t sbind = {};
-                        sbind.sampler_buffers.decl = &sbuffer;
+                        sbind.sampler_buffers.desc = &sbuffer;
                         sbind.sampler_buffers.size = sizeof(sbuffer);
 
                         // Bind individual texture bind
-                        gs_graphics_bind_bindings(cb, &sbind);
+                        gs_graphics_apply_bindings(cb, &sbind);
 
                         // Draw elements
                         gs_graphics_draw_desc_t draw = {};

@@ -2,16 +2,6 @@
     * Copyright: 2020 John Jackson
     * uniforms_buffers
 
-    The purpose of this example is to demonstrate how to bind and upload 
-    uniform data to the GPU using pipelines and uniform buffers.
-
-    Included: 
-        * Construct vertex/index buffers from user defined declarations
-        * Construct shaders from source
-        * Construct uniforms and bind data to pass to GPU
-        * Construct pipelines
-        * Rendering via command buffers
-
     Press `esc` to exit the application.
 ================================================================*/
 
@@ -149,8 +139,7 @@ void app_init()
     gs_mat4 proj = gs_camera_get_projection(&cam, (int32_t)ws.x, (int32_t)ws.y);
 
     // Update sub region of uniform buffer data with projection (won't change during runtime) 
-    gs_graphics_uniform_buffer_request_update(
-        &cb, u_vp, 
+    gs_graphics_uniform_buffer_request_update(&cb, u_vp,
         &(gs_graphics_uniform_buffer_desc_t){
             .data = &proj,
             .size = sizeof(proj),
@@ -218,18 +207,14 @@ void app_update()
     if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_engine_quit();
 
     gs_vec2 fs = gs_platform_framebuffer_sizev(gs_platform_main_window());
-    gs_vec2 ws = gs_platform_window_sizev(gs_platform_main_window());
 
     // Action for clearing the screen
-    gs_graphics_clear_desc_t clear = (gs_graphics_clear_desc_t){
-        .actions = &(gs_graphics_clear_action_t){.color = {0.1f, 0.1f, 0.1f, 1.f}}
-    };
+    gs_graphics_clear_desc_t clear = {.actions = &(gs_graphics_clear_action_t){.color = {0.1f, 0.1f, 0.1f, 1.f}}};
 
     gs_mat4 view = gs_camera_get_view(&cam);
 
     // Request buffer upate for view once per frame to be shared across pipelines
-    gs_graphics_uniform_buffer_request_update(
-        &cb, u_vp, 
+    gs_graphics_uniform_buffer_request_update(&cb, u_vp,
         &(gs_graphics_uniform_buffer_desc_t){
             .data = &view,
             .size = sizeof(view),
@@ -251,32 +236,18 @@ void app_update()
 
     /* Render */
     gs_graphics_begin_render_pass(&cb, GS_GRAPHICS_RENDER_PASS_DEFAULT);
-    {
-        // Set viewport
         gs_graphics_set_viewport(&cb, 0, 0, (uint32_t)fs.x, (uint32_t)fs.y);
-
-        // Clear screen
         gs_graphics_clear(&cb, &clear);
-
-        // For each pipeline
-        for (uint32_t i = 0; i < 4; ++i)
-        {
-            gs_graphics_bind_pipeline(&cb, pips[i]);
-
-            // Binding descriptor for uniform buffer, uniform, and vertex buffer
+        for (uint32_t i = 0; i < 4; ++i) {
             gs_graphics_bind_desc_t binds = {
                 .vertex_buffers = {&(gs_graphics_vertex_buffer_bind_desc_t){.buffer = vbo}},
                 .uniform_buffers = {&(gs_graphics_uniform_buffer_bind_desc_t){.buffer = u_vp, .binding = 0}},
                 .uniforms = {&(gs_graphics_uniform_bind_desc_t){.uniform = u_model, .data = &models[i]}}
             };
-
-            // Set bindings to be bound
-            gs_graphics_set_bindings(&cb, &binds);
-
-            // Draw to screen
+            gs_graphics_bind_pipeline(&cb, pips[i]);
+            gs_graphics_apply_bindings(&cb, &binds);
             gs_graphics_draw(&cb, &(gs_graphics_draw_desc_t){.start = 0, .count = 36});
         }
-    }
     gs_graphics_end_render_pass(&cb);
 
     // Submit command buffer (syncs to GPU, MUST be done on main thread where you have your GPU context created)

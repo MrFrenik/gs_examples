@@ -30,12 +30,12 @@ typedef struct gs_nk_ctx_t
     void* tmp_vertex_data;
     void* tmp_index_data;
     gs_handle(gs_graphics_pipeline_t) pip;
-    gs_handle(gs_graphics_buffer_t) vbo;
-    gs_handle(gs_graphics_buffer_t) ibo;
+    gs_handle(gs_graphics_vertex_buffer_t) vbo;
+    gs_handle(gs_graphics_index_buffer_t) ibo;
     gs_handle(gs_graphics_shader_t) shader;
     gs_handle(gs_graphics_texture_t) font_tex; 
-    gs_handle(gs_graphics_buffer_t) u_tex;
-    gs_handle(gs_graphics_buffer_t) u_proj;
+    gs_handle(gs_graphics_sampler_buffer_t) u_tex;
+    gs_handle(gs_graphics_uniform_t) u_proj;
     uint32_t window_hndl;  
     int32_t width, height;
     int32_t display_width, display_height;
@@ -117,43 +117,32 @@ gs_nk_device_create(gs_nk_ctx_t* gs)
         }
     );
 
-    // Sampler buffer desc
-    gs_graphics_sampler_desc_t sdesc = {
-        .type = GS_GRAPHICS_SAMPLER_2D
-    };
-
     // Construct sampler buffer
-    gs->u_tex = gs_graphics_buffer_create(
-        &(gs_graphics_buffer_desc_t) {
-            .type = GS_GRAPHICS_BUFFER_SAMPLER,
-            .data = &sdesc,
-            .size = sizeof(sdesc),
+    gs->u_tex = gs_graphics_sampler_buffer_create(
+        &(gs_graphics_sampler_buffer_desc_t) {
+            .type = GS_GRAPHICS_SAMPLER_2D,
             .name = "Texture"
         }
     );
 
-    gs->u_proj = gs_graphics_buffer_create (
-        &(gs_graphics_buffer_desc_t) {
-            .type = GS_GRAPHICS_BUFFER_UNIFORM,                                         // Type of buffer (uniform)
-            .data = &(gs_graphics_uniform_desc_t){.type = GS_GRAPHICS_UNIFORM_MAT4},    // Description of internal uniform data
-            .size = sizeof(gs_graphics_uniform_desc_t),                                 // Size of uniform description (used for counts, if uniform block used)
-            .name = "ProjMtx"                                                           // Name of uniform (used for linkage)
+    gs->u_proj = gs_graphics_uniform_create (
+        &(gs_graphics_uniform_desc_t) {
+            .name = "ProjMtx",                                                           // Name of uniform (used for linkage)
+            .layout = &(gs_graphics_uniform_layout_desc_t){.type = GS_GRAPHICS_UNIFORM_MAT4}
         }
     );
 
     // Construct vertex buffer
-    gs->vbo = gs_graphics_buffer_create(
-        &(gs_graphics_buffer_desc_t) {
-            .type = GS_GRAPHICS_BUFFER_VERTEX,
+    gs->vbo = gs_graphics_vertex_buffer_create(
+        &(gs_graphics_index_buffer_desc_t) {
             .usage = GS_GRAPHICS_BUFFER_USAGE_STREAM,
             .data = NULL
         }
     );
 
     // Create index buffer
-    gs->ibo = gs_graphics_buffer_create(
-        &(gs_graphics_buffer_desc_t) {
-            .type = GS_GRAPHICS_BUFFER_INDEX,
+    gs->ibo = gs_graphics_index_buffer_create(
+        &(gs_graphics_index_buffer_desc_t) {
             .usage = GS_GRAPHICS_BUFFER_USAGE_STREAM,
             .data = NULL
         }
@@ -387,9 +376,9 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
 
     // Set up data binds
     gs_graphics_bind_desc_t binds = {
-        .vertex_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = gs->vbo}},
-        .index_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = gs->ibo}},
-        .uniform_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = gs->u_proj, .data = &m}}
+        .vertex_buffers = {.desc = &(gs_graphics_bind_vertex_buffer_desc_t){.buffer = gs->vbo}},
+        .index_buffers = {.desc = &(gs_graphics_bind_index_buffer_desc_t){.buffer = gs->ibo}},
+        .uniforms = {.desc = &(gs_graphics_bind_uniform_desc_t){.uniform = gs->u_proj, .data = &m}}
     };
 
     gs_assert(gs->tmp_vertex_data);
@@ -433,11 +422,8 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
         }
 
         // Request update vertex data
-        gs_graphics_buffer_request_update(
-            cb, 
-            gs->vbo, 
-            &(gs_graphics_buffer_desc_t){
-                .type = GS_GRAPHICS_BUFFER_VERTEX,
+        gs_graphics_vertex_buffer_request_update(cb, gs->vbo,
+            &(gs_graphics_vertex_buffer_desc_t){
                 .usage = GS_GRAPHICS_BUFFER_USAGE_STREAM,
                 .data = vertices,
                 .size = GS_NK_MAX_VERTEX_BUFFER
@@ -445,11 +431,8 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
         );
 
         // Request update index data
-        gs_graphics_buffer_request_update(
-            cb, 
-            gs->ibo, 
-            &(gs_graphics_buffer_desc_t){
-                .type = GS_GRAPHICS_BUFFER_INDEX,
+        gs_graphics_index_buffer_request_update(cb, gs->ibo,
+            &(gs_graphics_index_buffer_desc_t){
                 .usage = GS_GRAPHICS_BUFFER_USAGE_STREAM,
                 .data = indices,
                 .size = GS_NK_MAX_INDEX_BUFFER
@@ -457,10 +440,10 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
         );
 
         // Render pass action for clearing the screen
-        gs_graphics_render_pass_action_t action = (gs_graphics_render_pass_action_t){.color = {0.0f, 0.0f, 0.0f, 1.f}};
+        gs_graphics_clear_desc_t clear = {.actions = &(gs_graphics_clear_action_t){.color = 0.0f, 0.0f, 0.0f, 1.f}};
 
         // Render pass
-        gs_graphics_begin_render_pass(cb, (gs_handle(gs_graphics_render_pass_t)){0}, &action, sizeof(action));
+        gs_graphics_begin_render_pass(cb, GS_GRAPHICS_RENDER_PASS_DEFAULT);
 
             // Bind pipeline for nuklear
             gs_graphics_bind_pipeline(cb, gs->pip);
@@ -468,8 +451,11 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
             // Set viewport
             gs_graphics_set_viewport(cb, 0, 0, (uint32_t)gs->display_width, (uint32_t)gs->display_height);
 
+            // Clear
+            gs_graphics_clear(cb, &clear);
+
             // Global bindings for pipeline
-            gs_graphics_bind_bindings(cb, &binds);
+            gs_graphics_apply_bindings(cb, &binds);
 
             // Iterate and draw all commands
             nk_draw_foreach(cmd, &gs->nk_ctx, &gs->cmds)
@@ -481,11 +467,11 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
 
                 // Bind texture
                 gs_graphics_bind_desc_t sbind = {
-                    .sampler_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = gs->u_tex, .data = &tex, .binding = 0}}
+                    .sampler_buffers = {.desc = &(gs_graphics_bind_sampler_buffer_desc_t){.buffer = gs->u_tex, .tex = tex, .binding = 0}}
                 };
 
                 // Bind individual texture binding
-                gs_graphics_bind_bindings(cb, &sbind);
+                gs_graphics_apply_bindings(cb, &sbind);
 
                 // Set view scissor
                 gs_graphics_set_view_scissor(cb, 

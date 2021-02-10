@@ -17,10 +17,10 @@
 #define GS_IMPL
 #include <gs/gs.h>
 
-gs_command_buffer_t               cb      = {0};
-gs_handle(gs_graphics_buffer_t)   vbo     = {0};
-gs_handle(gs_graphics_pipeline_t) pip     = {0};
-gs_handle(gs_graphics_shader_t)   shader  = {0};
+gs_command_buffer_t                      cb      = {0};
+gs_handle(gs_graphics_vertex_buffer_t)   vbo     = {0};
+gs_handle(gs_graphics_pipeline_t)        pip     = {0};
+gs_handle(gs_graphics_shader_t)          shader  = {0};
 
 const char* v_src = "\n"
 "#version 330 core\n"
@@ -50,47 +50,11 @@ void init()
         0.5f, -0.5f
     };
 
-// typedef struct gs_graphics_buffer_desc_t 
-// {
-//     union {
-//         struct {
-//             void* data;
-//             size_t size;
-//             const char* name;
-//         } vertex_buffer;
-//         struct {
-//             void* data;
-//             size_t size;
-//             const char* name;
-//         } index_buffer;
-//         struct {
-//             gs_graphics_shader_stage_type shader_stage;
-//             const char* name;
-//             gs_graphics_uniform_type* layout;
-//             size_t layout_size;
-//         } uniform_constant;
-//         struct {
-//             gs_graphics_shader_stage_type shader_stage;
-//             const char* name;
-//             void* data;
-//             size_t size;
-//         } uniform_buffer;
-//         struct {
-//             gs_graphics_shader_stage_type shader_stage;
-//             gs_graphics_sampler_type type;
-//             const char* name; 
-//         } sampler_buffer;
-//     };
-// } gs_graphics_buffer_desc_t;
-
     // Construct vertex buffer
-    vbo = gs_graphics_buffer_create(
-        &(gs_graphics_buffer_desc_t) {
-            .type = GS_GRAPHICS_BUFFER_VERTEX,
-            .vertex_buffer = {
-                .data = v_data,
-                .size = sizeof(v_data)
-            }
+    vbo = gs_graphics_vertex_buffer_create(
+        &(gs_graphics_vertex_buffer_desc_t) {
+            .data = v_data,
+            .size = sizeof(v_data)
         }
     );
 
@@ -126,23 +90,21 @@ void update()
     if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_engine_quit();
 
     // Render pass action for clearing the screen
-    gs_graphics_render_pass_action_t action = (gs_graphics_render_pass_action_t){.color = {0.1f, 0.1f, 0.1f, 1.f}};
+    gs_graphics_clear_desc_t clear = (gs_graphics_clear_desc_t){
+        .actions = &(gs_graphics_clear_action_t){.color = {0.1f, 0.1f, 0.1f, 1.f}}
+    };
 
     // Binding descriptor for vertex buffer
     gs_graphics_bind_desc_t binds = {
-        .vertex_buffers = {.decl = &(gs_graphics_bind_buffer_desc_t){.buffer = vbo}}
+        .vertex_buffers = {&(gs_graphics_bind_vertex_buffer_desc_t){.buffer = vbo}}
     };
 
-    // Begin render pass (default render pass draws to back buffer)
-    gs_graphics_begin_render_pass(&cb, GS_GRAPHICS_RENDER_PASS_DEFAULT, &action, sizeof(action));
-        // Bind our triangle pipeline for rendering
-        gs_graphics_bind_pipeline(&cb, pip);
-        // Bind all bindings (just vertex buffer)
-        gs_graphics_bind_bindings(&cb, &binds);
-        // Draw the triangle
-        gs_graphics_draw(&cb, &(gs_graphics_draw_desc_t){.start = 0, .count = 3});
-    // End the render pass
-    gs_graphics_end_render_pass(&cb);
+    gs_graphics_begin_render_pass(&cb, GS_GRAPHICS_RENDER_PASS_DEFAULT);           // Begin render pass (default render pass draws to back buffer)
+        gs_graphics_clear(&cb, &clear);                                            // Clear screen
+        gs_graphics_bind_pipeline(&cb, pip);                                       // Bind our triangle pipeline for rendering
+        gs_graphics_apply_bindings(&cb, &binds);                                   // Bind all bindings (just vertex buffer)
+        gs_graphics_draw(&cb, &(gs_graphics_draw_desc_t){.start = 0, .count = 3}); // Draw the triangle
+    gs_graphics_end_render_pass(&cb);                                              // End the render pass
 
     // Submit command buffer (syncs to GPU, MUST be done on main thread where you have your GPU context created)
     gs_graphics_submit_command_buffer(&cb);
