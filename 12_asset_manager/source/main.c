@@ -190,13 +190,16 @@ void update()
             gs_graphics_bind_desc_t binds = {
                 .vertex_buffers = {.desc = &(gs_graphics_bind_vertex_buffer_desc_t){.buffer = prim->vbo}},
                 .index_buffers = {.desc = &(gs_graphics_bind_index_buffer_desc_t){.buffer = prim->ibo}},
-                .uniforms = {.desc = &(gs_graphics_bind_uniform_desc_t){.uniform = gsi.uniform, .data = &mvp}},
-                .sampler_buffers = {.desc = &(gs_graphics_bind_sampler_buffer_desc_t){.buffer = gsi.sampler, .tex = dtp->hndl, .binding = 0}}
+                .uniforms = {
+                    .desc = (gs_graphics_bind_uniform_desc_t[]){
+                        {.uniform = gsi.uniform, .data = &mvp},
+                        {.uniform = gsi.sampler, .data = &dtp->hndl, .binding = 0}
+                    },
+                    .size = 2 * sizeof(gs_graphics_bind_uniform_desc_t)
+                }
             };
 
-            // Bind bindings
-            gs_graphics_apply_bindings(&gcb, &binds);    // Clears any previous bindings
-            // Draw
+            gs_graphics_apply_bindings(&gcb, &binds);
             gs_graphics_draw(&gcb, &(gs_graphics_draw_desc_t){.start = 0, .count = prim->count});
         }
 

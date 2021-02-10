@@ -103,3 +103,7 @@ compute_shader/bin/main.obj
 20_uniforms_advanced/bin/.vs/App/v15/Browse.VC.db
 20_uniforms_advanced/bin/.vs/App/v15/Browse.VC.opendb
 20_uniforms_advanced/bin/main.obj
+08_audio/bin/main.obj
+15_meta_class/bin/main.obj
+15_meta_class/bin/main.obj
+17_gs_static_lib/bin/main.obj

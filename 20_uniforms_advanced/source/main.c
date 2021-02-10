@@ -375,21 +375,14 @@ void app_update()
         .uniforms = {.desc = uniforms, .size = sizeof(uniforms)}
     };
 
-    // Begin render pass
-    gs_graphics_begin_render_pass(&cb, GS_GRAPHICS_RENDER_PASS_DEFAULT);
-    {
-        // Bind pipeline
+    gs_graphics_begin_render_pass(&cb, GS_GRAPHICS_RENDER_PASS_DEFAULT); {
         gs_graphics_bind_pipeline(&cb, pip);
-        // Set viewport
         gs_graphics_set_viewport(&cb, 0, 0, (uint32_t)fs.x, (uint32_t)fs.y);
-        // Clear
         gs_graphics_clear(&cb, &clear);
-        // Apply bindings
         gs_graphics_apply_bindings(&cb, &binds);
 
         // For each cube
-        for (uint32_t i = 0; i < sizeof(cube_positions) / sizeof(gs_vec3); ++i)
-        {
+        for (uint32_t i = 0; i < sizeof(cube_positions) / sizeof(gs_vec3); ++i) {
             // Construct model matrix
             gs_vec3* pos = &cube_positions[i];
             gs_mat4 model = gs_mat4_translate(pos->x, pos->y, pos->z);
@@ -399,14 +392,10 @@ void app_update()
             gs_graphics_bind_desc_t model_binds = {
                 .uniforms = &(gs_graphics_bind_uniform_desc_t){.uniform = u_model, .data = &model}
             };
-
-            // Apply bindings
             gs_graphics_apply_bindings(&cb, &model_binds);
-
             gs_graphics_draw(&cb, &(gs_graphics_draw_desc_t){.start = 0, .count = 36});
         } 
     }
-    // End render pass
     gs_graphics_end_render_pass(&cb);
 
     // Submit command buffer (syncs to GPU, MUST be done on main thread where you have your GPU context created)

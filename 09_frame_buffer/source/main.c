@@ -30,10 +30,7 @@ void app_init()
     gsi = gs_immediate_draw_new();
 
     // Construct frame buffer
-    fbo = gs_graphics_framebuffer_create(
-        &(gs_graphics_framebuffer_desc_t) {
-        }
-    );
+    fbo = gs_graphics_framebuffer_create(NULL);
 
     // Construct color render target
     rt = gs_graphics_texture_create(

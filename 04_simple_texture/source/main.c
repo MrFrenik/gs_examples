@@ -24,7 +24,7 @@ gs_handle(gs_graphics_vertex_buffer_t)   vbo     = {0};
 gs_handle(gs_graphics_index_buffer_t)    ibo     = {0};
 gs_handle(gs_graphics_pipeline_t)        pip     = {0};
 gs_handle(gs_graphics_shader_t)          shader  = {0};
-gs_handle(gs_graphics_sampler_buffer_t)  u_tex   = {0};
+gs_handle(gs_graphics_uniform_t)         u_tex   = {0};
 gs_handle(gs_graphics_texture_t)         tex     = {0};
 
 gs_asset_texture_t texture = {0};
@@ -71,7 +71,7 @@ void init()
     }
 
     // Create dynamic texture
-    tex = gs_graphics_texture_create(
+    tex = gs_graphics_texture_create (
         &(gs_graphics_texture_desc_t){
             .width = ROW_COL_CT,
             .height = ROW_COL_CT,
@@ -82,16 +82,12 @@ void init()
         }
     );
 
-    gs_graphics_sampler_desc_t sdesc = {
-        .type = GS_GRAPHICS_SAMPLER_2D
-    };
-
     // Construct sampler buffer
-    u_tex = gs_graphics_sampler_buffer_create(
-        &(gs_graphics_sampler_buffer_desc_t) {
-            .type = GS_GRAPHICS_SAMPLER_2D,
+    u_tex = gs_graphics_uniform_create (
+        &(gs_graphics_uniform_desc_t) {
             .stage = GS_GRAPHICS_SHADER_STAGE_FRAGMENT,
-            .name = "u_tex"
+            .name = "u_tex",
+            .layout = &(gs_graphics_uniform_layout_desc_t){.type = GS_GRAPHICS_UNIFORM_SAMPLER2D}
         }
     );
     
@@ -167,7 +163,7 @@ void update()
     gs_graphics_bind_desc_t binds = {
         .vertex_buffers = {.desc = &(gs_graphics_bind_vertex_buffer_desc_t){.buffer = vbo}},
         .index_buffers = {.desc = &(gs_graphics_bind_index_buffer_desc_t){.buffer = ibo}},
-        .sampler_buffers = {.desc = &(gs_graphics_bind_sampler_buffer_desc_t){.buffer = u_tex, .tex = tex, .binding = 0}}
+        .uniforms = {.desc = &(gs_graphics_bind_uniform_desc_t){.uniform = u_tex, .data = &tex, .binding = 0}}
     };
 
     /* Render */

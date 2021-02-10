@@ -34,7 +34,7 @@ typedef struct gs_nk_ctx_t
     gs_handle(gs_graphics_index_buffer_t) ibo;
     gs_handle(gs_graphics_shader_t) shader;
     gs_handle(gs_graphics_texture_t) font_tex; 
-    gs_handle(gs_graphics_sampler_buffer_t) u_tex;
+    gs_handle(gs_graphics_uniform_t) u_tex;
     gs_handle(gs_graphics_uniform_t) u_proj;
     uint32_t window_hndl;  
     int32_t width, height;
@@ -118,10 +118,10 @@ gs_nk_device_create(gs_nk_ctx_t* gs)
     );
 
     // Construct sampler buffer
-    gs->u_tex = gs_graphics_sampler_buffer_create(
-        &(gs_graphics_sampler_buffer_desc_t) {
-            .type = GS_GRAPHICS_SAMPLER_2D,
-            .name = "Texture"
+    gs->u_tex = gs_graphics_uniform_create(
+        &(gs_graphics_uniform_desc_t) {
+            .name = "Texture",
+            .layout = &(gs_graphics_uniform_layout_desc_t){.type = GS_GRAPHICS_UNIFORM_SAMPLER2D}
         }
     );
 
@@ -467,7 +467,7 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
 
                 // Bind texture
                 gs_graphics_bind_desc_t sbind = {
-                    .sampler_buffers = {.desc = &(gs_graphics_bind_sampler_buffer_desc_t){.buffer = gs->u_tex, .tex = tex, .binding = 0}}
+                    .uniforms = {.desc = &(gs_graphics_bind_uniform_desc_t){.uniform = gs->u_tex, .data = &tex, .binding = 0}}
                 };
 
                 // Bind individual texture binding

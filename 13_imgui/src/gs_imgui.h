@@ -13,7 +13,7 @@ typedef struct gs_imgui_t
     gs_handle(gs_graphics_index_buffer_t) ibo;
     gs_handle(gs_graphics_shader_t) shader;
     gs_handle(gs_graphics_texture_t) font_tex; 
-    gs_handle(gs_graphics_sampler_buffer_t) u_tex;
+    gs_handle(gs_graphics_uniform_t) u_tex;
     gs_handle(gs_graphics_uniform_t) u_proj;
     ImGuiContext* ctx;
 } gs_imgui_t;
@@ -82,20 +82,17 @@ gs_imgui_device_create(gs_imgui_t* gs)
     // Create shader
     gs->shader = gs_graphics_shader_create (&sdesc);
 
-    // Sampler buffer desc
-    gs_graphics_sampler_desc_t samplerdesc = {};
-    samplerdesc.type = GS_GRAPHICS_SAMPLER_2D;
-
-    // Buffer description for Texture
-    gs_graphics_sampler_buffer_desc_t utexdesc = {};
-    utexdesc.type = GS_GRAPHICS_SAMPLER_2D;
+    // Uniform texture
+    gs_graphics_uniform_layout_desc_t slayout = gs_default_val();
+    slayout.type = GS_GRAPHICS_UNIFORM_SAMPLER2D;
+    gs_graphics_uniform_desc_t utexdesc = {};
     utexdesc.name = "Texture";
-
-    // Construct sampler buffer
-    gs->u_tex = gs_graphics_sampler_buffer_create(&utexdesc);
+    utexdesc.layout = &slayout;
+    gs->u_tex = gs_graphics_uniform_create(&utexdesc);
 
     // Construct uniform
-    gs_graphics_uniform_layout_desc_t ulayout = {.type = GS_GRAPHICS_UNIFORM_MAT4};
+    gs_graphics_uniform_layout_desc_t ulayout = gs_default_val();
+    ulayout.type = GS_GRAPHICS_UNIFORM_MAT4;
     gs_graphics_uniform_desc_t udesc = {};
     udesc.name = "ProjMtx";
     udesc.layout = &ulayout;
@@ -504,14 +501,14 @@ gs_imgui_render(gs_imgui_t* gs, gs_command_buffer_t* cb)
                         // Grab handle from command texture id
                         gs_handle(gs_graphics_texture_t) tex = gs_handle_create(gs_graphics_texture_t, (uint32_t)(intptr_t)pcmd->TextureId);
 
-                        gs_graphics_bind_sampler_buffer_desc_t sbuffer = {};
-                        sbuffer.buffer = gs->u_tex;
-                        sbuffer.tex = tex;
+                        gs_graphics_bind_uniform_desc_t sbuffer = {};
+                        sbuffer.uniform = gs->u_tex;
+                        sbuffer.data = &tex;
                         sbuffer.binding = 0;
 
                         gs_graphics_bind_desc_t sbind = {};
-                        sbind.sampler_buffers.desc = &sbuffer;
-                        sbind.sampler_buffers.size = sizeof(sbuffer);
+                        sbind.uniforms.desc = &sbuffer;
+                        sbind.uniforms.size = sizeof(sbuffer);
 
                         // Bind individual texture bind
                         gs_graphics_apply_bindings(cb, &sbind);

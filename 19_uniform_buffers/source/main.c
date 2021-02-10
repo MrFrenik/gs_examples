@@ -136,7 +136,7 @@ void app_init()
 
     // Upload projection matrix into buffer
     gs_vec2 ws = gs_platform_window_sizev(gs_platform_main_window());
-    gs_mat4 proj = gs_camera_get_projection(&cam, (int32_t)ws.x, (int32_t)ws.y);
+    gs_mat4 proj = gs_camera_get_proj(&cam, (int32_t)ws.x, (int32_t)ws.y);
 
     // Update sub region of uniform buffer data with projection (won't change during runtime)
     gs_graphics_uniform_buffer_request_update(&cb, u_vp,
