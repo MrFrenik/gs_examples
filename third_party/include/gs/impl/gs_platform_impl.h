@@ -1085,6 +1085,85 @@ void gs_platform_set_cursor(uint32_t handle, gs_platform_cursor cursor)
     glfwSetCursor(win, cp);
 }
 
+/* Main entry point for platform*/
+#ifndef GS_NO_HIJACK_MAIN
+
+    // Define main frame function for engine to step
+    void gs_engine_frame()
+    {
+        // Remove these...
+        static uint32_t curr_ticks = 0; 
+        static uint32_t prev_ticks = 0;
+
+        // Cache platform pointer
+        gs_platform_i* platform = gs_engine_subsystem(platform);
+
+        // Cache times at start of frame
+        platform->time.current  = gs_platform_elapsed_time();
+        platform->time.update   = platform->time.current - platform->time.previous;
+        platform->time.previous = platform->time.current;
+
+        // Update platform and process input
+        if (gs_platform_update(platform) != GS_RESULT_IN_PROGRESS) {
+            gs_engine_instance()->shutdown();
+            return;
+        }
+
+        // Process application context
+        gs_engine_instance()->ctx.app.update();
+        if (!gs_engine_instance()->ctx.app.is_running) {
+            gs_engine_instance()->shutdown();
+            return;
+        }
+
+        // NOTE(John): This won't work forever. Must change eventually.
+        // Swap all platform window buffers? Sure...
+        for 
+        (
+            gs_slot_array_iter it = 0;
+            gs_slot_array_iter_valid(platform->windows, it);
+            gs_slot_array_iter_advance(platform->windows, it)
+        )
+        {
+            gs_platform_window_swap_buffer(it);
+        }
+
+        // Frame locking (not sure if this should be done here, but it is what it is)
+        platform->time.current  = gs_platform_elapsed_time();
+        platform->time.render   = platform->time.current - platform->time.previous;
+        platform->time.previous = platform->time.current;
+        platform->time.frame    = platform->time.update + platform->time.render;            // Total frame time
+        platform->time.delta    = platform->time.frame / 1000.f;
+
+        float target = (1000.f / platform->time.max_fps);
+
+        if (platform->time.frame < target)
+        {
+            gs_platform_sleep((float)(target - platform->time.frame));
+            
+            platform->time.current = gs_platform_elapsed_time();
+            double wait_time = platform->time.current - platform->time.previous;
+            platform->time.previous = platform->time.current;
+            platform->time.frame += wait_time;
+            platform->time.delta = platform->time.frame / 1000.f;
+        }
+    }
+
+    int32_t main(int32_t argv, char** argc)
+    {
+        gs_engine_t* inst = gs_engine_create(gs_main(argv, argc));
+        gs_app_desc_t* app = gs_engine_app();
+
+        while (app->is_running) {
+            gs_engine_frame();
+        } 
+
+        return 0;
+    }
+
+
+#endif // GS_NO_HIJACK_MAIN
+
 #undef GS_PLATFORM_IMPL_GLFW
 #endif // GS_PLATFORM_IMPL_GLFW
 
