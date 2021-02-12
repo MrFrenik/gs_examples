@@ -109,3 +109,6 @@ compute_shader/bin/main.obj
 17_gs_static_lib/bin/main.obj
 21_stencil_test/bin/main.obj
 20_uniforms_advanced/bin/.vs/App/v15/.suo
+22_emscripten/bin/main.html
+22_emscripten/bin/main.js
+22_emscripten/bin/main.wasm

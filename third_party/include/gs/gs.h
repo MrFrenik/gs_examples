@@ -142,8 +142,11 @@
 
         int32_t main(int32_t argv, char** argc)
         {
-            gs_app_desc_t app = {0};        // Fill this with whatever your app needs
-            gs_engine_create(app)->run();   // Create instance of engine for framework and run
+            gs_app_desc_t app = {0}; // Fill this with whatever your app needs
+            gs_engine_create(app);   // Create instance of engine for framework and run
+            while (gs_engine_app()->is_running) {
+                gs_engine_frame();
+            }
             return 0;
        }
 
@@ -152,7 +155,7 @@
         Internally, gunslinger does its best to handle the boiler plate drudge work of implementing (in correct order) 
         the various layers required for a basic hardware accelerated multi-media application program to work. This involves allocating 
         memory for internal data structures for these layers as well initializing them in a particular order so they can inter-operate
-        as expected. If you're interested in taking care of this yourself, look at the `gs_engine_run()` function to get a feeling
+        as expected. If you're interested in taking care of this yourself, look at the `gs_engine_frame()` function to get a feeling
         for how this is being handled.
 
     GS_MATH:
@@ -3621,6 +3624,11 @@ gs_vec4 gs_aabb_window_coords(gs_aabb_t* aabb, gs_camera_t* camera, gs_vec2 wind
 
     #define GS_PLATFORM_LINUX
 
+/* Platform Emscripten */
+#elif (defined __EMSCRIPTEN__)
+
+    #define GS_PLATFORM_EMSCRIPTEN
+
 /* Else - Platform Undefined and Unsupported */
 
 #endif
@@ -3937,7 +3945,7 @@ typedef void (* gs_character_callback_t)(void*, uint32_t code_point);
 // Platform Interface
 ===============================================================================================*/
 
-typedef struct gs_platform_i
+typedef struct gs_platform_t
 {
     // Settings for platform, including video
     gs_platform_settings_t settings;
@@ -3959,7 +3967,8 @@ typedef struct gs_platform_i
 
     // Specific user data (for custom implementations)
     void* user_data;
-} gs_platform_i;
+
+} gs_platform_t;
 
 /*===============================================================================================
 // Platform API
@@ -3968,18 +3977,14 @@ typedef struct gs_platform_i
 /* == Platform Default API == */
 
 // Platform Create / Destroy
-GS_API_DECL gs_platform_i*  gs_platform_create();
-GS_API_DECL void            gs_platform_destroy(gs_platform_i* platform);
+GS_API_DECL gs_platform_t*  gs_platform_create();
+GS_API_DECL void            gs_platform_destroy(gs_platform_t* platform);
 
  // Platform Init / Update / Shutdown (make these default with custom implementations for internal inits/updates/shutdowns)
-GS_API_DECL gs_result gs_platform_update(gs_platform_i* platform);
+GS_API_DECL void gs_platform_update(gs_platform_t* platform);
 
 // Platform Util
-GS_API_DECL double gs_platform_elapsed_time();  // Returns time in ms since initialization of platform
 GS_API_DECL float  gs_platform_delta_time();
-
-// Platform Video
-GS_API_DECL void gs_platform_enable_vsync(int32_t enabled);
 
 // Platform UUID
 GS_API_DECL gs_uuid_t gs_platform_generate_uuid();
@@ -4024,15 +4029,18 @@ GS_API_DECL void       gs_platform_file_extension(char* buffer, size_t buffer_sz
 /* == Platform Dependent API == */
 
  // Platform Init / Update / Shutdown
-GS_API_DECL gs_result       gs_platform_init(gs_platform_i* platform);      // Initialize global platform layer
-GS_API_DECL gs_result       gs_platform_update(gs_platform_i* platform);    // Update platform layer
-GS_API_DECL gs_result       gs_platform_shutdown(gs_platform_i* platform);  // Shutdown gloabl platform layer
+GS_API_DECL void   gs_platform_init(gs_platform_t* platform);      // Initialize global platform layer
+GS_API_DECL void   gs_platform_shutdown(gs_platform_t* platform);  // Shutdown gloabl platform layer
 
 // Platform Util
+GS_API_DECL double gs_platform_elapsed_time();  // Returns time in ms since initialization of platform
 GS_API_DECL void   gs_platform_sleep(float ms); // Sleeps platform for time in ms
 
+// Platform Video
+GS_API_DECL void gs_platform_enable_vsync(int32_t enabled);
+
 // Platform Input
-GS_API_DECL gs_result gs_platform_process_input(gs_platform_input_t* input);
+GS_API_DECL void      gs_platform_process_input(gs_platform_input_t* input);
 GS_API_DECL uint32_t  gs_platform_key_to_codepoint(gs_platform_keycode code);
 GS_API_DECL void      gs_platform_mouse_set_position(uint32_t handle, float x, float y);
 
@@ -4677,6 +4685,7 @@ typedef struct gs_graphics_compute_state_desc_t
 
 /* Graphics Vertex Attribute Desc */
 typedef struct gs_graphics_vertex_attribute_desc_t {
+    const char* name;                                   // Attribute name (required for lower versions of OpenGL and ES)
     gs_graphics_vertex_attribute_type format;           // Format for vertex attribute
     size_t stride;                                      // Total stride of vertex layout (optional, calculated by default)
     size_t offset;                                      // Offset of this vertex from base pointer of data (optional, calaculated by default)
@@ -4746,8 +4755,8 @@ typedef struct gs_graphics_i
 /* Graphics Interface Creation / Initialization / Shutdown / Destruction */
 GS_API_DECL gs_graphics_i* gs_graphics_create();
 GS_API_DECL void           gs_graphics_destroy(gs_graphics_i* graphics);
-GS_API_DECL gs_result      gs_graphics_init(gs_graphics_i* graphics);
-GS_API_DECL gs_result      gs_graphics_shutdown(gs_graphics_i* graphics);
+GS_API_DECL void           gs_graphics_init(gs_graphics_i* graphics);
+GS_API_DECL void           gs_graphics_shutdown(gs_graphics_i* graphics);
 
 /* Graphics Info Object Query */
 GS_API_DECL                gs_graphics_info_t* gs_graphics_info();
@@ -4930,7 +4939,7 @@ typedef struct gs_app_desc_t
 */
 typedef struct gs_engine_context_t
 {
-    gs_platform_i* platform;
+    gs_platform_t* platform;
     gs_graphics_i* graphics;
     gs_audio_i* audio;
     gs_app_desc_t app;
@@ -4939,8 +4948,7 @@ typedef struct gs_engine_context_t
 typedef struct gs_engine_t
 {
     gs_engine_context_t ctx;
-    gs_result (* run)();
-    gs_result (* shutdown)();
+    void (* shutdown)();
 } gs_engine_t;
 
 /* Desc */
@@ -4953,6 +4961,8 @@ GS_API_DECL gs_engine_t* gs_engine_instance();
 GS_API_DECL gs_engine_context_t* gs_engine_ctx();
 /* Desc */
 GS_API_DECL gs_app_desc_t* gs_engine_app();
+/* Desc */
+GS_API_DECL void gs_engine_frame();
 /* Desc */
 GS_API_DECL void gs_engine_quit();
 /* Desc */
@@ -5331,8 +5341,23 @@ bool32_t gs_util_load_texture_data_from_file(const char* file_path, int32_t* wid
 
 #ifndef GS_PLATFORM_IMPL_CUSTOM
     #define GS_PLATFORM_IMPL_GLFW
-    #include "impl/gs_platform_impl.h"
 #endif
+
+#ifdef GS_PLATFORM_EMSCRIPTEN
+    #define GL_GLEXT_PROTOTYPES
+    #define EGL_EGLEXT_PROTOTYPES
+    // #define GL_ES_VERSION_2_0
+    // #define GLAD_IMPL
+    // #include "external/glad/glad.h"
+    // #include "external/glad/glad_impl.h"
+    // #include "external/glad/glad_impl.h"
+    #include <GLES3/gl3.h>
+    // #include <GLES2/gl2.h>
+    // #include <GLES2/gl2ext.h>
+#endif
+
+// Include for default platform implementations
+#include "impl/gs_platform_impl.h"
 
 /*=============================
 // GS_GRAPHICS
@@ -5818,8 +5843,7 @@ void gs_asset_mesh_load_from_file(const char* path, void* out, gs_asset_mesh_dec
 // GS_ENGINE
 =============================*/
 
-gs_result gs_engine_run();
-gs_result gs_engine_shutdown();
+void gs_engine_shutdown();
 void gs_default_app_func();
 void gs_default_main_window_close_callback(void* window);
 
@@ -5846,7 +5870,6 @@ gs_engine_t* gs_engine_create(gs_app_desc_t app_desc)
         gs_engine_instance()->ctx.app = app_desc;
 
         // Set up function pointers
-        gs_engine_instance()->run       = &gs_engine_run;
         gs_engine_instance()->shutdown  = &gs_engine_shutdown;
 
         // Need to have video settings passed down from user
@@ -5903,76 +5926,70 @@ gs_app_desc_t* gs_engine_app()
     return &gs_engine_instance()->ctx.app;
 }
 
-gs_result gs_engine_run()
+// Define main frame function for engine to step
+// Get rid of this eventually and just allow for the internal platform layer to decide how to update.
+GS_API_DECL void gs_engine_frame()
 {
-    // Main engine loop
-    while (true)
-    {
-        // TODO(john): Get rid of these...
-        static uint32_t curr_ticks = 0; 
-        static uint32_t prev_ticks = 0;
+    // Remove these...
+    static uint32_t curr_ticks = 0; 
+    static uint32_t prev_ticks = 0;
 
-        // Cache platform pointer
-        gs_platform_i* platform = gs_engine_subsystem(platform);
+    // Cache platform pointer
+    gs_platform_t* platform = gs_engine_subsystem(platform);
 
-        // Cache times at start of frame
-        platform->time.current  = gs_platform_elapsed_time();
-        platform->time.update   = platform->time.current - platform->time.previous;
-        platform->time.previous = platform->time.current;
+    // Cache times at start of frame
+    platform->time.current  = gs_platform_elapsed_time();
+    platform->time.update   = platform->time.current - platform->time.previous;
+    platform->time.previous = platform->time.current;
 
-        // Update platform and process input
-        if (gs_platform_update(platform) != GS_RESULT_IN_PROGRESS)
-        {
-            return (gs_engine_instance()->shutdown());
-        }
-
-        // Process application context
-        gs_engine_instance()->ctx.app.update();
-        if (!gs_engine_instance()->ctx.app.is_running) 
-        {
-            // Shutdown engine and return
-            return (gs_engine_instance()->shutdown());
-        }
-
-        // NOTE(John): This won't work forever. Must change eventually.
-        // Swap all platform window buffers? Sure...
-        for 
-        (
-            gs_slot_array_iter it = 0;
-            gs_slot_array_iter_valid(platform->windows, it);
-            gs_slot_array_iter_advance(platform->windows, it)
-        )
-        {
-            gs_platform_window_swap_buffer(it);
-        }
-
-        // Frame locking
-        platform->time.current  = gs_platform_elapsed_time();
-        platform->time.render   = platform->time.current - platform->time.previous;
-        platform->time.previous = platform->time.current;
-        platform->time.frame    = platform->time.update + platform->time.render;            // Total frame time
-        platform->time.delta    = platform->time.frame / 1000.f;
-
-        float target = (1000.f / platform->time.max_fps);
-
-        if (platform->time.frame < target)
-        {
-            gs_platform_sleep((float)(target - platform->time.frame));
-            
-            platform->time.current = gs_platform_elapsed_time();
-            double wait_time = platform->time.current - platform->time.previous;
-            platform->time.previous = platform->time.current;
-            platform->time.frame += wait_time;
-            platform->time.delta = platform->time.frame / 1000.f;
-        }
+    // Update platform and process input
+    gs_platform_update(platform);
+    if (!gs_engine_instance()->ctx.app.is_running) {
+        gs_engine_instance()->shutdown();
+        return;
     }
 
-    // Shouldn't hit here
-    gs_assert(false);
-    return GS_RESULT_FAILURE;
+    // Process application context
+    gs_engine_instance()->ctx.app.update();
+    if (!gs_engine_instance()->ctx.app.is_running) {
+        gs_engine_instance()->shutdown();
+        return;
+    }
+
+    // NOTE(John): This won't work forever. Must change eventually.
+    // Swap all platform window buffers? Sure...
+    for 
+    (
+        gs_slot_array_iter it = 0;
+        gs_slot_array_iter_valid(platform->windows, it);
+        gs_slot_array_iter_advance(platform->windows, it)
+    )
+    {
+        gs_platform_window_swap_buffer(it);
+    }
+
+    // Frame locking (not sure if this should be done here, but it is what it is)
+    platform->time.current  = gs_platform_elapsed_time();
+    platform->time.render   = platform->time.current - platform->time.previous;
+    platform->time.previous = platform->time.current;
+    platform->time.frame    = platform->time.update + platform->time.render;            // Total frame time
+    platform->time.delta    = platform->time.frame / 1000.f;
+
+    float target = (1000.f / platform->time.max_fps);
+
+    if (platform->time.frame < target)
+    {
+        gs_platform_sleep((float)(target - platform->time.frame));
+        
+        platform->time.current = gs_platform_elapsed_time();
+        double wait_time = platform->time.current - platform->time.previous;
+        platform->time.previous = platform->time.current;
+        platform->time.frame += wait_time;
+        platform->time.delta = platform->time.frame / 1000.f;
+    }
 }
 
-gs_result gs_engine_shutdown()
+void gs_engine_shutdown()
 {
     // Shutdown application
     gs_engine_ctx()->app.shutdown();
@@ -5991,8 +6008,6 @@ gs_result gs_engine_shutdown()
     // Free engine
     gs_free(__g_engine_instance);
     __g_engine_instance = NULL;
-
-    return GS_RESULT_SUCCESS;
 }
 
 void gs_default_app_func()

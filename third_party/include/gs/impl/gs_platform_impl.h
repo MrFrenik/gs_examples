@@ -29,10 +29,10 @@
 
 /*== Platform Window ==*/
 
-gs_platform_i* gs_platform_create()
+gs_platform_t* gs_platform_create()
 {
     // Construct new platform interface
-    gs_platform_i* platform = gs_malloc_init(gs_platform_i);
+    gs_platform_t* platform = gs_malloc_init(gs_platform_t);
 
     // Initialize windows
     platform->windows = gs_slot_array_new(void*);
@@ -43,7 +43,7 @@ gs_platform_i* gs_platform_create()
     return platform;
 }
 
-void gs_platform_destroy(gs_platform_i* platform)
+void gs_platform_destroy(gs_platform_t* platform)
 {
     if (platform == NULL) return;
 
@@ -58,7 +58,7 @@ void gs_platform_destroy(gs_platform_i* platform)
 uint32_t gs_platform_create_window(const char* title, uint32_t width, uint32_t height)
 {
     gs_assert(gs_engine_instance() != NULL);
-    gs_platform_i* platform = gs_engine_subsystem(platform);
+    gs_platform_t* platform = gs_engine_subsystem(platform);
     void* win = gs_platform_create_window_internal(title, width, height);
     return (gs_slot_array_insert(platform->windows, win));
 }
@@ -176,7 +176,7 @@ void gs_platform_update_input(gs_platform_input_t* input)
     input->mouse.moved_this_frame = false;
 }
 
-gs_result gs_platform_update(gs_platform_i* platform)
+void gs_platform_update(gs_platform_t* platform)
 {
     // Clear all previous events
     gs_dyn_array_clear(platform->events);
@@ -185,12 +185,12 @@ gs_result gs_platform_update(gs_platform_i* platform)
     gs_platform_update_input(&platform->input);
 
     // Process input for this frame
-    return gs_platform_process_input(&platform->input);
+    gs_platform_process_input(&platform->input);
 }
 
 bool gs_platform_poll_event(gs_platform_event_t* evt)
 {
-    gs_platform_i* platform = gs_engine_subsystem(platform);
+    gs_platform_t* platform = gs_engine_subsystem(platform);
 
     if (!evt) return false;
     if (gs_dyn_array_empty(platform->events)) return false;
@@ -444,8 +444,16 @@ void gs_platform_file_extension(char* buffer, size_t buffer_sz, const char* file
 #define GLAD_IMPL
 #include "../external/glad/glad_impl.h"
 
-#define GLFW_IMPL
-#include "../external/glfw/glfw_impl.h"
+#ifdef GS_PLATFORM_EMSCRIPTEN
+    #define GL_GLEXT_PROTOTYPES
+    #define EGL_EGLEXT_PROTOTYPES
+    #include "../external/glfw/glfw_impl.h"
+    #include <emscripten/emscripten.h>
+    #include <emscripten/html5.h>
+#else
+    #define GLFW_IMPL
+    #include "../external/glfw/glfw_impl.h"
+#endif
 
 #if (defined GS_PLATFORM_APPLE || defined GS_PLATFORM_LINUX)
 
@@ -472,7 +480,7 @@ void __glfw_drop_callback(GLFWwindow* window);
 
 /*== Platform Init / Shutdown == */
 
-gs_result gs_platform_init(gs_platform_i* pf)
+gs_result gs_platform_init(gs_platform_t* pf)
 {
     gs_assert(pf);
 
@@ -488,6 +496,13 @@ gs_result gs_platform_init(gs_platform_i* pf)
                 glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
                 glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
                 glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+                glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
+            #elif (defined GS_PLATFORM_EMSCRIPTEN)
+                glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+                glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+                glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+                glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
+                glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
                 glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
             #else
                 // glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, platform->settings.video.graphics.opengl.major_version);
@@ -523,7 +538,7 @@ gs_result gs_platform_init(gs_platform_i* pf)
     return GS_RESULT_SUCCESS;
 }
 
-gs_result gs_platform_shutdown(gs_platform_i* pf)
+gs_result gs_platform_shutdown(gs_platform_t* pf)
 {
     // Free all windows in glfw
     // TODO(john): Figure out crash with glfwDestroyWindow && glfwTerminate
@@ -780,7 +795,7 @@ gs_platform_mouse_button_code __glfw_button_to_gs_mouse_button(s32 code)
 void __glfw_key_callback(GLFWwindow* window, s32 code, s32 scancode, s32 action, s32 mods) 
 {
     // Grab platform instance from engine
-    gs_platform_i* platform = gs_engine_subsystem(platform);
+    gs_platform_t* platform = gs_engine_subsystem(platform);
 
     // Get keycode from key
     gs_platform_keycode key = glfw_key_to_gs_keycode(code);
@@ -816,7 +831,7 @@ void __glfw_key_callback(GLFWwindow* window, s32 code, s32 scancode, s32 action,
 void __glfw_mouse_button_callback(GLFWwindow* window, s32 code, s32 action, s32 mods)
 {
     // Grab platform instance from engine
-    gs_platform_i* platform = gs_engine_subsystem(platform);
+    gs_platform_t* platform = gs_engine_subsystem(platform);
 
     // Get mouse code from key
     gs_platform_mouse_button_code button = __glfw_button_to_gs_mouse_button(code);
@@ -850,14 +865,14 @@ void __glfw_mouse_button_callback(GLFWwindow* window, s32 code, s32 action, s32 
 
 void __glfw_mouse_cursor_position_callback(GLFWwindow* window, f64 x, f64 y)
 {
-    gs_platform_i* platform = gs_engine_subsystem(platform);
+    gs_platform_t* platform = gs_engine_subsystem(platform);
     platform->input.mouse.position = gs_v2((f32)x, (f32)y);
     platform->input.mouse.moved_this_frame = true;
 }
 
 void __glfw_mouse_scroll_wheel_callback(GLFWwindow* window, f64 x, f64 y)
 {
-    gs_platform_i* platform = gs_engine_subsystem(platform);
+    gs_platform_t* platform = gs_engine_subsystem(platform);
     platform->input.mouse.wheel = gs_v2((f32)x, (f32)y);
 }
 
@@ -874,10 +889,9 @@ void __glfw_frame_buffer_size_callback(GLFWwindow* window, s32 width, s32 height
 
 /*== Platform Input == */
 
-gs_result gs_platform_process_input(gs_platform_input_t* input)
+void gs_platform_process_input(gs_platform_input_t* input)
 {
     glfwPollEvents();
-    return GS_RESULT_IN_PROGRESS;
 }
 
 /*== Platform Util == */
@@ -958,28 +972,28 @@ void* gs_platform_create_window_internal(const char* title, uint32_t width, uint
 
 void gs_platform_set_dropped_files_callback(uint32_t handle, gs_dropped_files_callback_t cb)
 {
-    gs_platform_i* platform = gs_engine_subsystem(platform);
+    gs_platform_t* platform = gs_engine_subsystem(platform);
     GLFWwindow* win = __glfw_window_from_handle(platform, handle);
     glfwSetDropCallback(win, (GLFWdropfun)cb);
 }
 
 void  gs_platform_set_window_close_callback(uint32_t handle, gs_window_close_callback_t cb)
 {
-    gs_platform_i* platform = gs_engine_subsystem(platform);
+    gs_platform_t* platform = gs_engine_subsystem(platform);
     GLFWwindow* win = __glfw_window_from_handle(platform, handle);
     glfwSetWindowCloseCallback(win, (GLFWwindowclosefun)cb);
 }
 
 void gs_platform_set_character_callback(uint32_t handle, gs_character_callback_t cb)
 {
-    gs_platform_i* platform = gs_engine_subsystem(platform);
+    gs_platform_t* platform = gs_engine_subsystem(platform);
     GLFWwindow* win = __glfw_window_from_handle(platform, handle);
     glfwSetCharCallback(win, (GLFWcharfun)cb);
 }
 
 void gs_platform_mouse_set_position(uint32_t handle, float x, float y)
 {
-    struct gs_platform_i* platform = gs_engine_subsystem(platform);
+    struct gs_platform_t* platform = gs_engine_subsystem(platform);
     GLFWwindow* win = __glfw_window_from_handle(platform, handle);
     glfwSetCursorPos(win, x, y);
 }
@@ -987,7 +1001,7 @@ void gs_platform_mouse_set_position(uint32_t handle, float x, float y)
 void* gs_platform_raw_window_handle(uint32_t handle)
 {
     // Grab instance of platform from engine
-    gs_platform_i* platform = gs_engine_subsystem(platform);
+    gs_platform_t* platform = gs_engine_subsystem(platform);
 
     // Grab window from handle
     GLFWwindow* win = __glfw_window_from_handle(platform, handle);
@@ -997,7 +1011,7 @@ void* gs_platform_raw_window_handle(uint32_t handle)
 void gs_platform_window_swap_buffer(uint32_t handle)
 {
     // Grab instance of platform from engine
-    gs_platform_i* platform = gs_engine_subsystem(platform);
+    gs_platform_t* platform = gs_engine_subsystem(platform);
 
     // Grab window from handle
     GLFWwindow* win = __glfw_window_from_handle(platform, handle);
@@ -1079,7 +1093,7 @@ uint32_t gs_platform_framebuffer_height(uint32_t handle)
 
 void gs_platform_set_cursor(uint32_t handle, gs_platform_cursor cursor)
 {
-    gs_platform_i* platform = gs_engine_subsystem(platform);
+    gs_platform_t* platform = gs_engine_subsystem(platform);
     GLFWwindow* win = __glfw_window_from_handle(platform, handle);
     GLFWcursor* cp = ((GLFWcursor*)platform->cursors[(u32)cursor]); 
     glfwSetCursor(win, cp);
@@ -1096,7 +1110,7 @@ void gs_platform_set_cursor(uint32_t handle, gs_platform_cursor cursor)
         static uint32_t prev_ticks = 0;
 
         // Cache platform pointer
-        gs_platform_i* platform = gs_engine_subsystem(platform);
+        gs_platform_t* platform = gs_engine_subsystem(platform);
 
         // Cache times at start of frame
         platform->time.current  = gs_platform_elapsed_time();
@@ -1104,7 +1118,8 @@ void gs_platform_set_cursor(uint32_t handle, gs_platform_cursor cursor)
         platform->time.previous = platform->time.current;
 
         // Update platform and process input
-        if (gs_platform_update(platform) != GS_RESULT_IN_PROGRESS) {
+        gs_platform_update(platform);
+        if (!gs_engine_instance()->ctx.app.is_running) {
             gs_engine_instance()->shutdown();
             return;
         }
@@ -1149,17 +1164,28 @@ void gs_platform_set_cursor(uint32_t handle, gs_platform_cursor cursor)
         }
     }
 
-    int32_t main(int32_t argv, char** argc)
-    {
-        gs_engine_t* inst = gs_engine_create(gs_main(argv, argc));
-        gs_app_desc_t* app = gs_engine_app();
+    #if (defined GS_PLATFORM_EMSCRIPTEN)
 
-        while (app->is_running) {
-            gs_engine_frame();
-        } 
+        /* Main entry point */
+        int32_t main(int32_t argc, char** argv)
+        {
+            gs_engine_t* inst = gs_engine_create(gs_main(argv, argc));
+            emscripten_set_main_loop(gs_engine_frame, 0, true);
+            return 0;
+        }
 
-        return 0;
-    }
+    #else
+
+        int32_t main(int32_t argv, char** argc)
+        {
+            gs_engine_t* inst = gs_engine_create(gs_main(argv, argc));
+            while (gs_engine_app()->is_running) {
+                gs_engine_frame();
+            }
+            return 0;
+        }
+
+    #endif
 
 
 #endif // GS_NO_HIJACK_MAIN

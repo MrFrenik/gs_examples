@@ -163,7 +163,7 @@ void gsgl_pipeline_state()
 
     gs_graphics_info_t* info = gs_graphics_info();
     if (info->compute.available) {
-        glBindImageTexture(0, 0, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+        // glBindImageTexture(0, 0, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
     }
 }
 
@@ -182,6 +182,7 @@ int32_t gsgl_buffer_usage_to_gl_enum(gs_graphics_buffer_usage_type type)
 
 uint32_t gsgl_access_type_to_gl_access_type(gs_graphics_access_type type)
 {
+    /*
     uint32_t access = GL_WRITE_ONLY;
     switch (type)
     {
@@ -191,6 +192,21 @@ uint32_t gsgl_access_type_to_gl_access_type(gs_graphics_access_type type)
         default: break;
     }
     return access;
+    */
+    return 0;
+}
+
+uint32_t gsgl_texture_wrap_to_gl_texture_wrap(gs_graphics_texture_wrapping_type type)
+{
+    uint32_t wrap = GL_REPEAT;
+    switch (type) {
+        default:
+        case GS_GRAPHICS_TEXTURE_WRAP_REPEAT:           wrap = GL_REPEAT;           break;
+        case GS_GRAPHICS_TEXTURE_WRAP_MIRRORED_REPEAT:  wrap = GL_MIRRORED_REPEAT;  break;
+        case GS_GRAPHICS_TEXTURE_WRAP_CLAMP_TO_EDGE:    wrap = GL_CLAMP_TO_EDGE;    break;
+        // case GS_GRAPHICS_TEXTURE_WRAP_CLAMP_TO_BORDER:  wrap = GL_CLAMP_TO_BORDER;  break;
+    };
+    return wrap;
 }
 
 uint32_t gsgl_texture_format_to_gl_texture_format(gs_graphics_texture_format_type type)
@@ -215,7 +231,7 @@ uint32_t gsgl_shader_stage_to_gl_stage(gs_graphics_shader_stage_type type)
         default:
         case GS_GRAPHICS_SHADER_STAGE_VERTEX: stage = GL_VERTEX_SHADER; break;
         case GS_GRAPHICS_SHADER_STAGE_FRAGMENT: stage = GL_FRAGMENT_SHADER; break;
-        case GS_GRAPHICS_SHADER_STAGE_COMPUTE: stage = GL_COMPUTE_SHADER; break;
+        // case GS_GRAPHICS_SHADER_STAGE_COMPUTE: stage = GL_COMPUTE_SHADER; break;
     }
     return stage;
 }
@@ -227,7 +243,7 @@ uint32_t gsgl_primitive_to_gl_primitive(gs_graphics_primitive_type type)
         default:
         case GS_GRAPHICS_PRIMITIVE_TRIANGLES: prim = GL_TRIANGLES; break;
         case GS_GRAPHICS_PRIMITIVE_LINES: prim = GL_LINES; break;
-        case GS_GRAPHICS_PRIMITIVE_QUADS: prim = GL_QUADS; break;
+        // case GS_GRAPHICS_PRIMITIVE_QUADS: prim = GL_QUADS; break;
     }
     return prim;
 }
@@ -488,7 +504,7 @@ void gs_graphics_destroy(gs_graphics_i* graphics)
     graphics = NULL;
 }
 
-gs_result gs_graphics_init(gs_graphics_i* graphics)
+void gs_graphics_init(gs_graphics_i* graphics)
 {
     // Push back 0 handles into slot arrays (for 0 init validation)
     gsgl_data_t* ogl = (gsgl_data_t*)graphics->user_data;
@@ -511,8 +527,10 @@ gs_result gs_graphics_init(gs_graphics_i* graphics)
     gs_slot_array_insert(ogl->textures, tex);
 
     // Construct vao then bind
+    /*
     glGenVertexArrays(1, &ogl->cache.vao);      
     glBindVertexArray(ogl->cache.vao);
+    */
 
     // Reset data cache for rendering ops
     gsgl_reset_data_cache(&ogl->cache);
@@ -520,6 +538,7 @@ gs_result gs_graphics_init(gs_graphics_i* graphics)
     // Init info object
     gs_graphics_info_t* info = &gs_engine_subsystem(graphics)->info;
 
+    /*
     // Major/Minor version
     glGetIntegerv(GL_MAJOR_VERSION, (GLint*)&info->major_version);
     glGetIntegerv(GL_MINOR_VERSION, (GLint*)&info->minor_version);
@@ -539,13 +558,11 @@ gs_result gs_graphics_init(gs_graphics_i* graphics)
         // Work group invocations
         glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, (int32_t*)&info->compute.max_work_group_invocations);
     }
-
-    return GS_RESULT_SUCCESS;
+    */
 }
 
-gs_result gs_graphics_shutdown(gs_graphics_i* graphics)
+void gs_graphics_shutdown(gs_graphics_i* graphics)
 {
-    return GS_RESULT_SUCCESS;
 }
 
 /* Resource Creation */
@@ -599,14 +616,8 @@ gs_handle(gs_graphics_texture_t) gs_graphics_texture_create(gs_graphics_texture_
         }
     }
 
-    int32_t texture_wrap_s = desc->wrap_s == GS_GRAPHICS_TEXTURE_WRAP_REPEAT ? GL_REPEAT : 
-                         desc->wrap_s == GS_GRAPHICS_TEXTURE_WRAP_MIRRORED_REPEAT ? GL_MIRRORED_REPEAT : 
-                         desc->wrap_s == GS_GRAPHICS_TEXTURE_WRAP_CLAMP_TO_EDGE ? GL_CLAMP_TO_EDGE : 
-                         GL_CLAMP_TO_BORDER;
-    int32_t texture_wrap_t = desc->wrap_t == GS_GRAPHICS_TEXTURE_WRAP_REPEAT ? GL_REPEAT : 
-                         desc->wrap_t == GS_GRAPHICS_TEXTURE_WRAP_MIRRORED_REPEAT ? GL_MIRRORED_REPEAT : 
-                         desc->wrap_t == GS_GRAPHICS_TEXTURE_WRAP_CLAMP_TO_EDGE ? GL_CLAMP_TO_EDGE : 
-                         GL_CLAMP_TO_BORDER;
+    uint32_t texture_wrap_s = gsgl_texture_wrap_to_gl_texture_wrap(desc->wrap_s); 
+    uint32_t texture_wrap_t = gsgl_texture_wrap_to_gl_texture_wrap(desc->wrap_t);
 
     if (desc->num_mips) {
         glGenerateMipmap(GL_TEXTURE_2D);
@@ -1233,7 +1244,7 @@ void gs_graphics_submit_command_buffer(gs_command_buffer_t* cb)
                             if (cid && gs_slot_array_exists(ogl->textures, cid)) 
                             {
                                 gsgl_texture_t* rt = gs_slot_array_getp(ogl->textures, cid);
-                                glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + r, rt->id, 0);
+                                // glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + r, rt->id, 0);
                             }
                         }
                     }
@@ -1604,7 +1615,7 @@ void gs_graphics_submit_command_buffer(gs_command_buffer_t* cb)
                             uint32_t gl_format = gsgl_texture_format_to_gl_texture_format(tex->desc.format);
 
                             // Bind image texture
-                            glBindImageTexture(0, tex->id, 0, GL_FALSE, 0, gl_access, gl_format);
+                            // glBindImageTexture(0, tex->id, 0, GL_FALSE, 0, gl_access, gl_format);
                         } break;
 
                         default: gs_assert(false); break;
@@ -1735,9 +1746,9 @@ void gs_graphics_submit_command_buffer(gs_command_buffer_t* cb)
                 }
 
                 // Dispatch shader 
-                glDispatchCompute(num_x_groups, num_y_groups, num_z_groups); 
+                // glDispatchCompute(num_x_groups, num_y_groups, num_z_groups); 
                 // Memory barrier (TODO(john): make this specifically set in the pipeline state)
-                glMemoryBarrier(GL_ALL_BARRIER_BITS);
+                // glMemoryBarrier(GL_ALL_BARRIER_BITS);
             } break;
 
             case GS_OPENGL_OP_DRAW:
@@ -1834,8 +1845,8 @@ void gs_graphics_submit_command_buffer(gs_command_buffer_t* cb)
 
                 // Draw
                 if (ogl->cache.ibo) { 
-                    if (is_instanced)   glDrawElementsInstancedBaseVertex(prim, count, itype, gs_int2voidp(start), instance_count, base_vertex);
-                    else                glDrawRangeElementsBaseVertex(prim, range_start, range_end, count, itype, gs_int2voidp(start), base_vertex);
+                    // if (is_instanced)   glDrawElementsInstancedBaseVertex(prim, count, itype, gs_int2voidp(start), instance_count, base_vertex);
+                    // else                glDrawRangeElementsBaseVertex(prim, range_start, range_end, count, itype, gs_int2voidp(start), base_vertex);
                 } 
                 else {
                     if (is_instanced)   glDrawArraysInstanced(prim, start, count, instance_count);
