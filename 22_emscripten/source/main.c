@@ -68,10 +68,55 @@ gs_app_desc_t gs_main(int32_t argc, char** argv)
     }; 
 }
 
-
-
 /*
     Write custom platform layer - how? Would be nice to have specific defaults then ONLY write what I need to override. But that requires either setting EVERYTHING bounded in macros (disgusting), 
     or using a vtable (also disgusting).
+
+	// Platform impl
+
+    int32_t main(int32_t argc, char** argv)
+    {
+    	// Application with various settings for the layers.
+    	gs_app_desc_t app = {
+			.platform = {
+			},
+			.audio = {
+			},
+			.graphics = {
+			}
+    	};
+
+    	gs_app_desc_t app = {0};
+    	gs_platform_t* platform = gs_platform_setup(&app);
+    	gs_graphics_t* gfx = gs_graphics_setup(&app);
+    	gs_audio_t* audio = gs_graphics_audio_setup(&app);
+
+    	// Good to go, now.
+
+    	gs_setup(&app);	 -> sets up contexts for all of those.
+    }
     
 */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
