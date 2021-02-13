@@ -5894,10 +5894,10 @@ gs_engine_t* gs_engine_create(gs_app_desc_t app_desc)
         gs_graphics_init(gs_engine_subsystem(graphics));
 
         // Construct audio api
-        gs_engine_subsystem(audio) = gs_audio_create();
+        // gs_engine_subsystem(audio) = gs_audio_create();
 
         // Initialize audio
-        gs_audio_init(gs_engine_subsystem(audio));
+        // gs_audio_init(gs_engine_subsystem(audio));
 
         // Initialize application
         app_desc.init();
