@@ -3978,10 +3978,18 @@ typedef struct gs_platform_t
 
 // Platform Create / Destroy
 GS_API_DECL gs_platform_t*  gs_platform_create();
+GS_API_DECL void            gs_platform_register_instance(gs_platform_t* platform);     // Sets global instance of platform layer
 GS_API_DECL void            gs_platform_destroy(gs_platform_t* platform);
+
+ // Platform Init / Update / Shutdown
+GS_API_DECL void            gs_platform_init(gs_platform_t* platform);      // Initialize platform layer
+GS_API_DECL void            gs_platform_update(gs_platform_t* platform);    // Update platform layer
+GS_API_DECL void            gs_platform_shutdown(gs_platform_t* platform);  // Shutdown platform layer
 
  // Platform Init / Update / Shutdown (make these default with custom implementations for internal inits/updates/shutdowns)
 GS_API_DECL void gs_platform_update(gs_platform_t* platform);
+
+/* Platform global instance functions (should only be called if global platform instance is registered, automatically done when using default engine instance) */
 
 // Platform Util
 GS_API_DECL float  gs_platform_delta_time();
@@ -3990,6 +3998,15 @@ GS_API_DECL float  gs_platform_delta_time();
 GS_API_DECL gs_uuid_t gs_platform_generate_uuid();
 GS_API_DECL void      gs_platform_uuid_to_string(char* temp_buffer, const gs_uuid_t* uuid); // Expects a temp buffer with at least 32 bytes
 GS_API_DECL uint32_t  gs_platform_hash_uuid(const gs_uuid_t* uuid);
+
+// Platform Input
+GS_API_DECL void      gs_platform_update_input(gs_platform_input_t* input);
+GS_API_DECL void      gs_platform_press_key(gs_platform_keycode code);
+GS_API_DECL void      gs_platform_release_key(gs_platform_keycode code);
+GS_API_DECL bool      gs_platform_was_key_down(gs_platform_keycode code);
+GS_API_DECL bool      gs_platform_key_pressed(gs_platform_keycode code);
+GS_API_DECL bool      gs_platform_key_down(gs_platform_keycode code);
+GS_API_DECL bool      gs_platform_key_released(gs_platform_keycode code);
 GS_API_DECL void      gs_platform_press_mouse_button(gs_platform_mouse_button_code code);
 GS_API_DECL void      gs_platform_release_mouse_button(gs_platform_mouse_button_code code);
 GS_API_DECL bool      gs_platform_was_mouse_down(gs_platform_mouse_button_code code);
@@ -4002,15 +4019,6 @@ GS_API_DECL gs_vec2   gs_platform_mouse_positionv();
 GS_API_DECL void      gs_platform_mouse_position(int32_t* x, int32_t* y);
 GS_API_DECL void      gs_platform_mouse_wheel(float* x, float* y);
 GS_API_DECL bool      gs_platform_mouse_moved();
-
-// Platform Input
-GS_API_DECL void      gs_platform_update_input(gs_platform_input_t* input);
-GS_API_DECL void      gs_platform_press_key(gs_platform_keycode code);
-GS_API_DECL void      gs_platform_release_key(gs_platform_keycode code);
-GS_API_DECL bool      gs_platform_was_key_down(gs_platform_keycode code);
-GS_API_DECL bool      gs_platform_key_pressed(gs_platform_keycode code);
-GS_API_DECL bool      gs_platform_key_down(gs_platform_keycode code);
-GS_API_DECL bool      gs_platform_key_released(gs_platform_keycode code);
 
 // Platform Events
 GS_API_DECL bool      gs_platform_poll_event(gs_platform_event_t* evt);
@@ -4029,8 +4037,9 @@ GS_API_DECL void       gs_platform_file_extension(char* buffer, size_t buffer_sz
 /* == Platform Dependent API == */
 
  // Platform Init / Update / Shutdown
-GS_API_DECL void   gs_platform_init(gs_platform_t* platform);      // Initialize global platform layer
-GS_API_DECL void   gs_platform_shutdown(gs_platform_t* platform);  // Shutdown gloabl platform layer
+GS_API_DECL void   gs_platform_init_internal(gs_platform_t* platform);
+GS_API_DECL void   gs_platform_update_internal(gs_platform_t* platform);
+GS_API_DECL void   gs_platform_shutdown_internal(gs_platform_t* platform);
 
 // Platform Util
 GS_API_DECL double gs_platform_elapsed_time();  // Returns time in ms since initialization of platform

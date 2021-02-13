@@ -196,7 +196,7 @@ gs_platform_create_window_internal(const char* title, uint32_t width, uint32_t h
 GS_API_DECL void     
 gs_platform_window_swap_buffer(uint32_t handle)
 {
-    // Nothing for emscripten...
+    // Nothing for emscripten...but could handle swapping manually if preferred.
 }
 
 GS_API_DECL gs_vec2  
