@@ -145,6 +145,7 @@ void update()
 
     /* Render */
     gs_graphics_begin_render_pass(&cb, GS_GRAPHICS_RENDER_PASS_DEFAULT);
+        gs_graphics_clear(&cb, &clear);
         gs_graphics_bind_pipeline(&cb, pip);
         gs_graphics_apply_bindings(&cb, &binds);
         gs_graphics_draw(&cb, &(gs_graphics_draw_desc_t){.start = 0, .count = 3});
