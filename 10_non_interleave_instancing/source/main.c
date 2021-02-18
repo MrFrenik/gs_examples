@@ -22,13 +22,9 @@
 =================================================================*/
 
 #define GS_IMPL
-#define STB_DEFINE
 #include <gs/gs.h>
-#include <gs/external/stb/stb.h>
-#include <stdio.h>
 
-#define NUM_OFFSETS 1000000         // One MILLION offsets! Mwahahaha.
-#define CAM_SPEED   50
+#include "data.c"
 
 typedef struct fps_camera_t
 {
@@ -46,48 +42,6 @@ gs_handle(gs_graphics_pipeline_t)       pip      = {0};
 gs_handle(gs_graphics_shader_t)         shader   = {0};
 gs_handle(gs_graphics_vertex_buffer_t)  inst_vbo = {0};
 fps_camera_t                            fps      = {0};
-
-const char* v_src = "#version 330 core\n"
-"layout(location = 0) in vec3 a_pos;\n"
-"layout(location = 1) in vec4 a_color;\n"
-"layout(location = 2) in vec3 i_position;\n"
-"uniform mat4 u_mvp;\n"
-"out vec4 f_color;\n"
-"void main()\n"
-"{\n"
-"   gl_Position =u_mvp * vec4(a_pos + i_position, 1.0);\n"
-"   f_color = a_color;\n"
-"}";
-
-const char* f_src = "\n"
-"#version 330 core\n"
-"in vec4 f_color;\n"
-"out vec4 frag_color;\n"
-"void main()\n"
-"{\n"
-"   frag_color = f_color;\n"
-"}";
-
-// Cube vertex buffer
-gs_global float positions[] = {
-    -1.0, -1.0, -1.0,   1.0, -1.0, -1.0,   1.0,  1.0, -1.0,  -1.0,  1.0, -1.0,
-    -1.0, -1.0,  1.0,   1.0, -1.0,  1.0,   1.0,  1.0,  1.0,  -1.0,  1.0,  1.0,
-    -1.0, -1.0, -1.0,  -1.0,  1.0, -1.0,  -1.0,  1.0,  1.0,  -1.0, -1.0,  1.0,
-     1.0, -1.0, -1.0,   1.0,  1.0, -1.0,   1.0,  1.0,  1.0,   1.0, -1.0,  1.0, 
-    -1.0, -1.0, -1.0,  -1.0, -1.0,  1.0,   1.0, -1.0,  1.0,   1.0, -1.0, -1.0,
-    -1.0,  1.0, -1.0,  -1.0,  1.0,  1.0,   1.0,  1.0,  1.0,   1.0,  1.0, -1.0,
-};
-
-gs_global float colors[] = {
-    1.0, 0.5, 0.0, 1.0,  1.0, 0.5, 0.0, 1.0,  1.0, 0.5, 0.0, 1.0,  1.0, 0.5, 0.0, 1.0,
-    0.5, 1.0, 0.0, 1.0,  0.5, 1.0, 0.0, 1.0,  0.5, 1.0, 0.0, 1.0,  0.5, 1.0, 0.0, 1.0,
-    0.5, 0.0, 1.0, 1.0,  0.5, 0.0, 1.0, 1.0,  0.5, 0.0, 1.0, 1.0,  0.5, 0.0, 1.0, 1.0,
-    1.0, 0.5, 1.0, 1.0,  1.0, 0.5, 1.0, 1.0,  1.0, 0.5, 1.0, 1.0,  1.0, 0.5, 1.0, 1.0,
-    0.5, 1.0, 1.0, 1.0,  0.5, 1.0, 1.0, 1.0,  0.5, 1.0, 1.0, 1.0,  0.5, 1.0, 1.0, 1.0,
-    1.0, 1.0, 0.5, 1.0,  1.0, 1.0, 0.5, 1.0,  1.0, 1.0, 0.5, 1.0,  1.0, 1.0, 0.5, 1.0,
-};
-
-gs_global gs_vec3 offsets[NUM_OFFSETS];
 
 void app_init()
 {
@@ -147,16 +101,6 @@ void app_init()
         }
     );
 
-    // Index data
-    uint16_t i_data[] = {
-        0, 1, 2,  0, 2, 3,
-        6, 5, 4,  7, 6, 4,
-        8, 9, 10,  8, 10, 11,
-        14, 13, 12,  15, 14, 12,
-        16, 17, 18,  16, 18, 19,
-        22, 21, 20,  23, 22, 20
-    }; 
-
     // Construct index buffer
     ibo = gs_graphics_index_buffer_create( 
         &(gs_graphics_index_buffer_desc_t) {
@@ -190,9 +134,9 @@ void app_init()
     // Here's where we actually let the pipeline know how view our vertex data that we'll bind.
     // Need to actually describe vertex strides/offsets/divisors for instanced data layouts.
     gs_graphics_vertex_attribute_desc_t vattrs[] = {
-        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT3, .buffer_idx = 0}, // Position
-        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT4, .buffer_idx = 1}, // Color
-        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT3, .buffer_idx = 2, .stride = 3 * sizeof(float), .offset = 0, .divisor = 1},    // Offset (stride of total index vertex data, divisor is 1 for instance iteration)
+        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT3, .name = "a_pos", .buffer_idx = 0}, // Position
+        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT4, .name = "a_color", .buffer_idx = 1}, // Color
+        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT3, .name = "i_offset", .buffer_idx = 2, .stride = 3 * sizeof(float), .offset = 0, .divisor = 1},    // Offset (stride of total index vertex data, divisor is 1 for instance iteration)
     };
 
     pip = gs_graphics_pipeline_create (

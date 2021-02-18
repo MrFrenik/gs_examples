@@ -78,7 +78,13 @@ gs_app_desc_t gs_main(int32_t argc, char** argv)
     {
     	// Application with various settings for the layers.
     	gs_app_desc_t app = {
+            .init = app_init,
+            .update = app_update,
+            .shutdown = app_shutdown,
 			.platform = {
+                .window_width = 800,
+                .window_height = 600,
+                .window_title = "App"
 			},
 			.audio = {
 			},
@@ -87,13 +93,42 @@ gs_app_desc_t gs_main(int32_t argc, char** argv)
     	};
 
     	gs_app_desc_t app = {0};
-    	gs_platform_t* platform = gs_platform_setup(&app);
+    	gs_platform_t* platform = gs_platform_setup(&app); // The order matters, depending on what platform/graphics backends you're using
     	gs_graphics_t* gfx = gs_graphics_setup(&app);
     	gs_audio_t* audio = gs_graphics_audio_setup(&app);
 
     	// Good to go, now.
 
-    	gs_setup(&app);	 -> sets up contexts for all of those.
+        // Let's just do this for now.
+    	gs_context_t* ctx = gs_setup(&app); -> sets up all contexts and registers them as current
+        
+        How to do backends? Need emscripten/glfw platform backends + opengl3/opengles2/opengles3 backends
+        Do I supply glfw backends? Or have them as added utilities that can be used?
+        Don't get rid of glfw backend until all native backends are instated.
+
+        GS_PLATFORM_WIN
+        GS_PLATFORM_LINUX
+        GS_PLATFORM_APPLE
+        GS_PLATFORM_ANDROID
+        GS_PLATFORM_RASPI
+        GS_PLATFORM_WEB
+        GS_PLATFORM_CUSTOM
+
+        GS_GRAPHICS_OPENGL33
+        GS_GRAPHICS_OPENGLES2
+        GS_GRAPHICS_OPENGLES3
+        GS_GRAPHICS_CUSTOM
+
+        Then in some user config file, define what you want to use? Or should it be solely project based?
+
+        gs_config.h
+
+        // Defines for implementation
+
+        #define GS_PLATFORM_CUSTOM  // For custom platform implementation
+        
+        #define GS_GRAPHICS_CUSTOM  // For custom graphics implementation
+
     }
     
 */

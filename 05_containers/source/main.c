@@ -95,7 +95,7 @@ void update()
     if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_engine_quit();
 
     // To print array
-    if (gs_platform_key_pressed(GS_KEYCODE_ONE)) 
+    if (gs_platform_key_pressed(GS_KEYCODE_1)) 
     {
         gs_printf("gs_dyn_array: [");
         for (uint32_t i = 0; i < gs_dyn_array_size(arr); ++i)
@@ -106,7 +106,7 @@ void update()
     }
 
     // Iterate hash table
-    if (gs_platform_key_pressed(GS_KEYCODE_TWO))
+    if (gs_platform_key_pressed(GS_KEYCODE_2))
     {
         gs_println("gs_hash_table: [");
         for (
@@ -123,7 +123,7 @@ void update()
     }
 
     // Iterate custom key hash table
-    if (gs_platform_key_pressed(GS_KEYCODE_THREE))
+    if (gs_platform_key_pressed(GS_KEYCODE_3))
     {
         gs_println("gs_hash_table: [");
         for (
@@ -140,7 +140,7 @@ void update()
     }
 
     // Iterate slot array
-    if (gs_platform_key_pressed(GS_KEYCODE_FOUR))
+    if (gs_platform_key_pressed(GS_KEYCODE_4))
     {
         gs_println("gs_slot_array: [");
         for (
@@ -156,7 +156,7 @@ void update()
     }
 
     // Iterate slot map
-    if (gs_platform_key_pressed(GS_KEYCODE_FIVE))
+    if (gs_platform_key_pressed(GS_KEYCODE_5))
     {
         // Find data by hashed string key
         gs_println("gs_slot_map (manual): [");
@@ -181,7 +181,7 @@ void update()
         gs_println("]");
     }
 
-    if (gs_platform_key_pressed(GS_KEYCODE_SIX))
+    if (gs_platform_key_pressed(GS_KEYCODE_6))
     {
         // Find data by hashed string key
         gs_println("gs_byte_buffer_t: [");

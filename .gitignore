@@ -112,3 +112,10 @@ compute_shader/bin/main.obj
 22_emscripten/bin/main.html
 22_emscripten/bin/main.js
 22_emscripten/bin/main.wasm
+03_uniforms/bin/App.html
+03_uniforms/bin/App.js
+03_uniforms/bin/App.wasm
+15_meta_class/bin/main.obj
+20_uniforms_advanced/bin/App.html
+20_uniforms_advanced/bin/App.js
+20_uniforms_advanced/bin/App.wasm

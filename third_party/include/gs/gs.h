@@ -3627,7 +3627,7 @@ gs_vec4 gs_aabb_window_coords(gs_aabb_t* aabb, gs_camera_t* camera, gs_vec2 wind
 /* Platform Emscripten */
 #elif (defined __EMSCRIPTEN__)
 
-    #define GS_PLATFORM_EMSCRIPTEN
+    #define GS_PLATFORM_WEB
 
 /* Else - Platform Undefined and Unsupported */
 
@@ -3689,6 +3689,25 @@ typedef enum gs_platform_cursor
 
 typedef enum gs_platform_keycode
 {
+    GS_KEYCODE_INVALID,
+    GS_KEYCODE_SPACE,
+    GS_KEYCODE_APOSTROPHE,  /* ' */
+    GS_KEYCODE_COMMA,  /* , */
+    GS_KEYCODE_MINUS,  /* - */
+    GS_KEYCODE_PERIOD,  /* . */
+    GS_KEYCODE_SLASH,  /* / */
+    GS_KEYCODE_0,
+    GS_KEYCODE_1,
+    GS_KEYCODE_2,
+    GS_KEYCODE_3,
+    GS_KEYCODE_4,
+    GS_KEYCODE_5,
+    GS_KEYCODE_6,
+    GS_KEYCODE_7,
+    GS_KEYCODE_8,
+    GS_KEYCODE_9,
+    GS_KEYCODE_SEMICOLON,  /* ; */
+    GS_KEYCODE_EQUAL,  /* = */
     GS_KEYCODE_A,
     GS_KEYCODE_B,
     GS_KEYCODE_C,
@@ -3715,47 +3734,31 @@ typedef enum gs_platform_keycode
     GS_KEYCODE_X,
     GS_KEYCODE_Y,
     GS_KEYCODE_Z,
-    GS_KEYCODE_LSHIFT,
-    GS_KEYCODE_RSHIFT,
-    GS_KEYCODE_LALT,
-    GS_KEYCODE_RALT,
-    GS_KEYCODE_LCTRL,
-    GS_KEYCODE_RCTRL,
-    GS_KEYCODE_BSPACE,
-    GS_KEYCODE_BSLASH,
-    GS_KEYCODE_QMARK,
-    GS_KEYCODE_TILDE,
-    GS_KEYCODE_COMMA,
-    GS_KEYCODE_PERIOD,
-    GS_KEYCODE_ESC, 
-    GS_KEYCODE_SPACE,
-    GS_KEYCODE_LEFT,
-    GS_KEYCODE_UP,
-    GS_KEYCODE_RIGHT,
-    GS_KEYCODE_DOWN,
-    GS_KEYCODE_ZERO,
-    GS_KEYCODE_ONE,
-    GS_KEYCODE_TWO,
-    GS_KEYCODE_THREE,
-    GS_KEYCODE_FOUR,
-    GS_KEYCODE_FIVE,
-    GS_KEYCODE_SIX,
-    GS_KEYCODE_SEVEN,
-    GS_KEYCODE_EIGHT,
-    GS_KEYCODE_NINE,
-    GS_KEYCODE_NPZERO,
-    GS_KEYCODE_NPONE,
-    GS_KEYCODE_NPTWO,
-    GS_KEYCODE_NPTHREE,
-    GS_KEYCODE_NPFOUR,
-    GS_KEYCODE_NPFIVE,
-    GS_KEYCODE_NPSIX,
-    GS_KEYCODE_NPSEVEN,
-    GS_KEYCODE_NPEIGHT,
-    GS_KEYCODE_NPNINE,
-    GS_KEYCODE_CAPS,
+    GS_KEYCODE_LEFT_BRACKET,  /* [ */
+    GS_KEYCODE_BACKSLASH,  /* \ */
+    GS_KEYCODE_RIGHT_BRACKET,  /* ] */
+    GS_KEYCODE_GRAVE_ACCENT,  /* ` */
+    GS_KEYCODE_WORLD_1, /* non-US #1 */
+    GS_KEYCODE_WORLD_2, /* non-US #2 */
+    GS_KEYCODE_ESC,
+    GS_KEYCODE_ENTER,
+    GS_KEYCODE_TAB,
+    GS_KEYCODE_BACKSPACE,
+    GS_KEYCODE_INSERT,
     GS_KEYCODE_DELETE,
+    GS_KEYCODE_RIGHT,
+    GS_KEYCODE_LEFT,
+    GS_KEYCODE_DOWN,
+    GS_KEYCODE_UP,
+    GS_KEYCODE_PAGE_UP,
+    GS_KEYCODE_PAGE_DOWN,
+    GS_KEYCODE_HOME,
     GS_KEYCODE_END,
+    GS_KEYCODE_CAPS_LOCK,
+    GS_KEYCODE_SCROLL_LOCK,
+    GS_KEYCODE_NUM_LOCK,
+    GS_KEYCODE_PRINT_SCREEN,
+    GS_KEYCODE_PAUSE,
     GS_KEYCODE_F1,
     GS_KEYCODE_F2,
     GS_KEYCODE_F3,
@@ -3768,30 +3771,46 @@ typedef enum gs_platform_keycode
     GS_KEYCODE_F10,
     GS_KEYCODE_F11,
     GS_KEYCODE_F12,
-    GS_KEYCODE_HOME,
-    GS_KEYCODE_PLUS,
-    GS_KEYCODE_MINUS,
-    GS_KEYCODE_LBRACKET,
-    GS_KEYCODE_RBRACKET,
-    GS_KEYCODE_SEMI_COLON,
-    GS_KEYCODE_ENTER,
-    GS_KEYCODE_INSERT,
-    GS_KEYCODE_PGUP,
-    GS_KEYCODE_PGDOWN,
-    GS_KEYCODE_NUMLOCK,
-    GS_KEYCODE_TAB,
-    GS_KEYCODE_NPMULT,
-    GS_KEYCODE_NPDIV,
-    GS_KEYCODE_NPPLUS,
-    GS_KEYCODE_NPMINUS,
-    GS_KEYCODE_NPENTER,
-    GS_KEYCODE_NPDEL,
-    GS_KEYCODE_MUTE,
-    GS_KEYCODE_VOLUP,
-    GS_KEYCODE_VOLDOWN,
-    GS_KEYCODE_PAUSE,
-    GS_KEYCODE_PRINT,
-    GS_KEYCODE_COUNT
+    GS_KEYCODE_F13,
+    GS_KEYCODE_F14,
+    GS_KEYCODE_F15,
+    GS_KEYCODE_F16,
+    GS_KEYCODE_F17,
+    GS_KEYCODE_F18,
+    GS_KEYCODE_F19,
+    GS_KEYCODE_F20,
+    GS_KEYCODE_F21,
+    GS_KEYCODE_F22,
+    GS_KEYCODE_F23,
+    GS_KEYCODE_F24,
+    GS_KEYCODE_F25,
+    GS_KEYCODE_KP_0,
+    GS_KEYCODE_KP_1,
+    GS_KEYCODE_KP_2,
+    GS_KEYCODE_KP_3,
+    GS_KEYCODE_KP_4,
+    GS_KEYCODE_KP_5,
+    GS_KEYCODE_KP_6,
+    GS_KEYCODE_KP_7,
+    GS_KEYCODE_KP_8,
+    GS_KEYCODE_KP_9,
+    GS_KEYCODE_KP_DECIMAL,
+    GS_KEYCODE_KP_DIVIDE,
+    GS_KEYCODE_KP_MULTIPLY,
+    GS_KEYCODE_KP_SUBTRACT,
+    GS_KEYCODE_KP_ADD,
+    GS_KEYCODE_KP_ENTER,
+    GS_KEYCODE_KP_EQUAL,
+    GS_KEYCODE_LEFT_SHIFT,
+    GS_KEYCODE_LEFT_CONTROL,
+    GS_KEYCODE_LEFT_ALT,
+    GS_KEYCODE_LEFT_SUPER,
+    GS_KEYCODE_RIGHT_SHIFT,
+    GS_KEYCODE_RIGHT_CONTROL,
+    GS_KEYCODE_RIGHT_ALT,
+    GS_KEYCODE_RIGHT_SUPER,
+    GS_KEYCODE_MENU,
+    GS_KEYCODE_COUNT 
 } gs_platform_keycode;
 
 typedef enum gs_platform_mouse_button_code
@@ -4049,9 +4068,10 @@ GS_API_DECL void   gs_platform_sleep(float ms); // Sleeps platform for time in m
 GS_API_DECL void gs_platform_enable_vsync(int32_t enabled);
 
 // Platform Input
-GS_API_DECL void      gs_platform_process_input(gs_platform_input_t* input);
-GS_API_DECL uint32_t  gs_platform_key_to_codepoint(gs_platform_keycode code);
-GS_API_DECL void      gs_platform_mouse_set_position(uint32_t handle, float x, float y);
+GS_API_DECL void     gs_platform_process_input(gs_platform_input_t* input);
+GS_API_DECL uint32_t gs_platform_key_to_codepoint(gs_platform_keycode code);
+gs_platform_keycode  gs_platform_codepoint_to_key(uint32_t code);
+GS_API_DECL void     gs_platform_mouse_set_position(uint32_t handle, float x, float y);
 
 GS_API_DECL void*    gs_platform_create_window_internal(const char* title, uint32_t width, uint32_t height);
 GS_API_DECL void     gs_platform_window_swap_buffer(uint32_t handle);
@@ -5338,6 +5358,7 @@ bool32_t gs_util_load_texture_data_from_file(const char* file_path, int32_t* wid
 
     if (!*data) {
         gs_println("Warning: could not load texture: %s", file_path);
+        gs_free(*data);
         return false;
     }
 
@@ -5348,24 +5369,15 @@ bool32_t gs_util_load_texture_data_from_file(const char* file_path, int32_t* wid
 // GS_PLATFORM
 =============================*/
 
+// Default provided platform implementations (these will be removed eventually)
 #ifndef GS_PLATFORM_IMPL_CUSTOM
-    #define GS_PLATFORM_IMPL_GLFW
+    #if (defined GS_PLATFORM_WIN || defined GS_PLATFORM_APPLE || defined GS_PLATFORM_LINUX)
+        #define GS_PLATFORM_IMPL_GLFW
+    #elif (defined GS_PLATFORM_WEB)
+        #define GS_PLATFORM_IMPL_EMSCRIPTEN
+	#endif
 #endif
 
-#ifdef GS_PLATFORM_EMSCRIPTEN
-    #define GL_GLEXT_PROTOTYPES
-    #define EGL_EGLEXT_PROTOTYPES
-    // #define GL_ES_VERSION_2_0
-    // #define GLAD_IMPL
-    // #include "external/glad/glad.h"
-    // #include "external/glad/glad_impl.h"
-    // #include "external/glad/glad_impl.h"
-    #include <GLES3/gl3.h>
-    // #include <GLES2/gl2.h>
-    // #include <GLES2/gl2ext.h>
-#endif
-
-// Include for default platform implementations
 #include "impl/gs_platform_impl.h"
 
 /*=============================
@@ -5373,9 +5385,14 @@ bool32_t gs_util_load_texture_data_from_file(const char* file_path, int32_t* wid
 =============================*/
 
 #ifndef GS_GRAPHICS_IMPL_CUSTOM
-    #define GS_GRAPHICS_IMPL_OPENGL
-    #include "impl/gs_graphics_impl.h"
+    #if (defined GS_PLATFORM_WIN || defined GS_PLATFORM_APPLE || defined GS_PLATFORM_LINUX)
+        #define GS_GRAPHICS_IMPL_OPENGL_CORE
+    #else
+        #define GS_GRAPHICS_IMPL_OPENGL_ES
+    #endif
 #endif
+
+#include "impl/gs_graphics_impl.h"
 
 /*=============================
 // GS_AUDIO
@@ -5383,8 +5400,9 @@ bool32_t gs_util_load_texture_data_from_file(const char* file_path, int32_t* wid
 
 #ifndef GS_AUDIO_IMPL_CUSTOM
     #define GS_AUDIO_IMPL_MINIAUDIO
-    #include "impl/gs_audio_impl.h"
 #endif
+
+#include "impl/gs_audio_impl.h"
 
 /*==========================
 // GS_ASSET_TYPES
@@ -5412,7 +5430,6 @@ void gs_asset_texture_load_from_file(const char* path, void* out, gs_graphics_te
         (int32_t*)&t->desc.height, (uint32_t*)&num_comps, (void**)&t->desc.data, flip_on_load);
 
     if (!loaded) {
-        gs_println("Warning: could not load texture: %s", path);
         return;
     }
 
@@ -5477,7 +5494,7 @@ void gs_asset_font_load_from_file(const char* path, void* out, uint32_t point_si
         gs_println("Font Failed to Load: %s, %d", path, v);
     }
     else {
-        gs_println("Font Successfully Load: %s, %d", path, v);
+        gs_println("Font Successfully Loaded: %s, %d", path, v);
     }
 
     gs_free(ttf);
@@ -6013,10 +6030,6 @@ void gs_engine_shutdown()
 
     gs_platform_shutdown(gs_engine_subsystem(platform)); 
     gs_platform_destroy(gs_engine_subsystem(platform));
-
-    // Free engine
-    gs_free(__g_engine_instance);
-    __g_engine_instance = NULL;
 }
 
 void gs_default_app_func()

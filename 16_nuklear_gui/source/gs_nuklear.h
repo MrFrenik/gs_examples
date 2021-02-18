@@ -42,9 +42,13 @@ typedef struct gs_nk_ctx_t
 } gs_nk_ctx_t;
 
 NK_API struct nk_context*   gs_nk_init(gs_nk_ctx_t* gs, uint32_t win_hndl, enum gs_nk_init_state init_state);
+NK_API void                 gs_nk_new_frame(gs_nk_ctx_t* gs);
 NK_API void                 gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA);
 NK_API void                 gs_nk_device_upload_atlas(gs_nk_ctx_t* gs, const void *image, int32_t width, int32_t height);
 NK_API void                 gs_nk_device_create(gs_nk_ctx_t* gs);
+
+NK_API void gs_nk_font_stash_begin(struct gs_nk_ctx_t* gs, struct nk_font_atlas **atlas);
+NK_API void gs_nk_font_stash_end(struct gs_nk_ctx_t* gs);
 
 NK_INTERN void              gs_nk_clipboard_paste(nk_handle usr, struct nk_text_edit *edit);
 NK_INTERN void              gs_nk_clipboard_copy(nk_handle usr, const char *text, int32_t len);
@@ -69,7 +73,11 @@ typedef struct gs_nk_vertex_t
     nk_byte col[4];
 } gs_nk_vertex_t;
 
-#define NK_SHADER_VERSION "#version 330 core\n"
+#ifdef GS_PLATFORM_WEB
+    #define NK_SHADER_VERSION "#version 300 es\n"
+#else
+    #define NK_SHADER_VERSION "#version 330 core\n"
+#endif
 
 NK_API void
 gs_nk_device_create(gs_nk_ctx_t* gs)
@@ -252,7 +260,7 @@ gs_nk_new_frame(gs_nk_ctx_t* gs)
     struct nk_context* ctx = &gs->nk_ctx;
 
     // Cache platform pointer
-    gs_platform_i* platform = gs_engine_subsystem(platform);
+    gs_platform_t* platform = gs_engine_subsystem(platform);
 
     // Get window size
     gs_platform_window_size(gs->window_hndl, &gs->width, &gs->height);
@@ -303,20 +311,20 @@ gs_nk_new_frame(gs_nk_ctx_t* gs)
         nk_input_key(ctx, NK_KEY_DEL, gs_platform_key_pressed(GS_KEYCODE_DELETE));
         nk_input_key(ctx, NK_KEY_ENTER, gs_platform_key_pressed(GS_KEYCODE_ENTER));
         nk_input_key(ctx, NK_KEY_TAB, gs_platform_key_pressed(GS_KEYCODE_TAB));
-        nk_input_key(ctx, NK_KEY_BACKSPACE, gs_platform_key_pressed(GS_KEYCODE_BSPACE));
+        nk_input_key(ctx, NK_KEY_BACKSPACE, gs_platform_key_pressed(GS_KEYCODE_BACKSPACE));
         nk_input_key(ctx, NK_KEY_UP, gs_platform_key_pressed(GS_KEYCODE_UP));
         nk_input_key(ctx, NK_KEY_DOWN, gs_platform_key_pressed(GS_KEYCODE_DOWN));
         nk_input_key(ctx, NK_KEY_TEXT_START, gs_platform_key_pressed(GS_KEYCODE_HOME));
         nk_input_key(ctx, NK_KEY_TEXT_END, gs_platform_key_pressed(GS_KEYCODE_END));
         nk_input_key(ctx, NK_KEY_SCROLL_START, gs_platform_key_pressed(GS_KEYCODE_HOME));
         nk_input_key(ctx, NK_KEY_SCROLL_END, gs_platform_key_pressed(GS_KEYCODE_END));
-        nk_input_key(ctx, NK_KEY_SCROLL_DOWN, gs_platform_key_pressed(GS_KEYCODE_PGDOWN));
-        nk_input_key(ctx, NK_KEY_SCROLL_UP, gs_platform_key_pressed(GS_KEYCODE_PGUP));
-        nk_input_key(ctx, NK_KEY_SHIFT, gs_platform_key_pressed(GS_KEYCODE_LSHIFT)||
-                                        gs_platform_key_pressed(GS_KEYCODE_RSHIFT));
+        nk_input_key(ctx, NK_KEY_SCROLL_DOWN, gs_platform_key_pressed(GS_KEYCODE_PAGE_DOWN));
+        nk_input_key(ctx, NK_KEY_SCROLL_UP, gs_platform_key_pressed(GS_KEYCODE_PAGE_UP));
+        nk_input_key(ctx, NK_KEY_SHIFT, gs_platform_key_pressed(GS_KEYCODE_LEFT_SHIFT)||
+                                        gs_platform_key_pressed(GS_KEYCODE_RIGHT_SHIFT));
 
-        if (gs_platform_key_down(GS_KEYCODE_LCTRL) ||
-            gs_platform_key_down(GS_KEYCODE_RCTRL)) {
+        if (gs_platform_key_down(GS_KEYCODE_LEFT_CONTROL) ||
+            gs_platform_key_down(GS_KEYCODE_RIGHT_CONTROL)) {
             nk_input_key(ctx, NK_KEY_COPY, gs_platform_key_pressed(GS_KEYCODE_C));
             nk_input_key(ctx, NK_KEY_PASTE, gs_platform_key_pressed(GS_KEYCODE_V));
             nk_input_key(ctx, NK_KEY_CUT, gs_platform_key_pressed(GS_KEYCODE_X));

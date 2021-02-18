@@ -19,9 +19,6 @@
 // Include all necessary data for program
 #include "data.c"
 
-#define ROW_COL_CT  10
-#define CAM_SPEED   10
-
 typedef struct fps_camera_t
 {
     gs_camera_t camera;

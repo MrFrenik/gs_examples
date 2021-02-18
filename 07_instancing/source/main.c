@@ -19,51 +19,19 @@
 #define GS_IMPL
 #include <gs/gs.h>
 
+// All necessary graphics data for this example
+#include "data.c"
+
 gs_command_buffer_t                     cb       = {0};
 gs_handle(gs_graphics_vertex_buffer_t)  vbo      = {0};
 gs_handle(gs_graphics_vertex_buffer_t)  inst_vbo = {0};
 gs_handle(gs_graphics_pipeline_t)       pip      = {0};
 gs_handle(gs_graphics_shader_t)         shader   = {0};
 
-const char* v_src = "\n"
-"#version 330 core\n"
-"layout(location = 0) in vec2 a_pos;\n"
-"layout(location = 1) in vec3 a_color;\n"
-"layout(location = 2) in vec2 a_offset;\n"
-"out vec3 f_color;\n"
-"void main()\n"
-"{\n"
-"   vec2 pos = a_pos * (gl_InstanceID / 100.0);\n"
-"   gl_Position = vec4(pos + a_offset, 0.0, 1.0);\n"
-"   f_color = a_color;\n"
-"}";
-
-const char* f_src = "\n"
-"#version 330 core\n"
-"in vec3 f_color;\n"
-"out vec4 frag_color;\n"
-"void main()\n"
-"{\n"
-"   frag_color = vec4(f_color, 1.0);\n"
-"}";
-
-gs_vec2 g_translations[100] = {0};
-
 void init()
 {
     // Construct new command buffer
     cb = gs_command_buffer_new();
-    
-    float v_data[] = {
-        // positions     // colors
-        -0.05f,  0.05f,  1.0f, 0.0f, 0.0f,
-         0.05f, -0.05f,  0.0f, 1.0f, 0.0f,
-        -0.05f, -0.05f,  0.0f, 0.0f, 1.0f,
-
-        -0.05f,  0.05f,  1.0f, 0.0f, 0.0f,
-         0.05f, -0.05f,  0.0f, 1.0f, 0.0f,
-         0.05f,  0.05f,  0.0f, 1.0f, 1.0f
-    };
 
     // Translation data
     int32_t index = 0;
@@ -112,9 +80,9 @@ void init()
     // Here's where we actually let the pipeline know how view our vertex data that we'll bind.
     // Need to actually describe vertex strides/offsets/divisors for instanced data layouts.
     gs_graphics_vertex_attribute_desc_t vattrs[] = {
-        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2, .stride = 5 * sizeof(float), .offset = 0, .buffer_idx = 0},                  // Position
-        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT3, .stride = 5 * sizeof(float), .offset = 2 * sizeof(float), .buffer_idx = 0},  // Color
-        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2, .stride = 2 * sizeof(float), .offset = 0, .divisor = 1, .buffer_idx = 1},    // Offset (stride of total index vertex data, divisor is 1 for instance iteration)
+        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2, .name = "a_pos", .stride = 5 * sizeof(float), .offset = 0, .buffer_idx = 0},                  // Position
+        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT3, .name = "a_color", .stride = 5 * sizeof(float), .offset = 2 * sizeof(float), .buffer_idx = 0},  // Color
+        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2, .name = "a_offset", .stride = 2 * sizeof(float), .offset = 0, .divisor = 1, .buffer_idx = 1},    // Offset (stride of total index vertex data, divisor is 1 for instance iteration)
     };
 
     pip = gs_graphics_pipeline_create (

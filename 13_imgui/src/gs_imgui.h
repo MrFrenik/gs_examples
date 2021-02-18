@@ -25,7 +25,11 @@ typedef struct gs_imgui_vertex_t
     uint8_t col[4];
 } gs_imgui_vertex_t;
 
-#define GS_IMGUI_SHADER_VERSION "#version 330 core\n"
+#ifdef GS_PLATFORM_WEB
+    #define GS_IMGUI_SHADER_VERSION "#version 300 es\n"
+#else
+    #define GS_IMGUI_SHADER_VERSION "#version 330 core\n"
+#endif
 
 IMGUI_IMPL_API gs_imgui_t   gs_imgui_new(uint32_t hndl, bool install_callbacks);
 IMGUI_IMPL_API void         gs_imgui_device_create(gs_imgui_t* gs);

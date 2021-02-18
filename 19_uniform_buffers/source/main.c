@@ -7,6 +7,7 @@
 
 #define GS_IMPL
 #include <gs/gs.h>
+#include "data.c"
 
 gs_command_buffer_t                      cb          = {0};
 gs_camera_t                              cam         = {0};
@@ -16,48 +17,7 @@ gs_handle(gs_graphics_shader_t)          shaders[4]  = {0};
 gs_handle(gs_graphics_uniform_t)         u_model     = {0};
 gs_handle(gs_graphics_uniform_buffer_t)  u_vp        = {0};
 
-const char* v_src =
-    "#version 330\n"
-    "layout(location = 0) in vec3 a_pos;\n"
-    "layout (std140) uniform u_vp {\n"
-    "   mat4 projection;\n"
-    "   mat4 view;\n"
-    "};\n"
-    "uniform mat4 u_model;\n"
-    "void main() {\n"
-    "   gl_Position = projection * view * u_model * vec4(a_pos, 1.0);\n"
-    "}\n";
-
-const char* f_red_src =
-    "#version 330\n"
-    "layout(location = 0) out vec4 frag_color;\n"
-    "void main() {\n"
-    "   frag_color = vec4(1.0, 0.0, 0.0, 1.0);\n"
-    "}\n";
-
-const char* f_blue_src =
-    "#version 330\n"
-    "layout(location = 0) out vec4 frag_color;\n"
-    "void main() {\n"
-    "   frag_color = vec4(0.0, 0.0, 1.0, 1.0);\n"
-    "}\n";
-
-const char* f_green_src =
-    "#version 330\n"
-    "layout(location = 0) out vec4 frag_color;\n"
-    "void main() {\n"
-    "   frag_color = vec4(0.0, 1.0, 0.0, 1.0);\n"
-    "}\n";
-
-const char* f_yellow_src =
-    "#version 330\n"
-    "layout(location = 0) out vec4 frag_color;\n"
-    "void main() {\n"
-    "   frag_color = vec4(0.0, 1.0, 1.0, 1.0);\n"
-    "}\n";
-
-typedef struct vparams_t
-{
+typedef struct vparams_t {
     gs_mat4 projection;
     gs_mat4 view;
 } vparams_t;
@@ -70,52 +30,6 @@ void app_init()
     // Set up camera
     cam = gs_camera_perspective();
     cam.transform.position = gs_v3(0.f, 0.f, 3.f);
-
-    // Cube positions
-    float v_data[] = {
-        // positions
-        -0.5f, -0.5f, -0.5f,
-         0.5f, -0.5f, -0.5f,
-         0.5f,  0.5f, -0.5f,
-         0.5f,  0.5f, -0.5f,
-        -0.5f,  0.5f, -0.5f,
-        -0.5f, -0.5f, -0.5f,
-
-        -0.5f, -0.5f,  0.5f,
-         0.5f, -0.5f,  0.5f,
-         0.5f,  0.5f,  0.5f,
-         0.5f,  0.5f,  0.5f,
-        -0.5f,  0.5f,  0.5f,
-        -0.5f, -0.5f,  0.5f,
-
-        -0.5f,  0.5f,  0.5f,
-        -0.5f,  0.5f, -0.5f,
-        -0.5f, -0.5f, -0.5f,
-        -0.5f, -0.5f, -0.5f,
-        -0.5f, -0.5f,  0.5f,
-        -0.5f,  0.5f,  0.5f,
-
-         0.5f,  0.5f,  0.5f,
-         0.5f,  0.5f, -0.5f,
-         0.5f, -0.5f, -0.5f,
-         0.5f, -0.5f, -0.5f,
-         0.5f, -0.5f,  0.5f,
-         0.5f,  0.5f,  0.5f,
-
-        -0.5f, -0.5f, -0.5f,
-         0.5f, -0.5f, -0.5f,
-         0.5f, -0.5f,  0.5f,
-         0.5f, -0.5f,  0.5f,
-        -0.5f, -0.5f,  0.5f,
-        -0.5f, -0.5f, -0.5f,
-
-        -0.5f,  0.5f, -0.5f,
-         0.5f,  0.5f, -0.5f,
-         0.5f,  0.5f,  0.5f,
-         0.5f,  0.5f,  0.5f,
-        -0.5f,  0.5f,  0.5f,
-        -0.5f,  0.5f, -0.5f,
-    };
 
     // Construct vertex buffer
     vbo = gs_graphics_vertex_buffer_create(
@@ -193,7 +107,7 @@ void app_init()
                 },
                 .layout = {
                     .attrs = (gs_graphics_vertex_attribute_desc_t[]) {
-                        {.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT3}        // Position
+                        {.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT3, .name = "a_pos"}        // Position
                     },
                     .size = sizeof(gs_graphics_vertex_attribute_desc_t)
                 }
