@@ -119,3 +119,10 @@ compute_shader/bin/main.obj
 20_uniforms_advanced/bin/App.html
 20_uniforms_advanced/bin/App.js
 20_uniforms_advanced/bin/App.wasm
+08_audio/bin/App.data
+08_audio/bin/App.html
+08_audio/bin/App.js
+08_audio/bin/App.wasm
+19_uniform_buffers/bin/App.html
+19_uniform_buffers/bin/App.js
+19_uniform_buffers/bin/App.wasm

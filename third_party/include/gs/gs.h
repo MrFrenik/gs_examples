@@ -476,9 +476,9 @@
 
 /*===== Gunslinger Include ======*/
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+// #ifdef __cplusplus
+// extern "C" {
+// #endif
 
 /*========================
 // Defines
@@ -6068,9 +6068,9 @@ void gs_engine_quit()
 #undef GS_IMPL
 #endif // GS_IMPL
 
-#ifdef __cplusplus
-}
-#endif // c++
+// #ifdef __cplusplus
+// }
+// #endif // c++
 
 #endif // __GS_INCLUDED_H__
 

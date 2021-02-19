@@ -1322,12 +1322,12 @@ EM_BOOL gs_ems_key_cb(int32_t type, const EmscriptenKeyboardEvent* evt, void* us
     return evt->which < 32;
 }
 
-EM_BOOL gs_ems_mouse_cb(int32_t type, EmscriptenMouseEvent* evt, void* user_data)
+EM_BOOL gs_ems_mouse_cb(int32_t type, const EmscriptenMouseEvent* evt, void* user_data)
 {
     (void)type;
     (void)user_data;
 
-    gs_platform_mouse_button_code button = 0x00;
+    gs_platform_mouse_button_code button = GS_MOUSE_LBUTTON;
     switch (evt->button) {
         case 0: button = GS_MOUSE_LBUTTON; break;
         case 1: button = GS_MOUSE_MBUTTON; break;
@@ -1376,7 +1376,7 @@ EM_BOOL gs_ems_mouse_cb(int32_t type, EmscriptenMouseEvent* evt, void* user_data
     return true;
 }
 
-EM_BOOL gs_ems_mousewheel_cb(int32_t type, EmscriptenWheelEvent* evt, void* user_data)
+EM_BOOL gs_ems_mousewheel_cb(int32_t type, const EmscriptenWheelEvent* evt, void* user_data)
 {
     (void)type;
     (void)user_data;

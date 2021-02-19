@@ -166,17 +166,17 @@ gs_imgui_new(uint32_t hndl, bool install_callbacks)
     io.KeyMap[ImGuiKey_RightArrow]  = gs_platform_key_to_codepoint(GS_KEYCODE_RIGHT);
     io.KeyMap[ImGuiKey_UpArrow]     = gs_platform_key_to_codepoint(GS_KEYCODE_UP);
     io.KeyMap[ImGuiKey_DownArrow]   = gs_platform_key_to_codepoint(GS_KEYCODE_DOWN);
-    io.KeyMap[ImGuiKey_PageUp]      = gs_platform_key_to_codepoint(GS_KEYCODE_PGUP);
-    io.KeyMap[ImGuiKey_PageDown]    = gs_platform_key_to_codepoint(GS_KEYCODE_PGDOWN);
+    io.KeyMap[ImGuiKey_PageUp]      = gs_platform_key_to_codepoint(GS_KEYCODE_PAGE_UP);
+    io.KeyMap[ImGuiKey_PageDown]    = gs_platform_key_to_codepoint(GS_KEYCODE_PAGE_DOWN);
     io.KeyMap[ImGuiKey_Home]        = gs_platform_key_to_codepoint(GS_KEYCODE_HOME);
     io.KeyMap[ImGuiKey_End]         = gs_platform_key_to_codepoint(GS_KEYCODE_END);
     io.KeyMap[ImGuiKey_Insert]      = gs_platform_key_to_codepoint(GS_KEYCODE_INSERT);
     io.KeyMap[ImGuiKey_Delete]      = gs_platform_key_to_codepoint(GS_KEYCODE_DELETE);
-    io.KeyMap[ImGuiKey_Backspace]   = gs_platform_key_to_codepoint(GS_KEYCODE_BSPACE);
+    io.KeyMap[ImGuiKey_Backspace]   = gs_platform_key_to_codepoint(GS_KEYCODE_BACKSPACE);
     io.KeyMap[ImGuiKey_Space]       = gs_platform_key_to_codepoint(GS_KEYCODE_SPACE);
     io.KeyMap[ImGuiKey_Enter]       = gs_platform_key_to_codepoint(GS_KEYCODE_ENTER);
     io.KeyMap[ImGuiKey_Escape]      = gs_platform_key_to_codepoint(GS_KEYCODE_ESC);
-    io.KeyMap[ImGuiKey_KeyPadEnter] = gs_platform_key_to_codepoint(GS_KEYCODE_NPENTER);
+    io.KeyMap[ImGuiKey_KeyPadEnter] = gs_platform_key_to_codepoint(GS_KEYCODE_KP_ENTER);
     io.KeyMap[ImGuiKey_A]           = gs_platform_key_to_codepoint(GS_KEYCODE_A);
     io.KeyMap[ImGuiKey_C]           = gs_platform_key_to_codepoint(GS_KEYCODE_C);
     io.KeyMap[ImGuiKey_V]           = gs_platform_key_to_codepoint(GS_KEYCODE_V);
@@ -309,9 +309,9 @@ void gs_imgui_update_mouse_and_keys(gs_imgui_t* ctx)
     }
 
     // Modifiers
-    io.KeyCtrl   = gs_platform_key_down(GS_KEYCODE_LCTRL) || gs_platform_key_down(GS_KEYCODE_RCTRL);
-    io.KeyShift  = gs_platform_key_down(GS_KEYCODE_LSHIFT) || gs_platform_key_down(GS_KEYCODE_RSHIFT);
-    io.KeyAlt    = gs_platform_key_down(GS_KEYCODE_LALT) || gs_platform_key_down(GS_KEYCODE_RALT);
+    io.KeyCtrl   = gs_platform_key_down(GS_KEYCODE_LEFT_CONTROL) || gs_platform_key_down(GS_KEYCODE_RIGHT_CONTROL);
+    io.KeyShift  = gs_platform_key_down(GS_KEYCODE_LEFT_SHIFT) || gs_platform_key_down(GS_KEYCODE_RIGHT_SHIFT);
+    io.KeyAlt    = gs_platform_key_down(GS_KEYCODE_LEFT_ALT) || gs_platform_key_down(GS_KEYCODE_RIGHT_ALT);
     io.KeySuper  = false;
 
     // Update buttons
