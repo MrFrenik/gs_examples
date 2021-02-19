@@ -164,14 +164,14 @@ gs_asset_manager_t gs_asset_manager_new()
 	gs_asset_importer_desc_t font_desc  = gs_default_val();
 	gs_asset_importer_desc_t audio_desc = gs_default_val();
 	gs_asset_importer_desc_t mesh_desc  = gs_default_val();
+	gs_asset_importer_desc_t asset_desc  = gs_default_val();
 
 	tex_desc.load_from_file = (gs_asset_load_func)&gs_asset_texture_load_from_file;
 	font_desc.load_from_file = (gs_asset_load_func)&gs_asset_font_load_from_file;
 	audio_desc.load_from_file = (gs_asset_load_func)&gs_asset_audio_load_from_file;
 	mesh_desc.load_from_file = (gs_asset_load_func)&gs_asset_mesh_load_from_file;
 
-	gs_println("texture key: %lu", gs_hash_str64(gs_to_str(gs_asset_texture_t)));
-
+	gs_assets_register_importer(&assets, gs_asset_t, &asset_desc);
 	gs_assets_register_importer(&assets, gs_asset_texture_t, &tex_desc);
 	gs_assets_register_importer(&assets, gs_asset_font_t, &font_desc);
 	gs_assets_register_importer(&assets, gs_asset_audio_t, &audio_desc);

@@ -1838,8 +1838,6 @@ uint32_t gs_hash_table_get_key_index_func(void** data, void* key, size_t key_len
 
 typedef uint32_t gs_hash_table_iter;
 
-// uint32_t gs_hash_table_get_key_index_func(void** data, void* key, size_t key_len, size_t val_len, size_t stride, size_t klpvl)
-
 gs_force_inline
 uint32_t __gs_find_first_valid_iterator(void* data, size_t key_len, size_t val_len, uint32_t idx, size_t stride, size_t klpvl)
 {
@@ -1986,6 +1984,13 @@ uint32_t gs_slot_array_insert_func(void** indices, void** data, void* val, size_
     return idx;
 }
 
+#define gs_slot_array_reserve(__SA, __NUM)\
+    do {\
+        gs_slot_array_init_all(__SA);\
+        gs_dyn_array_reserve((__SA)->data, __NUM);\
+        gs_dyn_array_reserve((__SA)->indices, __NUM);\
+    } while (0)
+
 #define gs_slot_array_insert(__SA, __VAL)\
     (gs_slot_array_init_all(__SA), (__SA)->tmp = (__VAL),\
         gs_slot_array_insert_func((void**)&((__SA)->indices), (void**)&((__SA)->data), (void*)&((__SA)->tmp), sizeof(((__SA)->tmp)), NULL))
@@ -2034,7 +2039,7 @@ uint32_t gs_slot_array_insert_func(void** indices, void** data, void* val, size_
 
  #define gs_slot_array_erase(__SA, __id)\
     do {\
-        uint32_t __H0 = (__id) % gs_dyn_array_size((__SA)->indices);\
+        uint32_t __H0 = (__id) /*% gs_dyn_array_size((__SA)->indices)*/;\
         if (gs_slot_array_size(__SA) == 1) {\
             gs_slot_array_clear(__SA);\
         }\
@@ -3902,6 +3907,14 @@ typedef enum gs_platform_event_type
     GS_PLATFORM_EVENT_WINDOW
 } gs_platform_event_type;
 
+typedef enum gs_platform_key_modifier_type
+{
+    GS_PLATFORM_KEY_MODIFIER_NONE    = 0x00,
+    GS_PLATFORM_KEY_MODIFIER_SHIFT   = 0x01,
+    GS_PLATFORM_KEY_MODIFIER_CONTROL = 0x02,
+    GS_PLATFORM_KEY_MODIFIER_ALT     = 0x04
+} gs_platform_key_modifier_type;
+
 typedef enum gs_platform_key_action_type
 {
     GS_PLATFORM_KEY_PRESSED,
@@ -3912,8 +3925,9 @@ typedef enum gs_platform_key_action_type
 typedef struct gs_platform_key_event_t
 {
     int32_t codepoint;
-    gs_platform_keycode key;
+    gs_platform_keycode keycode;
     gs_platform_key_action_type action;
+    gs_platform_key_modifier_type modifier;
 } gs_platform_key_event_t;
 
 typedef enum gs_platform_mousebutton_action_type
@@ -4176,6 +4190,10 @@ GS_API_DECL gs_handle(gs_audio_source_t) gs_audio_load_from_file(const char* fil
 
 /* Audio create instance */
 GS_API_DECL gs_handle(gs_audio_instance_t) gs_audio_instance_create(gs_audio_instance_decl_t* decl);
+
+/* Locking audio thread (optional) */
+GS_API_DECL void gs_audio_mutex_lock(gs_audio_i* audio);
+GS_API_DECL void gs_audio_mutex_unlock(gs_audio_i* audio);
 
 /* Audio play instance */
 GS_API_DECL void     gs_audio_play_source(gs_handle(gs_audio_source_t) src, float volume);
@@ -5920,10 +5938,10 @@ gs_engine_t* gs_engine_create(gs_app_desc_t app_desc)
         gs_graphics_init(gs_engine_subsystem(graphics));
 
         // Construct audio api
-        // gs_engine_subsystem(audio) = gs_audio_create();
+        gs_engine_subsystem(audio) = gs_audio_create();
 
         // Initialize audio
-        // gs_audio_init(gs_engine_subsystem(audio));
+        gs_audio_init(gs_engine_subsystem(audio));
 
         // Initialize application
         app_desc.init();
@@ -5968,15 +5986,15 @@ GS_API_DECL void gs_engine_frame()
     platform->time.update   = platform->time.current - platform->time.previous;
     platform->time.previous = platform->time.current;
 
-    // Update platform and process input
-    gs_platform_update(platform);
+    // Process application context
+    gs_engine_instance()->ctx.app.update();
     if (!gs_engine_instance()->ctx.app.is_running) {
         gs_engine_instance()->shutdown();
         return;
     }
 
-    // Process application context
-    gs_engine_instance()->ctx.app.update();
+    // Update platform and process input
+    gs_platform_update(platform);
     if (!gs_engine_instance()->ctx.app.is_running) {
         gs_engine_instance()->shutdown();
         return;

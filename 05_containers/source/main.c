@@ -18,6 +18,9 @@
 #define GS_IMPL
 #include <gs/gs.h>
 
+#define GS_ASSET_IMPL
+#include <gs/util/gs_asset.h>
+
 #define ITER_CT   5
 
 // Helper macro for printing console commands
@@ -53,8 +56,25 @@ const char* smkeys[ITER_CT] =
     "Wayne"
 };
 
+// Custom asset definition
+typedef struct custom_asset_t
+{
+    const char* name;
+    uint32_t udata;
+    float fdata;
+} custom_asset_t;
+
+gs_asset_manager_t am = {0};
+
 void init()
 {
+    am = gs_asset_manager_new();
+
+    // Registering custom asset importer
+    gs_assets_register_importer(&am, custom_asset_t, &(gs_asset_importer_desc_t){0});
+
+    gs_assert(gs_hash_table_key_exists(am.importers, gs_hash_str64(gs_to_str(gs_asset_texture_t)))); 
+
     // Construct byte buffer
     bb = gs_byte_buffer_new();
 

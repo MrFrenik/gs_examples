@@ -20,15 +20,15 @@ void init()
     src_hndl = gs_audio_load_from_file("./assets/punch.wav");
 
     // Persistent audio (music)
-    mus_hndl = gs_audio_load_from_file("./assets/music.mp3");
+    mus_hndl = gs_audio_load_from_file("./assets/music.ogg");
 
     // Create instance decl, play sound to be looped
     inst_hndl = gs_audio_instance_create(
         &(gs_audio_instance_decl_t){
             .src = mus_hndl,
             .persistent = true,
-            .volume = 0.1f,
-            .loop = true 
+            .volume = 0.5f,
+            .loop = true
         }
     );
     gs_audio_play(inst_hndl);
@@ -36,12 +36,13 @@ void init()
 
 void update()
 {
+
     if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_engine_quit();
 
     // If press button, play transient, non-persistent audio sample from source
-    // with 0.5f volume (volume is normalized 0-1)
+    // with 0.5f volume (volume is clamped 0-1)
     // This sample will be cleaned up automatically by internal resources when done playing.
-    if (gs_platform_key_pressed(GS_KEYCODE_O)) {
+    if (gs_platform_key_pressed(GS_KEYCODE_SPACE)) {
         gs_audio_play_source(src_hndl, 0.5f);
     }
 
