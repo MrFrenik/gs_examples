@@ -3831,9 +3831,10 @@ typedef struct gs_platform_mouse_t
     b32 button_map[GS_MOUSE_BUTTON_CODE_COUNT];
     b32 prev_button_map[GS_MOUSE_BUTTON_CODE_COUNT];
     gs_vec2 position;
-    gs_vec2 prev_position;
+    gs_vec2 delta;
     gs_vec2 wheel;
     b32 moved_this_frame;
+    b32 locked;
 } gs_platform_mouse_t;
 
 typedef struct gs_platform_input_t
@@ -3947,7 +3948,7 @@ typedef struct gs_platform_mouse_event_t
     union {
         gs_platform_mouse_button_code button;
         gs_vec2 wheel;
-        gs_vec2 position;
+        gs_vec2 move;
     };
     gs_platform_mousebutton_action_type action;
 } gs_platform_mouse_event_t;
@@ -4058,6 +4059,7 @@ GS_API_DECL gs_vec2   gs_platform_mouse_positionv();
 GS_API_DECL void      gs_platform_mouse_position(int32_t* x, int32_t* y);
 GS_API_DECL void      gs_platform_mouse_wheel(float* x, float* y);
 GS_API_DECL bool      gs_platform_mouse_moved();
+GS_API_DECL bool      gs_platform_mouse_locked();
 
 // Platform Events
 GS_API_DECL bool      gs_platform_poll_events(gs_platform_event_t* evt, bool32_t consume);
@@ -4088,10 +4090,11 @@ GS_API_DECL void   gs_platform_sleep(float ms); // Sleeps platform for time in m
 GS_API_DECL void gs_platform_enable_vsync(int32_t enabled);
 
 // Platform Input
-GS_API_DECL void     gs_platform_process_input(gs_platform_input_t* input);
-GS_API_DECL uint32_t gs_platform_key_to_codepoint(gs_platform_keycode code);
-gs_platform_keycode  gs_platform_codepoint_to_key(uint32_t code);
-GS_API_DECL void     gs_platform_mouse_set_position(uint32_t handle, float x, float y);
+GS_API_DECL void                 gs_platform_process_input(gs_platform_input_t* input);
+GS_API_DECL uint32_t             gs_platform_key_to_codepoint(gs_platform_keycode code);
+GS_API_DECL gs_platform_keycode  gs_platform_codepoint_to_key(uint32_t code);
+GS_API_DECL void                 gs_platform_mouse_set_position(uint32_t handle, float x, float y);
+GS_API_DECL void                 gs_platform_lock_mouse(uint32_t handle, bool32_t lock);
 
 GS_API_DECL void*    gs_platform_create_window_internal(const char* title, uint32_t width, uint32_t height);
 GS_API_DECL void     gs_platform_window_swap_buffer(uint32_t handle);
@@ -6071,7 +6074,9 @@ void gs_default_main_window_close_callback(void* window)
 
 void gs_engine_quit()
 {
+#ifndef GS_PLATFORM_WEB
     gs_engine_instance()->ctx.app.is_running = false;
+#endif
 }
 
 #undef GS_IMPL

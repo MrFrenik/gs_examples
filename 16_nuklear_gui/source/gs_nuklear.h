@@ -310,7 +310,7 @@ gs_nk_new_frame(gs_nk_ctx_t* gs)
 
                         case GS_PLATFORM_MOUSE_MOVE:
                         {
-                            nk_input_motion(ctx, (int32_t)evt.mouse.position.x, (int32_t)evt.mouse.position.y);
+                            nk_input_motion(ctx, (int32_t)evt.mouse.move.x, (int32_t)evt.mouse.move.y);
                         } break;
 
                         default: break;

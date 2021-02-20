@@ -171,9 +171,14 @@ void gs_platform_update_input(gs_platform_input_t* input)
         input->mouse.prev_button_map[i] = input->mouse.button_map[i];
     }
 
-    input->mouse.prev_position = input->mouse.position;
+    // input->mouse.prev_position = input->mouse.position;
     input->mouse.wheel = gs_v2(0.0f, 0.0f);
+    input->mouse.delta = gs_v2(0.f, 0.f);
     input->mouse.moved_this_frame = false;
+    // gs_println("mouse pos: %.2f, %.2f", input->mouse.position.x, input->mouse.position.y);
+    // if (!input->mouse.locked) {
+    //     input->mouse.position = gs_v2(0.f, 0.f);
+    // }
 }
 
 void gs_platform_poll_all_events()
@@ -192,7 +197,15 @@ void gs_platform_poll_all_events()
                 {
                     case GS_PLATFORM_MOUSE_MOVE:
                     {
-                        platform->input.mouse.position = evt.mouse.position;
+                        // If locked, then movement amount will be applied to delta, 
+                        // otherwise set position
+                        if (gs_platform_mouse_locked()) {
+                            platform->input.mouse.delta = evt.mouse.move;
+                            platform->input.mouse.position = gs_vec2_add(evt.mouse.move, platform->input.mouse.position);
+                        } else {
+                            platform->input.mouse.delta = gs_vec2_sub(evt.mouse.move, platform->input.mouse.delta);
+                            platform->input.mouse.position = evt.mouse.move;
+                        }
                     } break;
 
                     case GS_PLATFORM_MOUSE_WHEEL:
@@ -237,14 +250,14 @@ void gs_platform_poll_all_events()
                         gs_platform_press_key(evt.key.keycode);
                     } break;
 
-                    case GS_PLATFORM_KEY_RELEASED:
-                    {
-                        gs_platform_release_key(evt.key.keycode);
-                    } break;
-
                     case GS_PLATFORM_KEY_DOWN:
                     {
                         gs_platform_press_key(evt.key.keycode);
+                    } break;
+
+                    case GS_PLATFORM_KEY_RELEASED:
+                    {
+                        gs_platform_release_key(evt.key.keycode);
                     } break;
                 }
 
@@ -375,35 +388,16 @@ bool gs_platform_mouse_released(gs_platform_mouse_button_code code)
 void gs_platform_mouse_delta(float* x, float* y)
 {
     gs_platform_input_t* input = __gs_input();
-
-    if (input->mouse.prev_position.x < 0.0f || 
-        input->mouse.prev_position.y < 0.0f ||
-        input->mouse.position.x < 0.0f || 
-        input->mouse.position.y < 0.0f)
-    {
-        *x = 0.f;
-        *y = 0.f;
-        return;
-    }
-    
-    *x = input->mouse.position.x - input->mouse.prev_position.x;
-    *y = input->mouse.position.y - input->mouse.prev_position.y;
+    *x = input->mouse.delta.x;
+    *y = input->mouse.delta.y;
 }
 
 gs_vec2 gs_platform_mouse_deltav()
 {
     gs_platform_input_t* input = __gs_input();
-
-    if (input->mouse.prev_position.x < 0.0f || 
-        input->mouse.prev_position.y < 0.0f ||
-        input->mouse.position.x < 0.0f || 
-        input->mouse.position.y < 0.0f)
-    {
-        return gs_v2(0.0f, 0.0f);
-    }
-    
-    return gs_v2(input->mouse.position.x - input->mouse.prev_position.x, 
-                      input->mouse.position.y - input->mouse.prev_position.y);
+    gs_vec2 delta = gs_default_val();
+    gs_platform_mouse_delta(&delta.x, &delta.y);
+    return delta;
 }
 
 gs_vec2 gs_platform_mouse_positionv()
@@ -428,6 +422,11 @@ void gs_platform_mouse_wheel(f32* x, f32* y)
     gs_platform_input_t* input = __gs_input();
     *x = input->mouse.wheel.x;
     *y = input->mouse.wheel.y;  
+}
+
+bool gs_platform_mouse_locked()
+{
+    return (__gs_input())->mouse.locked;
 }
 
 void gs_platform_press_key(gs_platform_keycode code)
@@ -696,7 +695,7 @@ uint32_t gs_platform_key_to_codepoint(gs_platform_keycode key)
         case GS_KEYCODE_TAB:              code = 258; break;
         case GS_KEYCODE_BACKSPACE:        code = 259; break;
         case GS_KEYCODE_INSERT:           code = 260; break;
-        case GS_KEYCODE_DELETE:           code = 46; break;
+        case GS_KEYCODE_DELETE:           code = GLFW_KEY_DELETE; break;
         case GS_KEYCODE_RIGHT:            code = 262; break;
         case GS_KEYCODE_LEFT:             code = 263; break;
         case GS_KEYCODE_DOWN:             code = 264; break;
@@ -828,7 +827,7 @@ gs_platform_keycode gs_platform_codepoint_to_key(uint32_t code)
         case 258: key = GS_KEYCODE_TAB; break;
         case 259: key = GS_KEYCODE_BACKSPACE; break;
         case 260: key = GS_KEYCODE_INSERT; break;
-        case 46: key = GS_KEYCODE_DELETE; break;
+        case GLFW_KEY_DELETE: key = GS_KEYCODE_DELETE; break;
         case 262: key = GS_KEYCODE_RIGHT; break; 
         case 263: key = GS_KEYCODE_LEFT; break; 
         case 264: key = GS_KEYCODE_DOWN; break;
@@ -1109,14 +1108,26 @@ void __glfw_mouse_button_callback(GLFWwindow* window, s32 code, s32 action, s32 
 void __glfw_mouse_cursor_position_callback(GLFWwindow* window, f64 x, f64 y)
 {
     gs_platform_t* platform = gs_engine_subsystem(platform);
-    platform->input.mouse.position = gs_v2((f32)x, (f32)y);
-    platform->input.mouse.moved_this_frame = true;
+    // platform->input.mouse.position = gs_v2((f32)x, (f32)y);
+    // platform->input.mouse.moved_this_frame = true;
 
-    // Push back event into platform events
     gs_platform_event_t gs_evt = gs_default_val();
     gs_evt.type = GS_PLATFORM_EVENT_MOUSE;
     gs_evt.mouse.action = GS_PLATFORM_MOUSE_MOVE;
-    gs_evt.mouse.position = gs_v2((f32)x, (f32)y);
+
+    // gs_println("pos: <%.2f, %.2f>, old: <%.2f, %.2f>", x, y, platform->input.mouse.position.x, platform->input.mouse.position.y);
+
+    // gs_evt.mouse.move = gs_v2((f32)x, (f32)y);
+
+    // Calculate mouse move based on whether locked or not
+    if (gs_platform_mouse_locked()) {
+        gs_evt.mouse.move.x = x - platform->input.mouse.position.x;
+        gs_evt.mouse.move.y = y - platform->input.mouse.position.y;
+    } else {
+        gs_evt.mouse.move = gs_v2((f32)x, (f32)y);
+    }
+
+    // Push back event into platform events
     gs_dyn_array_push(platform->events, gs_evt);
 }
 
@@ -1361,6 +1372,19 @@ void gs_platform_set_cursor(uint32_t handle, gs_platform_cursor cursor)
     glfwSetCursor(win, cp);
 }
 
+void gs_platform_lock_mouse(uint32_t handle, bool32_t lock)
+{
+    __gs_input()->mouse.locked = lock;
+    gs_platform_t* platform = gs_engine_subsystem(platform);
+    GLFWwindow* win = __glfw_window_from_handle(platform, handle);
+    glfwSetInputMode(win, GLFW_CURSOR, lock ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+
+    // Not sure if I want to support this or not
+    // if (glfwRawMouseMotionSupported()) {
+    //     glfwSetInputMode(win, GLFW_RAW_MOUSE_MOTION, lock ? GLFW_TRUE : GLFW_FALSE);
+    // }
+}
+
 /* Main entry point for platform*/
 #ifndef GS_NO_HIJACK_MAIN
 
@@ -1465,7 +1489,7 @@ uint32_t gs_platform_key_to_codepoint(gs_platform_keycode key)
         case GS_KEYCODE_GRAVE_ACCENT:     code = 96; break;  /* ` */
         case GS_KEYCODE_WORLD_1:          code = 161; break; /* non-US #1 */
         case GS_KEYCODE_WORLD_2:          code = 162; break; /* non-US #2 */
-        case GS_KEYCODE_ESC:              code = 256; break;
+        case GS_KEYCODE_ESC:              code = 27; break;
         case GS_KEYCODE_ENTER:            code = 13; break;
         case GS_KEYCODE_TAB:              code = 9; break;
         case GS_KEYCODE_BACKSPACE:        code = 8; break;
@@ -1570,39 +1594,39 @@ gs_platform_keycode gs_platform_codepoint_to_key(uint32_t code)
         case 57:  key = GS_KEYCODE_9; break;
         case 59:  key = GS_KEYCODE_SEMICOLON; break;
         case 61:  key = GS_KEYCODE_EQUAL; break;
-        case 65 + 32:  key = GS_KEYCODE_A; break;
-        case 66 + 32:  key = GS_KEYCODE_B; break;
-        case 67 + 32:  key = GS_KEYCODE_C; break;
-        case 68 + 32:  key = GS_KEYCODE_D; break;
-        case 69 + 32:  key = GS_KEYCODE_E; break;
-        case 70 + 32:  key = GS_KEYCODE_F; break;
-        case 71 + 32:  key = GS_KEYCODE_G; break;
-        case 72 + 32:  key = GS_KEYCODE_H; break;
-        case 73 + 32:  key = GS_KEYCODE_I; break;
-        case 74 + 32:  key = GS_KEYCODE_J; break;
-        case 75 + 32:  key = GS_KEYCODE_K; break;
-        case 76 + 32:  key = GS_KEYCODE_L; break;
-        case 77 + 32:  key = GS_KEYCODE_M; break;
-        case 78 + 32:  key = GS_KEYCODE_N; break;
-        case 79 + 32:  key = GS_KEYCODE_O; break;
-        case 80 + 32:  key = GS_KEYCODE_P; break;
-        case 81 + 32:  key = GS_KEYCODE_Q; break;
-        case 82 + 32:  key = GS_KEYCODE_R; break;
-        case 83 + 32:  key = GS_KEYCODE_S; break;
-        case 84 + 32:  key = GS_KEYCODE_T; break;
-        case 85 + 32:  key = GS_KEYCODE_U; break;
-        case 86 + 32:  key = GS_KEYCODE_V; break;
-        case 87 + 32:  key = GS_KEYCODE_W; break;
-        case 88 + 32:  key = GS_KEYCODE_X; break;
-        case 89 + 32:  key = GS_KEYCODE_Y; break;
-        case 90 + 32:  key = GS_KEYCODE_Z; break;
+        case 65: case 65 + 32:  key = GS_KEYCODE_A; break;
+        case 66: case 66 + 32:  key = GS_KEYCODE_B; break;
+        case 67: case 67 + 32:  key = GS_KEYCODE_C; break;
+        case 68: case 68 + 32:  key = GS_KEYCODE_D; break;
+        case 69: case 69 + 32:  key = GS_KEYCODE_E; break;
+        case 70: case 70 + 32:  key = GS_KEYCODE_F; break;
+        case 71: case 71 + 32:  key = GS_KEYCODE_G; break;
+        case 72: case 72 + 32:  key = GS_KEYCODE_H; break;
+        case 73: case 73 + 32:  key = GS_KEYCODE_I; break;
+        case 74: case 74 + 32:  key = GS_KEYCODE_J; break;
+        case 75: case 75 + 32:  key = GS_KEYCODE_K; break;
+        case 76: case 76 + 32:  key = GS_KEYCODE_L; break;
+        case 77: case 77 + 32:  key = GS_KEYCODE_M; break;
+        case 78: case 78 + 32:  key = GS_KEYCODE_N; break;
+        case 79: case 79 + 32:  key = GS_KEYCODE_O; break;
+        case 80: case 80 + 32:  key = GS_KEYCODE_P; break;
+        case 81: case 81 + 32:  key = GS_KEYCODE_Q; break;
+        case 82: case 82 + 32:  key = GS_KEYCODE_R; break;
+        case 83: case 83 + 32:  key = GS_KEYCODE_S; break;
+        case 84: case 84 + 32:  key = GS_KEYCODE_T; break;
+        case 85: case 85 + 32:  key = GS_KEYCODE_U; break;
+        case 86: case 86 + 32:  key = GS_KEYCODE_V; break;
+        case 87: case 87 + 32:  key = GS_KEYCODE_W; break;
+        case 88: case 88 + 32:  key = GS_KEYCODE_X; break;
+        case 89: case 89 + 32:  key = GS_KEYCODE_Y; break;
+        case 90: case 90 + 32:  key = GS_KEYCODE_Z; break;
         case 91:  key = GS_KEYCODE_LEFT_BRACKET; break;
         case 92:  key = GS_KEYCODE_BACKSLASH; break;
         case 93:  key = GS_KEYCODE_RIGHT_BRACKET; break;
         case 96:  key = GS_KEYCODE_GRAVE_ACCENT; break;
         case 161: key = GS_KEYCODE_WORLD_1; break;
         case 162: key = GS_KEYCODE_WORLD_2; break;
-        case 256: key = GS_KEYCODE_ESC; break;
+        case 27: key = GS_KEYCODE_ESC; break;
         case 13: key = GS_KEYCODE_ENTER; break;
         case 9: key = GS_KEYCODE_TAB; break;
         case 8: key = GS_KEYCODE_BACKSPACE; break;
@@ -1727,6 +1751,7 @@ EM_BOOL gs_ems_mouse_cb(int32_t type, const EmscriptenMouseEvent* evt, void* use
 {
     (void)user_data;
 
+    gs_platform_t* platform = gs_engine_subsystem(platform);
     gs_ems_t* ems = GS_EMS_DATA();
 
     gs_platform_mouse_button_code button = GS_MOUSE_LBUTTON;
@@ -1765,7 +1790,11 @@ EM_BOOL gs_ems_mouse_cb(int32_t type, const EmscriptenMouseEvent* evt, void* use
         case EMSCRIPTEN_EVENT_MOUSEMOVE:
         {
             gs_evt.mouse.action = GS_PLATFORM_MOUSE_MOVE;
-            gs_evt.mouse.position = gs_v2((float)evt->targetX, (float)evt->targetY);
+            if (platform->input.mouse.locked) {
+                gs_evt.mouse.move = gs_v2((float)evt->movementX, (float)evt->movementY);
+            } else {
+                gs_evt.mouse.move = gs_v2((float)evt->targetX, (float)evt->targetY);
+            }
         } break;
 
         case EMSCRIPTEN_EVENT_MOUSEENTER:
@@ -1811,6 +1840,15 @@ EM_BOOL gs_ems_mousewheel_cb(int32_t type, const EmscriptenWheelEvent* evt, void
     return true;
 }
 
+EM_BOOL gs_ems_pointerlock_cb(int32_t type, const EmscriptenPointerlockChangeEvent* evt, void* user_data)
+{
+    (void)type;
+    (void)user_data;
+    gs_platform_t* platform = gs_engine_subsystem(platform);
+    platform->input.mouse.locked = evt->isActive;
+    // gs_println("lock: %zu", platform->input.mouse.locked);
+}
+
 GS_API_DECL void       
 gs_platform_init(gs_platform_t* platform)
 {
@@ -1837,6 +1875,7 @@ gs_platform_init(gs_platform_t* platform)
     emscripten_set_mouseup_callback(ems->canvas_name, NULL, true, gs_ems_mouse_cb);
     emscripten_set_mousemove_callback(ems->canvas_name, NULL, true, gs_ems_mouse_cb);
     emscripten_set_wheel_callback(ems->canvas_name, NULL, true, gs_ems_mousewheel_cb);
+    emscripten_set_pointerlockchange_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, NULL, true, gs_ems_pointerlock_cb);
 
     // Set up webgl context
     EmscriptenWebGLContextAttributes attrs;
@@ -1858,6 +1897,20 @@ gs_platform_init(gs_platform_t* platform)
     }
     if (emscripten_webgl_make_context_current(ems->ctx) != EMSCRIPTEN_RESULT_SUCCESS) {
         gs_println("Emscripten Init: Unable to set current webgl context.");
+    }
+}
+
+GS_API_DECL void                 
+gs_platform_lock_mouse(uint32_t handle, bool32_t lock)
+{
+    gs_platform_t* platform = gs_engine_subsystem(platform);
+    gs_ems_t* ems = (gs_ems_t*)platform->user_data;
+    // if (platform->input.mouse.locked == lock) return;
+    platform->input.mouse.locked = lock;
+    if (lock) {
+        emscripten_request_pointerlock(ems->canvas_name, true);
+    } else {
+        emscripten_exit_pointerlock();
     }
 }
 
@@ -1897,6 +1950,13 @@ gs_platform_process_input(gs_platform_input_t* input)
     for (uint32_t i = 0; i < GS_MOUSE_BUTTON_CODE_COUNT; ++i) {
         if (ems->mouse_down[i]) gs_platform_press_mouse_button((gs_platform_mouse_button_code)i);
         else                    gs_platform_release_mouse_button((gs_platform_mouse_button_code)i);
+    }
+
+    // Check for pointerlock, because Chrome is retarded.
+    EmscriptenPointerlockChangeEvent evt = gs_default_val();
+    emscripten_get_pointerlock_status(&evt);
+    if (gs_platform_mouse_locked() && !evt.isActive) {
+        gs_engine_subsystem(platform)->input.mouse.locked = false;
     }
 }
 
