@@ -3932,22 +3932,28 @@ typedef struct gs_platform_key_event_t
 
 typedef enum gs_platform_mousebutton_action_type
 {
-    GS_PLATFORM_MBUTTON_PRESSED,
-    GS_PLATFORM_MBUTTON_DOWN,
-    GS_PLATFORM_MBUTTON_RELEASED
+    GS_PLATFORM_MOUSE_BUTTON_PRESSED,
+    GS_PLATFORM_MOUSE_BUTTON_DOWN,
+    GS_PLATFORM_MOUSE_BUTTON_RELEASED,
+    GS_PLATFORM_MOUSE_MOVE,
+    GS_PLATFORM_MOUSE_ENTER,
+    GS_PLATFORM_MOUSE_LEAVE,
+    GS_PLATFORM_MOUSE_WHEEL
 } gs_platform_mousebutton_action_type;
 
 typedef struct gs_platform_mouse_event_t 
 {
     int32_t codepoint;
-    gs_platform_mouse_button_code button;
+    union {
+        gs_platform_mouse_button_code button;
+        gs_vec2 wheel;
+        gs_vec2 position;
+    };
     gs_platform_mousebutton_action_type action;
 } gs_platform_mouse_event_t;
 
 typedef enum gs_platform_window_action_type
 {
-    GS_PLATFORM_WINDOW_MOUSE_ENTER,
-    GS_PLATFORM_WINDOW_MOUSE_LEAVE,
     GS_PLATFORM_WINDOW_RESIZE
 } gs_platform_window_action_type;
 
@@ -4054,7 +4060,7 @@ GS_API_DECL void      gs_platform_mouse_wheel(float* x, float* y);
 GS_API_DECL bool      gs_platform_mouse_moved();
 
 // Platform Events
-GS_API_DECL bool      gs_platform_poll_event(gs_platform_event_t* evt);
+GS_API_DECL bool      gs_platform_poll_events(gs_platform_event_t* evt, bool32_t consume);
 
 // Platform Window
 GS_API_DECL uint32_t gs_platform_create_window(const char* title, uint32_t width, uint32_t height);
@@ -5999,6 +6005,9 @@ GS_API_DECL void gs_engine_frame()
         gs_engine_instance()->shutdown();
         return;
     }
+
+    // Clear all platform events
+    gs_dyn_array_clear(platform->events);
 
     // NOTE(John): This won't work forever. Must change eventually.
     // Swap all platform window buffers? Sure...

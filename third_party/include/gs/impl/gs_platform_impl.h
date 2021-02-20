@@ -176,19 +176,106 @@ void gs_platform_update_input(gs_platform_input_t* input)
     input->mouse.moved_this_frame = false;
 }
 
+void gs_platform_poll_all_events()
+{
+    gs_platform_t* platform = gs_engine_subsystem(platform);
+
+    // Iterate through events, don't consume
+    gs_platform_event_t evt = gs_default_val();
+    while (gs_platform_poll_events(&evt, false))
+    {
+        switch (evt.type)
+        {
+            case GS_PLATFORM_EVENT_MOUSE:
+            {
+                switch (evt.mouse.action)
+                {
+                    case GS_PLATFORM_MOUSE_MOVE:
+                    {
+                        platform->input.mouse.position = evt.mouse.position;
+                    } break;
+
+                    case GS_PLATFORM_MOUSE_WHEEL:
+                    {
+                        platform->input.mouse.wheel = evt.mouse.wheel;
+                    } break;
+
+                    case GS_PLATFORM_MOUSE_BUTTON_PRESSED:
+                    {
+                        gs_platform_press_mouse_button(evt.mouse.button);
+                    } break;
+
+                    case GS_PLATFORM_MOUSE_BUTTON_RELEASED:
+                    {
+                        gs_platform_release_mouse_button(evt.mouse.button);
+                    } break;
+
+                    case GS_PLATFORM_MOUSE_BUTTON_DOWN:
+                    {
+                        gs_platform_press_mouse_button(evt.mouse.button);
+                    } break;
+
+                    case GS_PLATFORM_MOUSE_ENTER:
+                    {
+                        // If there are user callbacks, could trigger them here
+                    } break;
+
+                    case GS_PLATFORM_MOUSE_LEAVE:
+                    {
+                        // If there are user callbacks, could trigger them here
+                    } break;
+                }
+
+            } break;
+
+            case GS_PLATFORM_EVENT_KEY:
+            {
+                switch (evt.key.action) 
+                {
+                    case GS_PLATFORM_KEY_PRESSED:
+                    {
+                        gs_platform_press_key(evt.key.keycode);
+                    } break;
+
+                    case GS_PLATFORM_KEY_RELEASED:
+                    {
+                        gs_platform_release_key(evt.key.keycode);
+                    } break;
+
+                    case GS_PLATFORM_KEY_DOWN:
+                    {
+                        gs_platform_press_key(evt.key.keycode);
+                    } break;
+                }
+
+            } break;
+
+            case GS_PLATFORM_EVENT_WINDOW:
+            {
+                switch (evt.window.action)
+                {
+                }
+
+            } break;
+
+            default: break;
+        } 
+    }
+}
+
 void gs_platform_update(gs_platform_t* platform)
 {
-    // Clear all previous events
-    gs_dyn_array_clear(platform->events);
-
     // Update platform input from previous frame        
     gs_platform_update_input(&platform->input);
 
-    // Process input for this frame
+    // Process input for this frame (user dependent update)
     gs_platform_process_input(&platform->input);
+
+    // Poll all events
+    gs_platform_poll_all_events();
 }
 
-bool gs_platform_poll_event(gs_platform_event_t* evt)
+bool gs_platform_poll_events(gs_platform_event_t* evt, bool32_t consume)
 {
     gs_platform_t* platform = gs_engine_subsystem(platform);
 
@@ -196,10 +283,17 @@ bool gs_platform_poll_event(gs_platform_event_t* evt)
     if (gs_dyn_array_empty(platform->events)) return false;
     if (evt->idx >= gs_dyn_array_size(platform->events)) return false;
 
-    uint32_t tmp_idx = evt->idx;
-    *evt = platform->events[evt->idx];
-    evt->idx = tmp_idx;
-    evt->idx++;
+    if (consume) {
+        // Back event
+        *evt = gs_dyn_array_back(platform->events);
+        // Pop back
+        gs_dyn_array_pop(platform->events);
+    }
+    else {
+        uint32_t idx = evt->idx;
+        *evt = platform->events[idx++]; 
+        evt->idx = idx;
+    }
 
     return true;
 }
@@ -602,7 +696,7 @@ uint32_t gs_platform_key_to_codepoint(gs_platform_keycode key)
         case GS_KEYCODE_TAB:              code = 258; break;
         case GS_KEYCODE_BACKSPACE:        code = 259; break;
         case GS_KEYCODE_INSERT:           code = 260; break;
-        case GS_KEYCODE_DELETE:           code = 261; break;
+        case GS_KEYCODE_DELETE:           code = 46; break;
         case GS_KEYCODE_RIGHT:            code = 262; break;
         case GS_KEYCODE_LEFT:             code = 263; break;
         case GS_KEYCODE_DOWN:             code = 264; break;
@@ -734,7 +828,7 @@ gs_platform_keycode gs_platform_codepoint_to_key(uint32_t code)
         case 258: key = GS_KEYCODE_TAB; break;
         case 259: key = GS_KEYCODE_BACKSPACE; break;
         case 260: key = GS_KEYCODE_INSERT; break;
-        case 261: key = GS_KEYCODE_DELETE; break;
+        case 46: key = GS_KEYCODE_DELETE; break;
         case 262: key = GS_KEYCODE_RIGHT; break; 
         case 263: key = GS_KEYCODE_LEFT; break; 
         case 264: key = GS_KEYCODE_DOWN; break;
@@ -956,6 +1050,12 @@ void __glfw_key_callback(GLFWwindow* window, s32 code, s32 scancode, s32 action,
             evt.key.action = GS_PLATFORM_KEY_PRESSED;
         } break;
 
+        // Down
+        case 2: {
+            gs_platform_press_key(key);
+            evt.key.action = GS_PLATFORM_KEY_DOWN;
+        } break;
+
         default: {
         } break;
     }
@@ -984,14 +1084,21 @@ void __glfw_mouse_button_callback(GLFWwindow* window, s32 code, s32 action, s32 
         case 0:
         {
             gs_platform_release_mouse_button(button);
-            evt.mouse.action = GS_PLATFORM_MBUTTON_RELEASED;
+            evt.mouse.action = GS_PLATFORM_MOUSE_BUTTON_RELEASED;
         } break;
 
         // Pressed
         case 1:
         {
             gs_platform_press_mouse_button(button);
-            evt.mouse.action = GS_PLATFORM_MBUTTON_PRESSED;
+            evt.mouse.action = GS_PLATFORM_MOUSE_BUTTON_PRESSED;
+        } break;
+
+        // Down
+        case 2:
+        {
+            gs_platform_press_mouse_button(button);
+            evt.mouse.action = GS_PLATFORM_MOUSE_BUTTON_DOWN;
         } break;
     }
 
@@ -1004,18 +1111,36 @@ void __glfw_mouse_cursor_position_callback(GLFWwindow* window, f64 x, f64 y)
     gs_platform_t* platform = gs_engine_subsystem(platform);
     platform->input.mouse.position = gs_v2((f32)x, (f32)y);
     platform->input.mouse.moved_this_frame = true;
+
+    // Push back event into platform events
+    gs_platform_event_t gs_evt = gs_default_val();
+    gs_evt.type = GS_PLATFORM_EVENT_MOUSE;
+    gs_evt.mouse.action = GS_PLATFORM_MOUSE_MOVE;
+    gs_evt.mouse.position = gs_v2((f32)x, (f32)y);
+    gs_dyn_array_push(platform->events, gs_evt);
 }
 
 void __glfw_mouse_scroll_wheel_callback(GLFWwindow* window, f64 x, f64 y)
 {
     gs_platform_t* platform = gs_engine_subsystem(platform);
     platform->input.mouse.wheel = gs_v2((f32)x, (f32)y);
+
+    // Push back event into platform events
+    gs_platform_event_t gs_evt = gs_default_val();
+    gs_evt.type = GS_PLATFORM_EVENT_MOUSE;
+    gs_evt.mouse.action = GS_PLATFORM_MOUSE_WHEEL;
+    gs_evt.mouse.wheel = gs_v2((f32)x, (f32)y);
+    gs_dyn_array_push(platform->events, gs_evt);
 }
 
 // Gets called when mouse enters or leaves frame of window
 void __glfw_mouse_cursor_enter_callback(GLFWwindow* window, s32 entered)
 {
-    // Nothing for now, will capture state for windows later
+    gs_platform_t* platform = gs_engine_subsystem(platform);
+    gs_platform_event_t gs_evt = gs_default_val();
+    gs_evt.type = GS_PLATFORM_EVENT_MOUSE;
+    gs_evt.mouse.action = entered ? GS_PLATFORM_MOUSE_ENTER : GS_PLATFORM_MOUSE_LEAVE;
+    gs_dyn_array_push(platform->events, gs_evt);
 }
 
 void __glfw_frame_buffer_size_callback(GLFWwindow* window, s32 width, s32 height)
@@ -1080,6 +1205,7 @@ void* gs_platform_create_window_internal(const char* title, uint32_t width, uint
     glfwMakeContextCurrent(window);
     glfwSetKeyCallback(window, &__glfw_key_callback);
     glfwSetMouseButtonCallback(window, &__glfw_mouse_button_callback);
+    glfwSetCursorEnterCallback(window, &__glfw_mouse_cursor_enter_callback);
     glfwSetCursorPosCallback(window, &__glfw_mouse_cursor_position_callback);
     glfwSetScrollCallback(window, &__glfw_mouse_scroll_wheel_callback);
 
@@ -1275,117 +1401,11 @@ typedef struct gs_ems_t
     double canvas_width;
     double canvas_height;
     EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx;
+    bool32_t mouse_down[GS_MOUSE_BUTTON_CODE_COUNT];
 } gs_ems_t;
 
 #define GS_EMS_DATA()\
     ((gs_ems_t*)(gs_engine_subsystem(platform)->user_data))
-
-EM_BOOL gs_ems_size_changed_cb(int32_t type, const EmscriptenUiEvent* evt, void* user_data)
-{
-    gs_platform_t* platform = gs_engine_subsystem(platform);
-    gs_ems_t* ems = (gs_ems_t*)platform->user_data;
-    (void)type;
-    (void)evt;
-    (void)user_data;
-    emscripten_get_element_css_size(ems->canvas_name, &ems->canvas_width, &ems->canvas_height);
-    emscripten_set_canvas_element_size(ems->canvas_name, ems->canvas_width, ems->canvas_height);
-    return true;
-}
-
-EM_BOOL gs_ems_key_cb(int32_t type, const EmscriptenKeyboardEvent* evt, void* user_data)
-{
-    (void)user_data;
-
-    gs_println("press: ctrl: %zu, shift: %zu, alt: %zu, which: %zu, keycode: %zu", evt->ctrlKey, evt->shiftKey, 
-        evt->altKey, evt->which, evt->keyCode);
-
-    switch (type)
-    {
-        case EMSCRIPTEN_EVENT_KEYDOWN: 
-        {
-            gs_platform_press_key(gs_platform_codepoint_to_key(evt->which));
-        } break;
-
-        case EMSCRIPTEN_EVENT_KEYUP:
-        {
-            gs_platform_release_key(gs_platform_codepoint_to_key(evt->which));
-        } break;
-
-        case EMSCRIPTEN_EVENT_KEYPRESS:
-        {
-            gs_platform_press_key(gs_platform_codepoint_to_key(evt->which));
-        } break;
-
-        default: break;
-    }
-
-    return evt->which < 32;
-}
-
-EM_BOOL gs_ems_mouse_cb(int32_t type, const EmscriptenMouseEvent* evt, void* user_data)
-{
-    (void)user_data;
-
-    gs_println("fucking here");
-
-    gs_platform_mouse_button_code button = GS_MOUSE_LBUTTON;
-    switch (evt->button) {
-        case 0: button = GS_MOUSE_LBUTTON; break;
-        case 1: button = GS_MOUSE_MBUTTON; break;
-        case 2: button = GS_MOUSE_RBUTTON; break;
-    }
-
-    switch (type)
-    {
-        case EMSCRIPTEN_EVENT_CLICK: 
-        {
-            gs_platform_press_mouse_button(button); 
-        } break;
-
-        case EMSCRIPTEN_EVENT_MOUSEDOWN: 
-        {
-            gs_platform_press_mouse_button(button); 
-        } break;
-
-        case EMSCRIPTEN_EVENT_MOUSEUP: 
-        {
-            gs_println("releasing: %zu", button);
-            gs_platform_release_mouse_button(button); 
-        } break;
-
-        case EMSCRIPTEN_EVENT_MOUSEMOVE:
-        {
-            gs_platform_t* platform = gs_engine_subsystem(platform);
-            platform->input.mouse.position = gs_v2((float)evt->targetX, (float)evt->targetY);
-            platform->input.mouse.moved_this_frame = true;
-        } break;
-
-        case EMSCRIPTEN_EVENT_MOUSEENTER:
-        {
-            // Nothing for now
-        } break;
-
-        case EMSCRIPTEN_EVENT_MOUSELEAVE:
-        {
-            // Nothing for now
-        } break;
-
-        default:
-        {
-        }break;
-    }
-
-    return true;
-}
-
-EM_BOOL gs_ems_mousewheel_cb(int32_t type, const EmscriptenWheelEvent* evt, void* user_data)
-{
-    (void)type;
-    (void)user_data;
-    gs_platform_t* platform = gs_engine_subsystem(platform);
-    platform->input.mouse.wheel = gs_v2((float)evt->deltaX, (float)evt->deltaY);
-    return true;
-}
 
 uint32_t gs_platform_key_to_codepoint(gs_platform_keycode key)
 {
@@ -1396,7 +1416,7 @@ uint32_t gs_platform_key_to_codepoint(gs_platform_keycode key)
         case GS_KEYCODE_COUNT:
         case GS_KEYCODE_INVALID:          code = 0; break;
         case GS_KEYCODE_SPACE:            code = 32; break;
-        case GS_KEYCODE_APOSTROPHE:       code = 39; break;
+        case GS_KEYCODE_APOSTROPHE:       code = 222; break;
         case GS_KEYCODE_COMMA:            code = 44; break;
         case GS_KEYCODE_MINUS:            code = 45; break;
         case GS_KEYCODE_PERIOD:           code = 46; break;
@@ -1447,14 +1467,14 @@ uint32_t gs_platform_key_to_codepoint(gs_platform_keycode key)
         case GS_KEYCODE_WORLD_2:          code = 162; break; /* non-US #2 */
         case GS_KEYCODE_ESC:              code = 256; break;
         case GS_KEYCODE_ENTER:            code = 13; break;
-        case GS_KEYCODE_TAB:              code = 258; break;
-        case GS_KEYCODE_BACKSPACE:        code = 259; break;
+        case GS_KEYCODE_TAB:              code = 9; break;
+        case GS_KEYCODE_BACKSPACE:        code = 8; break;
         case GS_KEYCODE_INSERT:           code = 260; break;
         case GS_KEYCODE_DELETE:           code = 261; break;
-        case GS_KEYCODE_RIGHT:            code = 262; break;
-        case GS_KEYCODE_LEFT:             code = 263; break;
-        case GS_KEYCODE_DOWN:             code = 264; break;
-        case GS_KEYCODE_UP:               code = 265; break;
+        case GS_KEYCODE_LEFT:             code = 37; break;
+        case GS_KEYCODE_UP:               code = 38; break;
+        case GS_KEYCODE_RIGHT:            code = 39; break;
+        case GS_KEYCODE_DOWN:             code = 40; break;
         case GS_KEYCODE_PAGE_UP:          code = 266; break;
         case GS_KEYCODE_PAGE_DOWN:        code = 267; break;
         case GS_KEYCODE_HOME:             code = 268; break;
@@ -1533,7 +1553,7 @@ gs_platform_keycode gs_platform_codepoint_to_key(uint32_t code)
         default:
         case 0:   key = GS_KEYCODE_INVALID; break;
         case 32:  key = GS_KEYCODE_SPACE; break;
-        case 39:  key = GS_KEYCODE_APOSTROPHE; break;
+        case 222:  key = GS_KEYCODE_APOSTROPHE; break;
         case 44:  key = GS_KEYCODE_COMMA; break;
         case 45:  key = GS_KEYCODE_MINUS; break;
         case 46:  key = GS_KEYCODE_PERIOD; break;
@@ -1583,15 +1603,15 @@ gs_platform_keycode gs_platform_codepoint_to_key(uint32_t code)
         case 161: key = GS_KEYCODE_WORLD_1; break;
         case 162: key = GS_KEYCODE_WORLD_2; break;
         case 256: key = GS_KEYCODE_ESC; break;
-        case 257: key = GS_KEYCODE_ENTER; break;
-        case 258: key = GS_KEYCODE_TAB; break;
-        case 259: key = GS_KEYCODE_BACKSPACE; break;
+        case 13: key = GS_KEYCODE_ENTER; break;
+        case 9: key = GS_KEYCODE_TAB; break;
+        case 8: key = GS_KEYCODE_BACKSPACE; break;
         case 260: key = GS_KEYCODE_INSERT; break;
         case 261: key = GS_KEYCODE_DELETE; break;
-        case 262: key = GS_KEYCODE_RIGHT; break; 
-        case 263: key = GS_KEYCODE_LEFT; break; 
-        case 264: key = GS_KEYCODE_DOWN; break;
-        case 265: key = GS_KEYCODE_UP; break; 
+        case 37: key = GS_KEYCODE_LEFT; break; 
+        case 38: key = GS_KEYCODE_UP; break; 
+        case 39: key = GS_KEYCODE_RIGHT; break; 
+        case 40: key = GS_KEYCODE_DOWN; break;
         case 266: key = GS_KEYCODE_PAGE_UP; break;
         case 267: key = GS_KEYCODE_PAGE_DOWN; break;
         case 268: key = GS_KEYCODE_HOME; break;    
@@ -1653,6 +1673,144 @@ gs_platform_keycode gs_platform_codepoint_to_key(uint32_t code)
     return key;
 }
 
+EM_BOOL gs_ems_size_changed_cb(int32_t type, const EmscriptenUiEvent* evt, void* user_data)
+{
+    gs_platform_t* platform = gs_engine_subsystem(platform);
+    gs_ems_t* ems = (gs_ems_t*)platform->user_data;
+    (void)type;
+    (void)evt;
+    (void)user_data;
+    emscripten_get_element_css_size(ems->canvas_name, &ems->canvas_width, &ems->canvas_height);
+    emscripten_set_canvas_element_size(ems->canvas_name, ems->canvas_width, ems->canvas_height);
+    return true;
+}
+
+EM_BOOL gs_ems_key_cb(int32_t type, const EmscriptenKeyboardEvent* evt, void* user_data)
+{
+    (void)user_data;
+
+    // Push back event into platform events
+    gs_platform_event_t gs_evt = gs_default_val();
+    gs_evt.type = GS_PLATFORM_EVENT_KEY;
+    gs_evt.key.codepoint = evt->which;
+    gs_evt.key.keycode = gs_platform_codepoint_to_key(evt->which);
+
+    // gs_println("codepoint: %zu", evt->which);
+
+    switch (type)
+    {
+        case EMSCRIPTEN_EVENT_KEYPRESS:
+        {
+            gs_evt.key.action = GS_PLATFORM_KEY_PRESSED;
+        } break;
+
+        case EMSCRIPTEN_EVENT_KEYDOWN: 
+        {
+            gs_evt.key.action = GS_PLATFORM_KEY_DOWN;
+        } break;
+
+        case EMSCRIPTEN_EVENT_KEYUP:
+        {
+            gs_evt.key.action = GS_PLATFORM_KEY_RELEASED;
+        } break;
+
+        default: break;
+    }
+
+    // Add action
+    gs_dyn_array_push(gs_engine_subsystem(platform)->events, gs_evt);
+
+    return evt->which < 32;
+}
+
+EM_BOOL gs_ems_mouse_cb(int32_t type, const EmscriptenMouseEvent* evt, void* user_data)
+{
+    (void)user_data;
+
+    gs_ems_t* ems = GS_EMS_DATA();
+
+    gs_platform_mouse_button_code button = GS_MOUSE_LBUTTON;
+    switch (evt->button) {
+        case 0: button = GS_MOUSE_LBUTTON; break;
+        case 1: button = GS_MOUSE_MBUTTON; break;
+        case 2: button = GS_MOUSE_RBUTTON; break;
+    }
+
+    // Push back event into platform events
+    gs_platform_event_t gs_evt = gs_default_val();
+    gs_evt.type = GS_PLATFORM_EVENT_MOUSE;
+    gs_evt.mouse.codepoint = evt->button;
+    gs_evt.mouse.button = button;
+
+    switch (type)
+    {
+        case EMSCRIPTEN_EVENT_CLICK:
+        {
+            gs_evt.mouse.action = GS_PLATFORM_MOUSE_BUTTON_PRESSED;
+        } break;
+
+        // Emscripten doesn't register continuous presses, so have to manually store this state
+        case EMSCRIPTEN_EVENT_MOUSEDOWN: 
+        {
+            gs_evt.mouse.action = GS_PLATFORM_MOUSE_BUTTON_DOWN;
+            ems->mouse_down[(int32_t)button] = true; 
+        } break;
+
+        case EMSCRIPTEN_EVENT_MOUSEUP: 
+        {
+            gs_evt.mouse.action = GS_PLATFORM_MOUSE_BUTTON_RELEASED;
+            ems->mouse_down[(int32_t)button] = false; 
+        } break;
+
+        case EMSCRIPTEN_EVENT_MOUSEMOVE:
+        {
+            gs_evt.mouse.action = GS_PLATFORM_MOUSE_MOVE;
+            gs_evt.mouse.position = gs_v2((float)evt->targetX, (float)evt->targetY);
+        } break;
+
+        case EMSCRIPTEN_EVENT_MOUSEENTER:
+        {
+            gs_evt.mouse.action = GS_PLATFORM_MOUSE_ENTER;
+            // Release all buttons
+            ems->mouse_down[0] = false;
+            ems->mouse_down[1] = false;
+            ems->mouse_down[2] = false;
+        } break;
+
+        case EMSCRIPTEN_EVENT_MOUSELEAVE:
+        {
+            gs_evt.mouse.action = GS_PLATFORM_MOUSE_LEAVE;
+            // Release all buttons
+            ems->mouse_down[0] = false;
+            ems->mouse_down[1] = false;
+            ems->mouse_down[2] = false;
+        } break;
+
+        default:
+        {
+        }break;
+    }
+
+    gs_dyn_array_push(gs_engine_subsystem(platform)->events, gs_evt);
+
+    return true;
+}
+
+EM_BOOL gs_ems_mousewheel_cb(int32_t type, const EmscriptenWheelEvent* evt, void* user_data)
+{
+    (void)type;
+    (void)user_data;
+
+    // Push back event into platform events
+    gs_platform_event_t gs_evt = gs_default_val();
+    gs_evt.type = GS_PLATFORM_EVENT_MOUSE;
+    gs_evt.mouse.action = GS_PLATFORM_MOUSE_WHEEL;
+    gs_evt.mouse.wheel = gs_v2((float)evt->deltaX, -(float)evt->deltaY);
+    gs_dyn_array_push(gs_engine_subsystem(platform)->events, gs_evt);
+
+    return true;
+}
+
 GS_API_DECL void       
 gs_platform_init(gs_platform_t* platform)
 {
@@ -1663,7 +1821,7 @@ gs_platform_init(gs_platform_t* platform)
     gs_ems_t* ems = (gs_ems_t*)platform->user_data;
 
     // Just set this to defaults for now
-    ems->canvas_name = "canvas";
+    ems->canvas_name = "#canvas";
     emscripten_set_canvas_element_size(ems->canvas_name, app->window_width, app->window_height);
     emscripten_get_element_css_size(ems->canvas_name, &ems->canvas_width, &ems->canvas_height);
 
@@ -1672,11 +1830,13 @@ gs_platform_init(gs_platform_t* platform)
     emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, NULL, true, gs_ems_key_cb);
     emscripten_set_keypress_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, NULL, true, gs_ems_key_cb);
     emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, NULL, true, gs_ems_key_cb);
-    emscripten_set_click_callback("#canvas", NULL, true, gs_ems_mouse_cb);
-    emscripten_set_mousedown_callback("#canvas", NULL, true, gs_ems_mouse_cb);
-    emscripten_set_mouseup_callback("#canvas", NULL, true, gs_ems_mouse_cb);
-    emscripten_set_mousemove_callback("#canvas", NULL, true, gs_ems_mouse_cb);
-    emscripten_set_wheel_callback("#canvas", NULL, true, gs_ems_mousewheel_cb);
+    emscripten_set_click_callback(ems->canvas_name, NULL, true, gs_ems_mouse_cb);
+    emscripten_set_mouseenter_callback(ems->canvas_name, NULL, true, gs_ems_mouse_cb);
+    emscripten_set_mouseleave_callback(ems->canvas_name, NULL, true, gs_ems_mouse_cb);
+    emscripten_set_mousedown_callback(ems->canvas_name, NULL, true, gs_ems_mouse_cb);
+    emscripten_set_mouseup_callback(ems->canvas_name, NULL, true, gs_ems_mouse_cb);
+    emscripten_set_mousemove_callback(ems->canvas_name, NULL, true, gs_ems_mouse_cb);
+    emscripten_set_wheel_callback(ems->canvas_name, NULL, true, gs_ems_mousewheel_cb);
 
     // Set up webgl context
     EmscriptenWebGLContextAttributes attrs;
@@ -1731,12 +1891,19 @@ gs_platform_sleep(float ms)
 GS_API_DECL void 
 gs_platform_process_input(gs_platform_input_t* input)
 {
-    // Nothing for now
+    gs_ems_t* ems = GS_EMS_DATA();
+
+    // Set mouse buttons
+    for (uint32_t i = 0; i < GS_MOUSE_BUTTON_CODE_COUNT; ++i) {
+        if (ems->mouse_down[i]) gs_platform_press_mouse_button((gs_platform_mouse_button_code)i);
+        else                    gs_platform_release_mouse_button((gs_platform_mouse_button_code)i);
+    }
 }
 
 GS_API_DECL void      
 gs_platform_mouse_set_position(uint32_t handle, float x, float y)
 {
+    // Not sure this is possible...
     struct gs_platform_t* platform = gs_engine_subsystem(platform);
     platform->input.mouse.position = gs_v2(x, y);
 }

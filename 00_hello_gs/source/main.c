@@ -16,9 +16,16 @@ void update()
 {
     if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_engine_quit();
 
-    if (gs_platform_key_pressed(GS_KEYCODE_LEFT_SHIFT))
-    {
+    if (gs_platform_key_pressed(GS_KEYCODE_LEFT_SHIFT)) {
         gs_println("YES!");
+    }
+
+    if (gs_platform_mouse_down(GS_MOUSE_LBUTTON)) {
+        gs_println("mouse lbutton down");
+    }
+
+    if (gs_platform_mouse_released(GS_MOUSE_LBUTTON)) {
+        gs_println("mouse lbutton released");
     }
 }
 

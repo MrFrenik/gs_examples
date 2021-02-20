@@ -158,9 +158,9 @@ gs_nk_device_create(gs_nk_ctx_t* gs)
 
     // Vertex attr layout
     gs_graphics_vertex_attribute_desc_t gsnk_vattrs[] = {
-        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2},       // Position
-        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2},       // UV
-        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_BYTE4}         // Color
+        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2, .name = "Position"},  // Position
+        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2, .name = "TexCoord"},  // UV
+        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_BYTE4, .name = "Color"}       // Color
     };
 
     // Create pipeline
@@ -267,19 +267,22 @@ gs_nk_new_frame(gs_nk_ctx_t* gs)
     // Get frame buffer size
     gs_platform_framebuffer_size(gs->window_hndl, &gs->display_width, &gs->display_height);
 
+    // Reset wheel
+    gs->scroll.x = 0.f;
+    gs->scroll.y = 0.f; 
+
     // Calculate fb scale
     gs->fb_scale.x = (float)gs->display_width/(float)gs->width;
     gs->fb_scale.y = (float)gs->display_height/(float)gs->height;
 
     nk_input_begin(ctx);
     {
+        // Poll all events that occured this frame
         gs_platform_event_t evt = gs_default_val();
-        while(gs_platform_poll_event(&evt))
+        while(gs_platform_poll_events(&evt, true))
         {
             switch(evt.type)
             {
-                default: break;
-
                 case GS_PLATFORM_EVENT_KEY:
                 {
                     switch (evt.key.action)
@@ -294,6 +297,27 @@ gs_nk_new_frame(gs_nk_ctx_t* gs)
                         default: break;
                     }
                 } break;
+
+                case GS_PLATFORM_EVENT_MOUSE:
+                {
+                    switch (evt.mouse.action)
+                    {
+                        case GS_PLATFORM_MOUSE_WHEEL:
+                        {
+                            gs->scroll.x = evt.mouse.wheel.x;
+                            gs->scroll.y = evt.mouse.wheel.y;
+                        } break;
+
+                        case GS_PLATFORM_MOUSE_MOVE:
+                        {
+                            nk_input_motion(ctx, (int32_t)evt.mouse.position.x, (int32_t)evt.mouse.position.y);
+                        } break;
+
+                        default: break;
+                    }
+                } break;
+
+                default: break;
             }
         }
 
@@ -354,16 +378,16 @@ gs_nk_new_frame(gs_nk_ctx_t* gs)
         }
     #endif
 
-        nk_input_button(ctx, NK_BUTTON_LEFT, (int)x, (int)y, gs_platform_mouse_pressed(GS_MOUSE_LBUTTON));
-        nk_input_button(ctx, NK_BUTTON_MIDDLE, (int)x, (int)y, gs_platform_mouse_pressed(GS_MOUSE_MBUTTON));
-        nk_input_button(ctx, NK_BUTTON_RIGHT, (int)x, (int)y, gs_platform_mouse_pressed(GS_MOUSE_RBUTTON));
+        // Should swap this over to polling events instead.
+        nk_input_button(ctx, NK_BUTTON_LEFT, (int)x, (int)y, gs_platform_mouse_down(GS_MOUSE_LBUTTON));
+        nk_input_button(ctx, NK_BUTTON_MIDDLE, (int)x, (int)y, gs_platform_mouse_down(GS_MOUSE_MBUTTON));
+        nk_input_button(ctx, NK_BUTTON_RIGHT, (int)x, (int)y, gs_platform_mouse_down(GS_MOUSE_RBUTTON));
         nk_input_button(ctx, NK_BUTTON_DOUBLE, (int)gs->double_click_pos.x, (int)gs->double_click_pos.y, gs->is_double_click_down);
         nk_input_scroll(ctx, gs->scroll);
     }
     nk_input_end(ctx);
 
     gs->text_len = 0;
-    gs_platform_mouse_wheel(&gs->scroll.x, &gs->scroll.y);
 }
 
 NK_API void
