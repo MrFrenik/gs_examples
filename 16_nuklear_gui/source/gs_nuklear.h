@@ -354,7 +354,7 @@ gs_nk_new_frame(gs_nk_ctx_t* gs)
         }
     #endif
 
-        nk_input_button(ctx, NK_BUTTON_LEFT, (int)x, (int)y, gs_platform_mouse_down(GS_MOUSE_LBUTTON));
+        nk_input_button(ctx, NK_BUTTON_LEFT, (int)x, (int)y, gs_platform_mouse_pressed(GS_MOUSE_LBUTTON));
         nk_input_button(ctx, NK_BUTTON_MIDDLE, (int)x, (int)y, gs_platform_mouse_pressed(GS_MOUSE_MBUTTON));
         nk_input_button(ctx, NK_BUTTON_RIGHT, (int)x, (int)y, gs_platform_mouse_pressed(GS_MOUSE_RBUTTON));
         nk_input_button(ctx, NK_BUTTON_DOUBLE, (int)gs->double_click_pos.x, (int)gs->double_click_pos.y, gs->is_double_click_down);

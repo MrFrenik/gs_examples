@@ -1324,8 +1324,9 @@ EM_BOOL gs_ems_key_cb(int32_t type, const EmscriptenKeyboardEvent* evt, void* us
 
 EM_BOOL gs_ems_mouse_cb(int32_t type, const EmscriptenMouseEvent* evt, void* user_data)
 {
-    (void)type;
     (void)user_data;
+
+    gs_println("fucking here");
 
     gs_platform_mouse_button_code button = GS_MOUSE_LBUTTON;
     switch (evt->button) {
@@ -1348,6 +1349,7 @@ EM_BOOL gs_ems_mouse_cb(int32_t type, const EmscriptenMouseEvent* evt, void* use
 
         case EMSCRIPTEN_EVENT_MOUSEUP: 
         {
+            gs_println("releasing: %zu", button);
             gs_platform_release_mouse_button(button); 
         } break;
 

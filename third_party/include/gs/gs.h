@@ -5986,15 +5986,15 @@ GS_API_DECL void gs_engine_frame()
     platform->time.update   = platform->time.current - platform->time.previous;
     platform->time.previous = platform->time.current;
 
-    // Process application context
-    gs_engine_instance()->ctx.app.update();
+    // Update platform and process input
+    gs_platform_update(platform);
     if (!gs_engine_instance()->ctx.app.is_running) {
         gs_engine_instance()->shutdown();
         return;
     }
 
-    // Update platform and process input
-    gs_platform_update(platform);
+    // Process application context
+    gs_engine_instance()->ctx.app.update();
     if (!gs_engine_instance()->ctx.app.is_running) {
         gs_engine_instance()->shutdown();
         return;
