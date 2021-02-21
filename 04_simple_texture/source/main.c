@@ -19,6 +19,9 @@
 #define GS_IMPL
 #include <gs/gs.h>
 
+// All necessary graphics data for this example
+#include "data.c"
+
 gs_command_buffer_t                      cb      = {0};
 gs_handle(gs_graphics_vertex_buffer_t)   vbo     = {0};
 gs_handle(gs_graphics_index_buffer_t)    ibo     = {0};
@@ -28,29 +31,6 @@ gs_handle(gs_graphics_uniform_t)         u_tex   = {0};
 gs_handle(gs_graphics_texture_t)         tex     = {0};
 
 gs_asset_texture_t texture = {0};
-
-#define ROW_COL_CT  10
-
-const char* v_src = "\n"
-"#version 330 core\n"
-"layout(location = 0) in vec2 a_pos;\n"
-"layout(location = 1) in vec2 a_uv;\n"
-"out vec2 uv;\n"
-"void main()\n"
-"{\n"
-"   gl_Position = vec4(a_pos, 0.0, 1.0);\n"
-"   uv = a_uv;\n"
-"}";
-
-const char* f_src = "\n"
-"#version 330 core\n"
-"uniform sampler2D u_tex;"
-"in vec2 uv;\n"
-"out vec4 frag_color;\n"
-"void main()\n"
-"{\n"
-"   frag_color = texture(u_tex, uv);\n"
-"}";
 
 void init()
 {
@@ -90,20 +70,6 @@ void init()
             .layout = &(gs_graphics_uniform_layout_desc_t){.type = GS_GRAPHICS_UNIFORM_SAMPLER2D}
         }
     );
-    
-    // Vertex data for quad
-    float v_data[] = {
-        // Positions  UVs
-        -0.5f, -0.5f,  0.0f, 0.0f,  // Top Left
-         0.5f, -0.5f,  1.0f, 0.0f,  // Top Right 
-        -0.5f,  0.5f,  0.0f, 1.0f,  // Bottom Left
-         0.5f,  0.5f,  1.0f, 1.0f   // Bottom Right
-    };
-
-    uint32_t i_data[] = {
-        0, 3, 2,    // First Triangle
-        0, 1, 3     // Second Triangle
-    };
 
     // Construct vertex buffer
     vbo = gs_graphics_vertex_buffer_create(
@@ -141,8 +107,8 @@ void init()
             },
             .layout = {
                 .attrs = (gs_graphics_vertex_attribute_desc_t[]){
-                    {.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2},
-                    {.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2}
+                    {.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2, .name = "a_pos"},
+                    {.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2, .name = "a_uv"}
                 },
                 .size = 2 * sizeof(gs_graphics_vertex_attribute_desc_t)
             }

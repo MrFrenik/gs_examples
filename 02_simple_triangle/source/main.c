@@ -17,38 +17,18 @@
 #define GS_IMPL
 #include <gs/gs.h>
 
+// All necessary graphics data for this example (shader source/vertex data)
+#include "data.c"
+
 gs_command_buffer_t                      cb      = {0};
 gs_handle(gs_graphics_vertex_buffer_t)   vbo     = {0};
 gs_handle(gs_graphics_pipeline_t)        pip     = {0};
 gs_handle(gs_graphics_shader_t)          shader  = {0};
 
-const char* v_src = "\n"
-"#version 330 core\n"
-"layout(location = 0) in vec2 a_pos;\n"
-"void main()\n"
-"{\n"
-"   gl_Position = vec4(a_pos, 0.0, 1.0);\n"
-"}";
-
-const char* f_src = "\n"
-"#version 330 core\n"
-"out vec4 frag_color;\n"
-"void main()\n"
-"{\n"
-"   frag_color = vec4(1.0, 0.0, 0.0, 1.0);\n"
-"}";
-
 void init()
 {
     // Construct new command buffer
     cb = gs_command_buffer_new(); 
-
-    // Vertex data for triangle
-    float v_data[] = {
-        0.0f, 0.5f,
-        -0.5f, -0.5f, 
-        0.5f, -0.5f
-    };
 
     // Construct vertex buffer
     vbo = gs_graphics_vertex_buffer_create(
@@ -77,7 +57,7 @@ void init()
             },
             .layout = {
                 .attrs = (gs_graphics_vertex_attribute_desc_t[]){
-                    {.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2}
+                    {.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2, .name = "a_pos"}    // Named attribute required for lower GL versions / ES2 / ES3
                 },
                 .size = sizeof(gs_graphics_vertex_attribute_desc_t)
             }

@@ -58,8 +58,14 @@ gs_vec3 cube_positions[] = {
     {-1.3f,  1.0f, -1.5}
 };
 
+#ifdef GS_PLATFORM_WEB
+    #define GS_GL_VERSION_STR "#version 300 es\n"
+#else
+    #define GS_GL_VERSION_STR "#version 330 core\n"
+#endif
+
 const char* v_src =
-    "#version 330\n"
+    GS_GL_VERSION_STR
     "layout(location = 0) in vec3 a_pos;\n"
     "layout(location = 1) in vec3 a_normal;\n"
     "layout(location = 2) in vec2 a_texcoord;\n"
@@ -77,7 +83,8 @@ const char* v_src =
     "}\n";
 
 const char* f_src =
-    "#version 330\n"
+    GS_GL_VERSION_STR
+    "precision mediump float;\n"
     "layout(location = 0) out vec4 frag_color;\n"
     "in vec3 frag_pos;\n"
     "in vec3 normal;\n"
