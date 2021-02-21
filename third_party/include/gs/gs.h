@@ -4157,7 +4157,7 @@ gs_handle_decl(gs_audio_instance_t);
 // Audio Interface
 =============================*/
 
-typedef struct gs_audio_i
+typedef struct gs_audio_t
 {
     /* Audio source data cache */
     gs_slot_array(gs_audio_source_t) sources;
@@ -4182,17 +4182,17 @@ typedef struct gs_audio_i
 
     /* User data for custom impl */
     void* user_data;
-} gs_audio_i;
+} gs_audio_t;
 
 /*=============================
 // Audio API
 =============================*/
 
 /* Audio Create, Destroy, Init, Shutdown, Submit */
-GS_API_DECL gs_audio_i* gs_audio_create();
-GS_API_DECL void        gs_audio_destroy(gs_audio_i* audio);
-GS_API_DECL gs_result   gs_audio_init(gs_audio_i* audio);
-GS_API_DECL gs_result   gs_audio_shutdown(gs_audio_i* audio);
+GS_API_DECL gs_audio_t* gs_audio_create();
+GS_API_DECL void        gs_audio_destroy(gs_audio_t* audio);
+GS_API_DECL gs_result   gs_audio_init(gs_audio_t* audio);
+GS_API_DECL gs_result   gs_audio_shutdown(gs_audio_t* audio);
 
 /* Audio create source */
 GS_API_DECL gs_handle(gs_audio_source_t) gs_audio_load_from_file(const char* file_path);
@@ -4201,8 +4201,8 @@ GS_API_DECL gs_handle(gs_audio_source_t) gs_audio_load_from_file(const char* fil
 GS_API_DECL gs_handle(gs_audio_instance_t) gs_audio_instance_create(gs_audio_instance_decl_t* decl);
 
 /* Locking audio thread (optional) */
-GS_API_DECL void gs_audio_mutex_lock(gs_audio_i* audio);
-GS_API_DECL void gs_audio_mutex_unlock(gs_audio_i* audio);
+GS_API_DECL void gs_audio_mutex_lock(gs_audio_t* audio);
+GS_API_DECL void gs_audio_mutex_unlock(gs_audio_t* audio);
 
 /* Audio play instance */
 GS_API_DECL void     gs_audio_play_source(gs_handle(gs_audio_source_t) src, float volume);
@@ -4798,21 +4798,21 @@ typedef struct gs_graphics_info_t
 // Graphics Interface
 ==========================*/
 
-typedef struct gs_graphics_i
+typedef struct gs_graphics_t
 {
     void* user_data;            // For internal use
     gs_graphics_info_t info;    // Used for querying by user for features
-} gs_graphics_i;
+} gs_graphics_t;
 
 /*==========================
 // Graphics API
 ==========================*/
 
 /* Graphics Interface Creation / Initialization / Shutdown / Destruction */
-GS_API_DECL gs_graphics_i* gs_graphics_create();
-GS_API_DECL void           gs_graphics_destroy(gs_graphics_i* graphics);
-GS_API_DECL void           gs_graphics_init(gs_graphics_i* graphics);
-GS_API_DECL void           gs_graphics_shutdown(gs_graphics_i* graphics);
+GS_API_DECL gs_graphics_t* gs_graphics_create();
+GS_API_DECL void           gs_graphics_destroy(gs_graphics_t* graphics);
+GS_API_DECL void           gs_graphics_init(gs_graphics_t* graphics);
+GS_API_DECL void           gs_graphics_shutdown(gs_graphics_t* graphics);
 
 /* Graphics Info Object Query */
 GS_API_DECL                gs_graphics_info_t* gs_graphics_info();
@@ -4996,8 +4996,8 @@ typedef struct gs_app_desc_t
 typedef struct gs_engine_context_t
 {
     gs_platform_t* platform;
-    gs_graphics_i* graphics;
-    gs_audio_i* audio;
+    gs_graphics_t* graphics;
+    gs_audio_t* audio;
     gs_app_desc_t app;
 } gs_engine_context_t;
 

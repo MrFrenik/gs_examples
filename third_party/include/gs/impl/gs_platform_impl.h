@@ -1859,14 +1859,14 @@ gs_platform_init(gs_platform_t* platform)
     platform->user_data = gs_malloc_init(gs_ems_t);
     gs_ems_t* ems = (gs_ems_t*)platform->user_data;
 
-    ems->canvas_width = app->window_width;
-    ems->canvas_height = app->window_height;
-    double dpi = emscripten_get_device_pixel_ratio();
+    // ems->canvas_width = app->window_width;
+    // ems->canvas_height = app->window_height;
+    // double dpi = emscripten_get_device_pixel_ratio();
 
     // Just set this to defaults for now
     ems->canvas_name = "#canvas";
     emscripten_set_canvas_element_size(ems->canvas_name, app->window_width, app->window_height);
-    // emscripten_get_element_css_size(ems->canvas_name, &ems->canvas_width, &ems->canvas_height);
+    emscripten_get_element_css_size(ems->canvas_name, &ems->canvas_width, &ems->canvas_height);
 
     // Set up callbacks
     emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, 0, false, gs_ems_size_changed_cb);
@@ -2063,17 +2063,17 @@ GS_API_DECL void
 gs_platform_framebuffer_size(uint32_t handle, uint32_t* w, uint32_t* h)
 {
     gs_ems_t* ems = GS_EMS_DATA();
-    double dpi = emscripten_get_device_pixel_ratio();
-    *w = (uint32_t)(ems->canvas_width * dpi);
-    *h = (uint32_t)(ems->canvas_height * dpi);
+    // double dpi = emscripten_get_device_pixel_ratio();
+    *w = (uint32_t)(ems->canvas_width);
+    *h = (uint32_t)(ems->canvas_height);
 }
 
 GS_API_DECL gs_vec2  
 gs_platform_framebuffer_sizev(uint32_t handle)
 {
-    gs_vec2 fbs = gs_default_val();
-    gs_platform_framebuffer_size(handle, (uint32_t*)&fbs.x, (uint32_t*)&fbs.y);
-    return fbs;
+    uint32_t w = 0, h = 0;
+    gs_platform_framebuffer_size(handle, &w, &h);
+    return gs_v2(w, h);
 }
 
 GS_API_DECL uint32_t 

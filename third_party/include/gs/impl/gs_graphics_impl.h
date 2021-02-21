@@ -464,10 +464,10 @@ size_t gsgl_uniform_data_size_in_bytes(gs_graphics_uniform_type type)
 }
 
 /* Graphics Interface Creation / Initialization / Shutdown / Destruction */
-gs_graphics_i* gs_graphics_create()
+gs_graphics_t* gs_graphics_create()
 {
     // Construct new graphics interface
-    gs_graphics_i* gfx = gs_malloc_init(gs_graphics_i);
+    gs_graphics_t* gfx = gs_malloc_init(gs_graphics_t);
 
     // Construct internal data for opengl
     gfx->user_data = gs_malloc_init(gsgl_data_t);
@@ -475,7 +475,7 @@ gs_graphics_i* gs_graphics_create()
     return gfx;
 }
 
-void gs_graphics_destroy(gs_graphics_i* graphics)
+void gs_graphics_destroy(gs_graphics_t* graphics)
 {
     // Free all resources (assuming they've been freed from the GPU already)
     if (graphics == NULL) return;
@@ -510,7 +510,7 @@ void gs_graphics_destroy(gs_graphics_i* graphics)
     graphics = NULL;
 }
 
-void gs_graphics_init(gs_graphics_i* graphics)
+void gs_graphics_init(gs_graphics_t* graphics)
 {
     // Push back 0 handles into slot arrays (for 0 init validation)
     gsgl_data_t* ogl = (gsgl_data_t*)graphics->user_data;
@@ -565,7 +565,7 @@ void gs_graphics_init(gs_graphics_i* graphics)
     )
 }
 
-void gs_graphics_shutdown(gs_graphics_i* graphics)
+void gs_graphics_shutdown(gs_graphics_t* graphics)
 {
 }
 
