@@ -18,6 +18,8 @@
 #define GS_IMPL
 #include <gs/gs.h>
 
+#include "data.c"
+
 gs_command_buffer_t                      cb      = {0};
 gs_handle(gs_graphics_vertex_buffer_t)   vbo     = {0};
 gs_handle(gs_graphics_pipeline_t)        pip     = {0};
@@ -25,35 +27,10 @@ gs_handle(gs_graphics_shader_t)          shader  = {0};
 gs_handle(gs_graphics_uniform_t)         u_color = {0};
 gs_handle(gs_graphics_uniform_t)         u_model = {0};
 
-const char* v_src = "\n"
-"#version 330 core\n"
-"layout(location = 0) in vec2 a_pos;\n"
-"uniform mat4 u_model;\n"
-"void main()\n"
-"{\n"
-"   gl_Position = u_model * vec4(a_pos, 0.0, 1.0);\n"
-"}";
-
-const char* f_src = "\n"
-"#version 330 core\n"
-"out vec4 frag_color;\n"
-"uniform vec3 u_color;\n"
-"void main()\n"
-"{\n"
-"   frag_color = vec4(u_color, 1.0);\n"
-"}";
-
 void init()
 {
     // Construct new command buffer
     cb = gs_command_buffer_new(); 
-
-    // Vertex data for triangle
-    float v_data[] = {
-        0.0f, 0.5f,
-        -0.5f, -0.5f, 
-        0.5f, -0.5f
-    };
 
     // Construct vertex buffer
     vbo = gs_graphics_vertex_buffer_create(
@@ -145,6 +122,7 @@ void update()
 
     /* Render */
     gs_graphics_begin_render_pass(&cb, GS_GRAPHICS_RENDER_PASS_DEFAULT);
+        gs_graphics_clear(&cb, &clear);
         gs_graphics_bind_pipeline(&cb, pip);
         gs_graphics_apply_bindings(&cb, &binds);
         gs_graphics_draw(&cb, &(gs_graphics_draw_desc_t){.start = 0, .count = 3});

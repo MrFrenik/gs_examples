@@ -1,5 +1,8 @@
 // Data for program
 
+#define ROW_COL_CT  10
+#define CAM_SPEED   10
+
 // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
     float cube_vdata[] = {
@@ -58,8 +61,15 @@
          5.0f, -0.5f, -5.0f,  2.0f, 2.0f
     };
 
+#ifdef GS_PLATFORM_WEB
+    #define GS_GL_VERSION_STR "#version 300 es\n"
+#else
+    #define GS_GL_VERSION_STR "#version 330 core\n"
+#endif
+
 const char* v_src =
-    "#version 330\n"
+    GS_GL_VERSION_STR
+    "precision mediump float;\n"
     "layout(location = 0) in vec3 a_pos;\n"
     "layout(location = 1) in vec2 a_texcoord;\n"
     "struct vp_t {\n"
@@ -75,7 +85,8 @@ const char* v_src =
     "}\n";
 
 const char* f_texsrc =
-    "#version 330\n"
+    GS_GL_VERSION_STR
+    "precision mediump float;\n"
     "layout(location = 0) out vec4 frag_color;\n"
     "in vec2 tex_coord;\n"
     "uniform sampler2D u_tex;\n"
@@ -84,7 +95,8 @@ const char* f_texsrc =
     "}\n";
 
 const char* f_colsrc =
-    "#version 330\n"
+    GS_GL_VERSION_STR
+    "precision mediump float;\n"
     "layout(location = 0) out vec4 frag_color;\n"
     "void main() {\n"
     "   frag_color = vec4(0.04, 0.28, 0.26, 1.0);\n"

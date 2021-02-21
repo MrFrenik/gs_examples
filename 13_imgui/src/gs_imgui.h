@@ -25,7 +25,11 @@ typedef struct gs_imgui_vertex_t
     uint8_t col[4];
 } gs_imgui_vertex_t;
 
-#define GS_IMGUI_SHADER_VERSION "#version 330 core\n"
+#ifdef GS_PLATFORM_WEB
+    #define GS_IMGUI_SHADER_VERSION "#version 300 es\n"
+#else
+    #define GS_IMGUI_SHADER_VERSION "#version 330 core\n"
+#endif
 
 IMGUI_IMPL_API gs_imgui_t   gs_imgui_new(uint32_t hndl, bool install_callbacks);
 IMGUI_IMPL_API void         gs_imgui_device_create(gs_imgui_t* gs);
@@ -162,17 +166,17 @@ gs_imgui_new(uint32_t hndl, bool install_callbacks)
     io.KeyMap[ImGuiKey_RightArrow]  = gs_platform_key_to_codepoint(GS_KEYCODE_RIGHT);
     io.KeyMap[ImGuiKey_UpArrow]     = gs_platform_key_to_codepoint(GS_KEYCODE_UP);
     io.KeyMap[ImGuiKey_DownArrow]   = gs_platform_key_to_codepoint(GS_KEYCODE_DOWN);
-    io.KeyMap[ImGuiKey_PageUp]      = gs_platform_key_to_codepoint(GS_KEYCODE_PGUP);
-    io.KeyMap[ImGuiKey_PageDown]    = gs_platform_key_to_codepoint(GS_KEYCODE_PGDOWN);
+    io.KeyMap[ImGuiKey_PageUp]      = gs_platform_key_to_codepoint(GS_KEYCODE_PAGE_UP);
+    io.KeyMap[ImGuiKey_PageDown]    = gs_platform_key_to_codepoint(GS_KEYCODE_PAGE_DOWN);
     io.KeyMap[ImGuiKey_Home]        = gs_platform_key_to_codepoint(GS_KEYCODE_HOME);
     io.KeyMap[ImGuiKey_End]         = gs_platform_key_to_codepoint(GS_KEYCODE_END);
     io.KeyMap[ImGuiKey_Insert]      = gs_platform_key_to_codepoint(GS_KEYCODE_INSERT);
     io.KeyMap[ImGuiKey_Delete]      = gs_platform_key_to_codepoint(GS_KEYCODE_DELETE);
-    io.KeyMap[ImGuiKey_Backspace]   = gs_platform_key_to_codepoint(GS_KEYCODE_BSPACE);
+    io.KeyMap[ImGuiKey_Backspace]   = gs_platform_key_to_codepoint(GS_KEYCODE_BACKSPACE);
     io.KeyMap[ImGuiKey_Space]       = gs_platform_key_to_codepoint(GS_KEYCODE_SPACE);
     io.KeyMap[ImGuiKey_Enter]       = gs_platform_key_to_codepoint(GS_KEYCODE_ENTER);
     io.KeyMap[ImGuiKey_Escape]      = gs_platform_key_to_codepoint(GS_KEYCODE_ESC);
-    io.KeyMap[ImGuiKey_KeyPadEnter] = gs_platform_key_to_codepoint(GS_KEYCODE_NPENTER);
+    io.KeyMap[ImGuiKey_KeyPadEnter] = gs_platform_key_to_codepoint(GS_KEYCODE_KP_ENTER);
     io.KeyMap[ImGuiKey_A]           = gs_platform_key_to_codepoint(GS_KEYCODE_A);
     io.KeyMap[ImGuiKey_C]           = gs_platform_key_to_codepoint(GS_KEYCODE_C);
     io.KeyMap[ImGuiKey_V]           = gs_platform_key_to_codepoint(GS_KEYCODE_V);
@@ -269,7 +273,7 @@ void gs_imgui_update_mouse_and_keys(gs_imgui_t* ctx)
 
     // Have to poll events from platform layer to do this
     gs_platform_event_t evt = {};
-    while(gs_platform_poll_event(&evt))
+    while(gs_platform_poll_events(&evt, false))
     {
         switch (evt.type)
         {
@@ -277,17 +281,15 @@ void gs_imgui_update_mouse_and_keys(gs_imgui_t* ctx)
             {
                 switch (evt.key.action)
                 {
-                    case GS_PLATFORM_KEY_DOWN:
                     case GS_PLATFORM_KEY_PRESSED:
                     {
                         // Not sure if this is correct at all.
                         uint32_t cp = evt.key.codepoint;
-                        if (cp <= IM_UNICODE_CODEPOINT_MAX)
-                        {
+                        if (cp <= IM_UNICODE_CODEPOINT_MAX) {
                             io.AddInputCharacter(cp); 
                         }
 
-                        io.KeysDown[evt.key.codepoint] = true;
+                        // io.KeysDown[io.KeyMap[evt.key.codepoint]] = true;
 
                     } break;
 
@@ -304,10 +306,26 @@ void gs_imgui_update_mouse_and_keys(gs_imgui_t* ctx)
         }
     }
 
+    if (gs_platform_key_pressed(GS_KEYCODE_TAB)) gs_println("tab");
+    if (gs_platform_key_pressed(GS_KEYCODE_ENTER)) gs_println("enter");
+    if (gs_platform_key_pressed(GS_KEYCODE_BACKSPACE)) gs_println("bspace");
+    if (gs_platform_key_pressed(GS_KEYCODE_LEFT)) gs_println("left");
+    if (gs_platform_key_pressed(GS_KEYCODE_RIGHT)) gs_println("right");
+    if (gs_platform_key_pressed(GS_KEYCODE_UP)) gs_println("up");
+    if (gs_platform_key_pressed(GS_KEYCODE_DOWN)) gs_println("down");
+
+    io.KeysDown[gs_platform_key_to_codepoint(GS_KEYCODE_BACKSPACE)] = gs_platform_key_pressed(GS_KEYCODE_BACKSPACE);
+    io.KeysDown[gs_platform_key_to_codepoint(GS_KEYCODE_TAB)]       = gs_platform_key_pressed(GS_KEYCODE_TAB);
+    io.KeysDown[gs_platform_key_to_codepoint(GS_KEYCODE_ENTER)]     = gs_platform_key_pressed(GS_KEYCODE_ENTER);
+    io.KeysDown[gs_platform_key_to_codepoint(GS_KEYCODE_LEFT)]      = gs_platform_key_pressed(GS_KEYCODE_LEFT);
+    io.KeysDown[gs_platform_key_to_codepoint(GS_KEYCODE_RIGHT)]     = gs_platform_key_pressed(GS_KEYCODE_RIGHT);
+    io.KeysDown[gs_platform_key_to_codepoint(GS_KEYCODE_UP)]        = gs_platform_key_pressed(GS_KEYCODE_UP);
+    io.KeysDown[gs_platform_key_to_codepoint(GS_KEYCODE_DOWN)]      = gs_platform_key_pressed(GS_KEYCODE_DOWN);
+
     // Modifiers
-    io.KeyCtrl   = gs_platform_key_down(GS_KEYCODE_LCTRL) || gs_platform_key_down(GS_KEYCODE_RCTRL);
-    io.KeyShift  = gs_platform_key_down(GS_KEYCODE_LSHIFT) || gs_platform_key_down(GS_KEYCODE_RSHIFT);
-    io.KeyAlt    = gs_platform_key_down(GS_KEYCODE_LALT) || gs_platform_key_down(GS_KEYCODE_RALT);
+    io.KeyCtrl   = gs_platform_key_down(GS_KEYCODE_LEFT_CONTROL) || gs_platform_key_down(GS_KEYCODE_RIGHT_CONTROL);
+    io.KeyShift  = gs_platform_key_down(GS_KEYCODE_LEFT_SHIFT) || gs_platform_key_down(GS_KEYCODE_RIGHT_SHIFT);
+    io.KeyAlt    = gs_platform_key_down(GS_KEYCODE_LEFT_ALT) || gs_platform_key_down(GS_KEYCODE_RIGHT_ALT);
     io.KeySuper  = false;
 
     // Update buttons
@@ -347,9 +365,10 @@ gs_imgui_new_frame(gs_imgui_t* gs)
         io.DisplayFramebufferScale = ImVec2((float)display_w / w, (float)display_h / h);
 
     // Setup time step
-    double current_time = (double)gs_platform_elapsed_time();
-    io.DeltaTime = gs->time > 0.0 ? (float)(current_time - gs->time) : (float)(1.0f / 60.0f);
-    gs->time = current_time;
+    // double current_time = (double)gs_platform_elapsed_time();
+    io.DeltaTime = gs_engine_subsystem(platform)->time.delta;
+    // io.DeltaTime = gs->time > 0.0 ? (float)(current_time - gs->time) : (float)(1.0f / 60.0f);
+    // gs->time = current_time;
 
     gs_imgui_update_mouse_and_keys(gs);
 

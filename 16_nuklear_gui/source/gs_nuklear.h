@@ -42,9 +42,13 @@ typedef struct gs_nk_ctx_t
 } gs_nk_ctx_t;
 
 NK_API struct nk_context*   gs_nk_init(gs_nk_ctx_t* gs, uint32_t win_hndl, enum gs_nk_init_state init_state);
+NK_API void                 gs_nk_new_frame(gs_nk_ctx_t* gs);
 NK_API void                 gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA);
 NK_API void                 gs_nk_device_upload_atlas(gs_nk_ctx_t* gs, const void *image, int32_t width, int32_t height);
 NK_API void                 gs_nk_device_create(gs_nk_ctx_t* gs);
+
+NK_API void gs_nk_font_stash_begin(struct gs_nk_ctx_t* gs, struct nk_font_atlas **atlas);
+NK_API void gs_nk_font_stash_end(struct gs_nk_ctx_t* gs);
 
 NK_INTERN void              gs_nk_clipboard_paste(nk_handle usr, struct nk_text_edit *edit);
 NK_INTERN void              gs_nk_clipboard_copy(nk_handle usr, const char *text, int32_t len);
@@ -69,7 +73,11 @@ typedef struct gs_nk_vertex_t
     nk_byte col[4];
 } gs_nk_vertex_t;
 
-#define NK_SHADER_VERSION "#version 330 core\n"
+#ifdef GS_PLATFORM_WEB
+    #define NK_SHADER_VERSION "#version 300 es\n"
+#else
+    #define NK_SHADER_VERSION "#version 330 core\n"
+#endif
 
 NK_API void
 gs_nk_device_create(gs_nk_ctx_t* gs)
@@ -150,9 +158,9 @@ gs_nk_device_create(gs_nk_ctx_t* gs)
 
     // Vertex attr layout
     gs_graphics_vertex_attribute_desc_t gsnk_vattrs[] = {
-        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2},       // Position
-        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2},       // UV
-        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_BYTE4}         // Color
+        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2, .name = "Position"},  // Position
+        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT2, .name = "TexCoord"},  // UV
+        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_BYTE4, .name = "Color"}       // Color
     };
 
     // Create pipeline
@@ -252,12 +260,16 @@ gs_nk_new_frame(gs_nk_ctx_t* gs)
     struct nk_context* ctx = &gs->nk_ctx;
 
     // Cache platform pointer
-    gs_platform_i* platform = gs_engine_subsystem(platform);
+    gs_platform_t* platform = gs_engine_subsystem(platform);
 
     // Get window size
     gs_platform_window_size(gs->window_hndl, &gs->width, &gs->height);
     // Get frame buffer size
     gs_platform_framebuffer_size(gs->window_hndl, &gs->display_width, &gs->display_height);
+
+    // Reset wheel
+    gs->scroll.x = 0.f;
+    gs->scroll.y = 0.f; 
 
     // Calculate fb scale
     gs->fb_scale.x = (float)gs->display_width/(float)gs->width;
@@ -265,13 +277,12 @@ gs_nk_new_frame(gs_nk_ctx_t* gs)
 
     nk_input_begin(ctx);
     {
+        // Poll all events that occured this frame
         gs_platform_event_t evt = gs_default_val();
-        while(gs_platform_poll_event(&evt))
+        while(gs_platform_poll_events(&evt, true))
         {
             switch(evt.type)
             {
-                default: break;
-
                 case GS_PLATFORM_EVENT_KEY:
                 {
                     switch (evt.key.action)
@@ -286,6 +297,27 @@ gs_nk_new_frame(gs_nk_ctx_t* gs)
                         default: break;
                     }
                 } break;
+
+                case GS_PLATFORM_EVENT_MOUSE:
+                {
+                    switch (evt.mouse.action)
+                    {
+                        case GS_PLATFORM_MOUSE_WHEEL:
+                        {
+                            gs->scroll.x = evt.mouse.wheel.x;
+                            gs->scroll.y = evt.mouse.wheel.y;
+                        } break;
+
+                        case GS_PLATFORM_MOUSE_MOVE:
+                        {
+                            nk_input_motion(ctx, (int32_t)evt.mouse.move.x, (int32_t)evt.mouse.move.y);
+                        } break;
+
+                        default: break;
+                    }
+                } break;
+
+                default: break;
             }
         }
 
@@ -303,20 +335,20 @@ gs_nk_new_frame(gs_nk_ctx_t* gs)
         nk_input_key(ctx, NK_KEY_DEL, gs_platform_key_pressed(GS_KEYCODE_DELETE));
         nk_input_key(ctx, NK_KEY_ENTER, gs_platform_key_pressed(GS_KEYCODE_ENTER));
         nk_input_key(ctx, NK_KEY_TAB, gs_platform_key_pressed(GS_KEYCODE_TAB));
-        nk_input_key(ctx, NK_KEY_BACKSPACE, gs_platform_key_pressed(GS_KEYCODE_BSPACE));
+        nk_input_key(ctx, NK_KEY_BACKSPACE, gs_platform_key_pressed(GS_KEYCODE_BACKSPACE));
         nk_input_key(ctx, NK_KEY_UP, gs_platform_key_pressed(GS_KEYCODE_UP));
         nk_input_key(ctx, NK_KEY_DOWN, gs_platform_key_pressed(GS_KEYCODE_DOWN));
         nk_input_key(ctx, NK_KEY_TEXT_START, gs_platform_key_pressed(GS_KEYCODE_HOME));
         nk_input_key(ctx, NK_KEY_TEXT_END, gs_platform_key_pressed(GS_KEYCODE_END));
         nk_input_key(ctx, NK_KEY_SCROLL_START, gs_platform_key_pressed(GS_KEYCODE_HOME));
         nk_input_key(ctx, NK_KEY_SCROLL_END, gs_platform_key_pressed(GS_KEYCODE_END));
-        nk_input_key(ctx, NK_KEY_SCROLL_DOWN, gs_platform_key_pressed(GS_KEYCODE_PGDOWN));
-        nk_input_key(ctx, NK_KEY_SCROLL_UP, gs_platform_key_pressed(GS_KEYCODE_PGUP));
-        nk_input_key(ctx, NK_KEY_SHIFT, gs_platform_key_pressed(GS_KEYCODE_LSHIFT)||
-                                        gs_platform_key_pressed(GS_KEYCODE_RSHIFT));
+        nk_input_key(ctx, NK_KEY_SCROLL_DOWN, gs_platform_key_pressed(GS_KEYCODE_PAGE_DOWN));
+        nk_input_key(ctx, NK_KEY_SCROLL_UP, gs_platform_key_pressed(GS_KEYCODE_PAGE_UP));
+        nk_input_key(ctx, NK_KEY_SHIFT, gs_platform_key_pressed(GS_KEYCODE_LEFT_SHIFT)||
+                                        gs_platform_key_pressed(GS_KEYCODE_RIGHT_SHIFT));
 
-        if (gs_platform_key_down(GS_KEYCODE_LCTRL) ||
-            gs_platform_key_down(GS_KEYCODE_RCTRL)) {
+        if (gs_platform_key_down(GS_KEYCODE_LEFT_CONTROL) ||
+            gs_platform_key_down(GS_KEYCODE_RIGHT_CONTROL)) {
             nk_input_key(ctx, NK_KEY_COPY, gs_platform_key_pressed(GS_KEYCODE_C));
             nk_input_key(ctx, NK_KEY_PASTE, gs_platform_key_pressed(GS_KEYCODE_V));
             nk_input_key(ctx, NK_KEY_CUT, gs_platform_key_pressed(GS_KEYCODE_X));
@@ -346,16 +378,16 @@ gs_nk_new_frame(gs_nk_ctx_t* gs)
         }
     #endif
 
+        // Should swap this over to polling events instead.
         nk_input_button(ctx, NK_BUTTON_LEFT, (int)x, (int)y, gs_platform_mouse_down(GS_MOUSE_LBUTTON));
-        nk_input_button(ctx, NK_BUTTON_MIDDLE, (int)x, (int)y, gs_platform_mouse_pressed(GS_MOUSE_MBUTTON));
-        nk_input_button(ctx, NK_BUTTON_RIGHT, (int)x, (int)y, gs_platform_mouse_pressed(GS_MOUSE_RBUTTON));
+        nk_input_button(ctx, NK_BUTTON_MIDDLE, (int)x, (int)y, gs_platform_mouse_down(GS_MOUSE_MBUTTON));
+        nk_input_button(ctx, NK_BUTTON_RIGHT, (int)x, (int)y, gs_platform_mouse_down(GS_MOUSE_RBUTTON));
         nk_input_button(ctx, NK_BUTTON_DOUBLE, (int)gs->double_click_pos.x, (int)gs->double_click_pos.y, gs->is_double_click_down);
         nk_input_scroll(ctx, gs->scroll);
     }
     nk_input_end(ctx);
 
     gs->text_len = 0;
-    gs_platform_mouse_wheel(&gs->scroll.x, &gs->scroll.y);
 }
 
 NK_API void
