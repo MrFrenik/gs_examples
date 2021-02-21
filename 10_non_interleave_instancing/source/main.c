@@ -22,21 +22,11 @@
 =================================================================*/
 
 #define GS_IMPL
-#define STB_DEFINE
 #include <gs/gs.h>
-#include <gs/external/stb/stb.h>
-#include <stdio.h>
 
-#define NUM_OFFSETS 1000000         // One MILLION offsets! Mwahahaha.
-#define CAM_SPEED   50
+#include "data.c"
 
-typedef struct fps_camera_t
-{
-    gs_camera_t camera;
-    gs_vec2 prev_mouse_position;
-} fps_camera_t;
-
-void fps_camera_update(fps_camera_t* cam);
+void fps_camera_update(gs_camera_t* cam);
 
 gs_command_buffer_t                     cb       = {0};
 gs_handle(gs_graphics_vertex_buffer_t)  vbo      = {0};
@@ -45,49 +35,7 @@ gs_handle(gs_graphics_uniform_t)        u_mvp    = {0};
 gs_handle(gs_graphics_pipeline_t)       pip      = {0};
 gs_handle(gs_graphics_shader_t)         shader   = {0};
 gs_handle(gs_graphics_vertex_buffer_t)  inst_vbo = {0};
-fps_camera_t                            fps      = {0};
-
-const char* v_src = "#version 330 core\n"
-"layout(location = 0) in vec3 a_pos;\n"
-"layout(location = 1) in vec4 a_color;\n"
-"layout(location = 2) in vec3 i_position;\n"
-"uniform mat4 u_mvp;\n"
-"out vec4 f_color;\n"
-"void main()\n"
-"{\n"
-"   gl_Position =u_mvp * vec4(a_pos + i_position, 1.0);\n"
-"   f_color = a_color;\n"
-"}";
-
-const char* f_src = "\n"
-"#version 330 core\n"
-"in vec4 f_color;\n"
-"out vec4 frag_color;\n"
-"void main()\n"
-"{\n"
-"   frag_color = f_color;\n"
-"}";
-
-// Cube vertex buffer
-gs_global float positions[] = {
-    -1.0, -1.0, -1.0,   1.0, -1.0, -1.0,   1.0,  1.0, -1.0,  -1.0,  1.0, -1.0,
-    -1.0, -1.0,  1.0,   1.0, -1.0,  1.0,   1.0,  1.0,  1.0,  -1.0,  1.0,  1.0,
-    -1.0, -1.0, -1.0,  -1.0,  1.0, -1.0,  -1.0,  1.0,  1.0,  -1.0, -1.0,  1.0,
-     1.0, -1.0, -1.0,   1.0,  1.0, -1.0,   1.0,  1.0,  1.0,   1.0, -1.0,  1.0, 
-    -1.0, -1.0, -1.0,  -1.0, -1.0,  1.0,   1.0, -1.0,  1.0,   1.0, -1.0, -1.0,
-    -1.0,  1.0, -1.0,  -1.0,  1.0,  1.0,   1.0,  1.0,  1.0,   1.0,  1.0, -1.0,
-};
-
-gs_global float colors[] = {
-    1.0, 0.5, 0.0, 1.0,  1.0, 0.5, 0.0, 1.0,  1.0, 0.5, 0.0, 1.0,  1.0, 0.5, 0.0, 1.0,
-    0.5, 1.0, 0.0, 1.0,  0.5, 1.0, 0.0, 1.0,  0.5, 1.0, 0.0, 1.0,  0.5, 1.0, 0.0, 1.0,
-    0.5, 0.0, 1.0, 1.0,  0.5, 0.0, 1.0, 1.0,  0.5, 0.0, 1.0, 1.0,  0.5, 0.0, 1.0, 1.0,
-    1.0, 0.5, 1.0, 1.0,  1.0, 0.5, 1.0, 1.0,  1.0, 0.5, 1.0, 1.0,  1.0, 0.5, 1.0, 1.0,
-    0.5, 1.0, 1.0, 1.0,  0.5, 1.0, 1.0, 1.0,  0.5, 1.0, 1.0, 1.0,  0.5, 1.0, 1.0, 1.0,
-    1.0, 1.0, 0.5, 1.0,  1.0, 1.0, 0.5, 1.0,  1.0, 1.0, 0.5, 1.0,  1.0, 1.0, 0.5, 1.0,
-};
-
-gs_global gs_vec3 offsets[NUM_OFFSETS];
+gs_camera_t                             cam      = {0};
 
 void app_init()
 {
@@ -96,10 +44,9 @@ void app_init()
 
     // Construct camera
     const gs_vec2 ws = gs_platform_window_sizev(gs_platform_main_window());
-    fps.camera = gs_camera_perspective();
-    fps.prev_mouse_position = gs_vec2_scale(gs_v2(ws.x, ws.y), 0.5f);
-    fps.camera.transform.position = gs_v3(-15.89f, 4.45f, -0.08f);
-    fps.camera.transform.rotation = gs_quat(0.02f, -0.79f, 0.02f, 0.61f);
+    cam = gs_camera_perspective();
+    cam.transform.position = gs_v3(-15.89f, 4.45f, -0.08f);
+    cam.transform.rotation = gs_quat(0.02f, -0.79f, 0.02f, 0.61f);
 
     for (int32_t i = 0; i < NUM_OFFSETS; ++i) {
 
@@ -147,16 +94,6 @@ void app_init()
         }
     );
 
-    // Index data
-    uint16_t i_data[] = {
-        0, 1, 2,  0, 2, 3,
-        6, 5, 4,  7, 6, 4,
-        8, 9, 10,  8, 10, 11,
-        14, 13, 12,  15, 14, 12,
-        16, 17, 18,  16, 18, 19,
-        22, 21, 20,  23, 22, 20
-    }; 
-
     // Construct index buffer
     ibo = gs_graphics_index_buffer_create( 
         &(gs_graphics_index_buffer_desc_t) {
@@ -190,9 +127,9 @@ void app_init()
     // Here's where we actually let the pipeline know how view our vertex data that we'll bind.
     // Need to actually describe vertex strides/offsets/divisors for instanced data layouts.
     gs_graphics_vertex_attribute_desc_t vattrs[] = {
-        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT3, .buffer_idx = 0}, // Position
-        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT4, .buffer_idx = 1}, // Color
-        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT3, .buffer_idx = 2, .stride = 3 * sizeof(float), .offset = 0, .divisor = 1},    // Offset (stride of total index vertex data, divisor is 1 for instance iteration)
+        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT3, .name = "a_pos", .buffer_idx = 0}, // Position
+        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT4, .name = "a_color", .buffer_idx = 1}, // Color
+        (gs_graphics_vertex_attribute_desc_t){.format = GS_GRAPHICS_VERTEX_ATTRIBUTE_FLOAT3, .name = "i_offset", .buffer_idx = 2, .stride = 3 * sizeof(float), .offset = 0, .divisor = 1},    // Offset (stride of total index vertex data, divisor is 1 for instance iteration)
     };
 
     pip = gs_graphics_pipeline_create (
@@ -214,7 +151,8 @@ void app_init()
 
 void app_update()
 {
-    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_engine_quit();
+    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) 
+        gs_engine_quit();
 
     // Render pass action for clearing the screen
     gs_graphics_clear_desc_t clear = {.actions = &(gs_graphics_clear_action_t){.color = 0.1f, 0.1f, 0.1f, 1.f}};
@@ -222,10 +160,10 @@ void app_update()
     const gs_vec2 ws = gs_platform_window_sizev(gs_platform_main_window());
 
     // Update camera
-    fps_camera_update(&fps);
+    fps_camera_update(&cam);
 
     // Calculate mvp matrix
-    gs_mat4 mvp = gs_camera_get_view_projection(&fps.camera, (int32_t)ws.x ,(int32_t)ws.y);
+    gs_mat4 mvp = gs_camera_get_view_projection(&cam, (int32_t)ws.x ,(int32_t)ws.y);
 
     // Declare all binds
     gs_graphics_bind_vertex_buffer_desc_t vbuffers[] = {
@@ -253,31 +191,30 @@ void app_update()
     gs_graphics_submit_command_buffer(&cb);
 }
 
-void fps_camera_update(fps_camera_t* fps)
+void fps_camera_update(gs_camera_t* cam)
 {
+    gs_platform_t* platform = gs_engine_subsystem(platform);
+
+    gs_platform_lock_mouse(gs_platform_main_window(), gs_platform_mouse_down(GS_MOUSE_LBUTTON));
+    if (!gs_platform_mouse_locked()) {
+        return;
+    }
+
     const gs_vec2 ws = gs_platform_window_sizev(gs_platform_main_window());
-    const gs_vec2 mp = gs_platform_mouse_positionv();
-    float dt = gs_engine_subsystem(platform)->time.delta;
+    const gs_vec2 dp = gs_platform_mouse_deltav();
+    const float mod = gs_platform_key_down(GS_KEYCODE_LEFT_SHIFT) ? 5.f : 1.f; 
+    float dt = platform->time.delta;
 
-    // First pressed
-    if (gs_platform_mouse_pressed(GS_MOUSE_LBUTTON)) {
-        fps->prev_mouse_position = mp;
-    }
-
-    // Update fly camera
-    if (gs_platform_mouse_down(GS_MOUSE_LBUTTON)) {
-        gs_vec2 ds = gs_v2(mp.x - fps->prev_mouse_position.x, mp.y - fps->prev_mouse_position.y);
-        gs_camera_offset_orientation(&fps->camera, -ds.x, -ds.y);
-        gs_platform_mouse_set_position(gs_platform_main_window(), fps->prev_mouse_position.x, fps->prev_mouse_position.y);
-    }
+    // Rotate camera
+    gs_camera_offset_orientation(cam, -dp.x, -dp.y);
 
     gs_vec3 vel = {0};
-    if (gs_platform_key_down(GS_KEYCODE_W)) vel = gs_vec3_add(vel, gs_camera_forward(&fps->camera));
-    if (gs_platform_key_down(GS_KEYCODE_S)) vel = gs_vec3_add(vel, gs_camera_backward(&fps->camera));
-    if (gs_platform_key_down(GS_KEYCODE_A)) vel = gs_vec3_add(vel, gs_camera_left(&fps->camera));
-    if (gs_platform_key_down(GS_KEYCODE_D)) vel = gs_vec3_add(vel, gs_camera_right(&fps->camera));
+    if (gs_platform_key_down(GS_KEYCODE_W)) vel = gs_vec3_add(vel, gs_camera_forward(cam));
+    if (gs_platform_key_down(GS_KEYCODE_S)) vel = gs_vec3_add(vel, gs_camera_backward(cam));
+    if (gs_platform_key_down(GS_KEYCODE_A)) vel = gs_vec3_add(vel, gs_camera_left(cam));
+    if (gs_platform_key_down(GS_KEYCODE_D)) vel = gs_vec3_add(vel, gs_camera_right(cam));
 
-    fps->camera.transform.position = gs_vec3_add(fps->camera.transform.position, gs_vec3_scale(gs_vec3_norm(vel), dt * CAM_SPEED));
+    cam->transform.position = gs_vec3_add(cam->transform.position, gs_vec3_scale(gs_vec3_norm(vel), dt * CAM_SPEED * mod));
 }
 
 gs_app_desc_t gs_main(int32_t argc, char** argv)

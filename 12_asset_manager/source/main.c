@@ -55,7 +55,7 @@ void load_custom_asset_from_file(const char* path, void* out, uint32_t optional_
 }
 
 // Asset handles
-gs_asset_t tex_hndl   = {0}; 
+gs_asset_t tex_hndl   = {0};
 gs_asset_t fnt_hndl   = {0};
 gs_asset_t aud_hndl   = {0};
 gs_asset_t msh_hndl   = {0};
@@ -87,23 +87,43 @@ void init()
         .layout_size = sizeof(mesh_layout)
     };
 
-    // Loading assets provided with framework
-    tex_hndl = gs_assets_load_from_file(&gsa, gs_asset_texture_t, "./assets/champ.png", NULL, false);
-    aud_hndl = gs_assets_load_from_file(&gsa, gs_asset_audio_t, "./assets/jump.wav");
-    fnt_hndl = gs_assets_load_from_file(&gsa, gs_asset_font_t, "./assets/font.ttf", 32);
-    msh_hndl = gs_assets_load_from_file(&gsa, gs_asset_mesh_t, "./assets/duck/Duck.gltf", &mesh_decl, NULL, 0);
-    dtex_hndl = gs_assets_load_from_file(&gsa, gs_asset_texture_t, "./assets/duck/DuckCM.png", NULL, false);
+    gs_asset_texture_t tex0 = {0};
+    gs_asset_texture_t tex1 = {0};
+    gs_asset_audio_t   aud  = {0};
+    gs_asset_mesh_t    msh  = {0};
+    gs_asset_font_t    fnt  = {0};
+
+    // Load asset data
+    gs_asset_texture_load_from_file("./assets/champ.png", &tex0, NULL, false, false);
+    gs_asset_audio_load_from_file("./assets/jump.wav", &aud);
+    gs_asset_font_load_from_file("./assets/font.ttf", &fnt, 32);
+    gs_asset_mesh_load_from_file("./assets/duck/Duck.gltf", &msh, &mesh_decl, NULL, 0);
+    gs_asset_texture_load_from_file("./assets/duck/DuckCM.png", &tex1, NULL, false, false);
+
+    // Create and place assets
+    tex_hndl = gs_assets_create_asset(&gsa, gs_asset_texture_t, &tex0);
+    dtex_hndl = gs_assets_create_asset(&gsa, gs_asset_texture_t, &tex1);
+    aud_hndl = gs_assets_create_asset(&gsa, gs_asset_audio_t, &aud);
+    fnt_hndl = gs_assets_create_asset(&gsa, gs_asset_font_t, &fnt);
+    msh_hndl = gs_assets_create_asset(&gsa, gs_asset_mesh_t, &msh);
 
     // Create asset and get handle for custom data placed into asset manager
-    custom_asset_t custom = {
+    // Might have to just do this instead. Load from file just isn't going to work.
+    custom_asset_t custom = (custom_asset_t){
         .name = "whatever", 
         .udata = 10,
         .fdata = 3.145f
     };
     cust_hndl = gs_assets_create_asset(&gsa, custom_asset_t, &custom);
 
-    // Load custom data "from file" (can provide optional data AFTER path)
-    cust_hndl0 = gs_assets_load_from_file(&gsa, custom_asset_t, "path/to/asset", 10, 2.45f);
+    custom = (custom_asset_t){
+        .name = "whatever", 
+        .udata = 2,
+        .fdata = 2.45
+    };
+
+    // // Load custom data "from file" (can provide optional data AFTER path)
+    cust_hndl0 = gs_assets_create_asset(&gsa, custom_asset_t, &custom);
 }
 
 void update()
@@ -114,20 +134,20 @@ void update()
     const gs_vec2 ws = gs_platform_window_sizev(gs_platform_main_window());
 
     // Whenever user presses key, play transient sound effect
-    if (gs_platform_key_pressed(GS_KEYCODE_P))
-    {
+    if (gs_platform_key_pressed(GS_KEYCODE_SPACE)) {
         // Grab audio asset pointer from assets
         gs_asset_audio_t* ap = gs_assets_getp(&gsa, gs_asset_audio_t, aud_hndl);
+        gs_println("playing sound");
         gs_audio_play_source(ap->hndl, 0.5f);
     }
 
     // Grab texture asset pointer from assets
     gs_asset_texture_t* tp = gs_assets_getp(&gsa, gs_asset_texture_t, tex_hndl);
+    custom_asset_t* cp = gs_assets_getp(&gsa, custom_asset_t, cust_hndl);
+    custom_asset_t* cp0 = gs_assets_getp(&gsa, custom_asset_t, cust_hndl0);
     gs_asset_font_t* fp = gs_assets_getp(&gsa, gs_asset_font_t, fnt_hndl);
     gs_asset_mesh_t* mp = gs_assets_getp(&gsa, gs_asset_mesh_t, msh_hndl);
     gs_asset_texture_t* dtp = gs_assets_getp(&gsa, gs_asset_texture_t, dtex_hndl);
-    custom_asset_t* cp = gs_assets_getp(&gsa, custom_asset_t, cust_hndl);
-    custom_asset_t* cp0 = gs_assets_getp(&gsa, custom_asset_t, cust_hndl0);
 
     gsi_camera3D(&gsi);
     gsi_face_cull_enabled(&gsi, true);
