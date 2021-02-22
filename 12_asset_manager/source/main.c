@@ -119,7 +119,7 @@ void init()
     custom = (custom_asset_t){
         .name = "whatever", 
         .udata = 2,
-        .fdata = 2.45
+        .fdata = 2.45f
     };
 
     // // Load custom data "from file" (can provide optional data AFTER path)

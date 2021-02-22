@@ -24,7 +24,7 @@ void init()
     cb = gs_command_buffer_new(); 
     gsi = gs_immediate_draw_new();
 
-    gs_asset_font_load_from_file("../assets/font.ttf", &font, 48);
+    gs_asset_font_load_from_file("./assets/font.ttf", &font, 48);
 
     gs_graphics_texture_desc_t desc = {0};
     gs_asset_texture_load_from_file("./assets/champ.png", &tex, NULL, true, false);

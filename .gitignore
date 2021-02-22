@@ -126,3 +126,4 @@ compute_shader/bin/main.obj
 19_uniform_buffers/bin/App.html
 19_uniform_buffers/bin/App.js
 19_uniform_buffers/bin/App.wasm
+22_first_person_camera/bin/main.obj
