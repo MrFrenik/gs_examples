@@ -320,11 +320,13 @@ void march_cubes(gs_immediate_draw_t* gsi)
         uint32_t idx = _x + CHUNK_ARR_DIM * (_y + CHUNK_ARR_DIM * _z);
 
         // Determine resolution based on camera distance
+        const float MAX_DIST = 2000.f;
         gs_vec3 diff = gs_vec3_sub(fps.cam.transform.position, chunks[idx].origin);
         float sdist = gs_vec3_dot(diff, diff);
-        if (sdist <= 600.f)       chunks[idx].resolution = 0.5f;
-        else if (sdist <= 1500.f) chunks[idx].resolution = 1.f;
-        else                      chunks[idx].resolution = 2.f;
+        chunks[idx].resolution = gs_clamp(sdist / MAX_DIST, 1.f, 2.f);
+        // if (sdist <= 600.f)       chunks[idx].resolution = 0.5f;
+        // else if (sdist <= 1500.f) chunks[idx].resolution = 1.f;
+        // else                      chunks[idx].resolution = 2.f;
 
         const uint32_t NUM_VOXELS = (uint32_t)((float)CHUNK_WORLD_SIZE / chunks[idx].resolution);
         const float scale = (float)chunks[idx].resolution;
