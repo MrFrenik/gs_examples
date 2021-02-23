@@ -11,13 +11,14 @@ typedef struct fps_camera_t {
 #define SENSITIVITY  0.2f
 
 // Voxel
-#define CHUNK_WORLD_SIZE  16   // Chunk size in pure world units (ex. 16 => 16^3 in total cubic size)
-#define VOXEL_RESOLUTION  1.f  // Resolution of voxel grid (ex. 0.5 => pow(CHUNK_WORLD_SIZE / 0.5, 3) voxels in a given chunk)
+#define CHUNK_WORLD_SIZE  16    // Chunk size in pure world units (ex. 32 => 32^3 in total cubic size)
+#define NUM_VOXELS        16    // Voxels per chunk (to control resolution)
+#define NUM_CORNERS       (NUM_VOXELS + 1)
 
 // A chunk is just an origin, right? For now, we'll just do that. We're going to re-evaluate the chunk every frame with immediate drawing.
 typedef struct voxel_chunk_t {
     gs_vec3 origin;
-    float resolution;
+    float data[NUM_CORNERS * NUM_CORNERS * NUM_CORNERS]; // Just a flat array of data (this will be optimized later on, like quantizing the float to a uint8_t in range [0, 255], since value of data should be 0.f -> 1.f for valid range)
 } voxel_chunk_t;
 
 void march_single_cube(gs_immediate_draw_t* gsi, gs_vec3 p, float resolution);
