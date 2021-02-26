@@ -534,6 +534,49 @@
    #define GS_API_DECL   extern
 #endif
 
+/*===================
+// PLATFORM DEFINES
+===================*/
+
+/* Platform Android */
+#if (defined __ANDROID__)
+
+    #define GS_PLATFORM_ANDROID
+
+/* Platform Apple */
+#elif (defined __APPLE__ || defined _APPLE)
+
+    #define GS_PLATFORM_APPLE
+
+/* Platform Windows */
+#elif (defined _WIN32 || defined _WIN64)
+
+    // Necessary windows defines before including windows.h, because it's retarded.
+    #define OEMRESOURCE
+
+    #define GS_PLATFORM_WIN
+    #include <windows.h>
+
+    #define WIN32_LEAN_AND_MEAN
+
+/* Platform Linux */
+#elif (defined linux || defined _linux || defined __linux__)
+
+    #define GS_PLATFORM_LINUX
+
+/* Platform Emscripten */
+#elif (defined __EMSCRIPTEN__)
+
+    #define GS_PLATFORM_WEB
+
+/* Else - Platform Undefined and Unsupported or custom */
+
+#endif
+
+#ifndef __ANDROID__
+#error "FUCK"
+#endif
+
 /*============================================================
 // C primitive types
 ============================================================*/
@@ -1100,7 +1143,15 @@ void gs_util_normalize_path
 }
 
 #ifdef __MINGW32__
+
     #define gs_printf(__FMT, ...) __mingw_printf(__FMT, ##__VA_ARGS__)
+
+#elif (defined GS_PLATFORM_ANDROID)
+
+    #include <android/log.h>
+
+    #define gs_printf(__FMT, ...) ((void)__android_log_print(ANDROID_LOG_INFO, "native-activity", __FMT, ## __VA_ARGS__))
+
 #else
     gs_force_inline void 
     gs_printf
@@ -1118,7 +1169,7 @@ void gs_util_normalize_path
 
 #define gs_println(__FMT, ...)\
     do {\
-        gs_printf(__FMT, ##__VA_ARGS__);\
+        gs_printf(__FMT, ## __VA_ARGS__);\
         gs_printf("\n");\
     } while (0)
 
@@ -3635,36 +3686,6 @@ gs_vec4 gs_aabb_window_coords(gs_aabb_t* aabb, gs_camera_t* camera, gs_vec2 wind
 // GS_PLATFORM
 ========================*/
 
-/* Platform Apple */
-#if (defined __APPLE__ || defined _APPLE)   
-
-    #define GS_PLATFORM_APPLE
-
-/* Platform Windows */
-#elif (defined _WIN32 || defined _WIN64)
-
-    // Necessary windows defines before including windows.h, because it's retarded.
-    #define OEMRESOURCE
-
-    #define GS_PLATFORM_WIN
-    #include <windows.h>
-
-    #define WIN32_LEAN_AND_MEAN
-
-/* Platform Linux */
-#elif (defined linux || defined _linux || defined __linux__)
-
-    #define GS_PLATFORM_LINUX
-
-/* Platform Emscripten */
-#elif (defined __EMSCRIPTEN__)
-
-    #define GS_PLATFORM_WEB
-
-/* Else - Platform Undefined and Unsupported */
-
-#endif
-
 /*============================================================
 // Platform Time
 ============================================================*/
@@ -4049,14 +4070,7 @@ GS_API_DECL void            gs_platform_register_instance(gs_platform_t* platfor
 GS_API_DECL void            gs_platform_destroy(gs_platform_t* platform);
 
  // Platform Init / Update / Shutdown
-GS_API_DECL void            gs_platform_init(gs_platform_t* platform);      // Initialize platform layer
-GS_API_DECL void            gs_platform_update(gs_platform_t* platform);    // Update platform layer
-GS_API_DECL void            gs_platform_shutdown(gs_platform_t* platform);  // Shutdown platform layer
-
- // Platform Init / Update / Shutdown (make these default with custom implementations for internal inits/updates/shutdowns)
-GS_API_DECL void gs_platform_update(gs_platform_t* platform);
-
-/* Platform global instance functions (should only be called if global platform instance is registered, automatically done when using default engine instance) */
+GS_API_DECL void  gs_platform_update(gs_platform_t* platform);    // Update platform layer
 
 // Platform Util
 GS_API_DECL float  gs_platform_delta_time();
@@ -4104,10 +4118,8 @@ GS_API_DECL void       gs_platform_file_extension(char* buffer, size_t buffer_sz
 
 /* == Platform Dependent API == */
 
- // Platform Init / Update / Shutdown
-GS_API_DECL void   gs_platform_init_internal(gs_platform_t* platform);
-GS_API_DECL void   gs_platform_update_internal(gs_platform_t* platform);
-GS_API_DECL void   gs_platform_shutdown_internal(gs_platform_t* platform);
+GS_API_DECL void            gs_platform_init(gs_platform_t* platform);      // Initialize platform layer
+GS_API_DECL void            gs_platform_shutdown(gs_platform_t* platform);  // Shutdown platform layer
 
 // Platform Util
 GS_API_DECL double gs_platform_elapsed_time();  // Returns time in ms since initialization of platform
@@ -5011,6 +5023,9 @@ typedef struct gs_app_desc_t
     bool32 enable_vsync;
     bool32 is_running;
     void* user_data;
+    struct {
+        void* state; 
+    } android;
 } gs_app_desc_t;
 
 /*
@@ -5424,10 +5439,19 @@ bool32_t gs_util_load_texture_data_from_file(const char* file_path, int32_t* wid
 
 // Default provided platform implementations (these will be removed eventually)
 #ifndef GS_PLATFORM_IMPL_CUSTOM
+
     #if (defined GS_PLATFORM_WIN || defined GS_PLATFORM_APPLE || defined GS_PLATFORM_LINUX)
+
         #define GS_PLATFORM_IMPL_GLFW
+
     #elif (defined GS_PLATFORM_WEB)
+
         #define GS_PLATFORM_IMPL_EMSCRIPTEN
+
+    #elif (defined GS_PLATFORM_ANDROID)
+
+        #define GS_PLATFORM_IMPL_ANDROID
+
 	#endif
 #endif
 
@@ -5438,11 +5462,17 @@ bool32_t gs_util_load_texture_data_from_file(const char* file_path, int32_t* wid
 =============================*/
 
 #ifndef GS_GRAPHICS_IMPL_CUSTOM
+
     #if (defined GS_PLATFORM_WIN || defined GS_PLATFORM_APPLE || defined GS_PLATFORM_LINUX)
+
         #define GS_GRAPHICS_IMPL_OPENGL_CORE
+
     #else
+
         #define GS_GRAPHICS_IMPL_OPENGL_ES
+
     #endif
+
 #endif
 
 #include "impl/gs_graphics_impl.h"
@@ -5452,7 +5482,9 @@ bool32_t gs_util_load_texture_data_from_file(const char* file_path, int32_t* wid
 =============================*/
 
 #ifndef GS_AUDIO_IMPL_CUSTOM
+
     #define GS_AUDIO_IMPL_MINIAUDIO
+
 #endif
 
 #include "impl/gs_audio_impl.h"

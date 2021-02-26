@@ -848,6 +848,7 @@ gs_handle(gs_graphics_shader_t) gs_graphics_shader_create(gs_graphics_shader_des
     {
         if (desc->sources[i].type == GS_GRAPHICS_SHADER_STAGE_VERTEX) pip |= GSGL_GRAPHICS_SHADER_PIPELINE_GFX;
         if (desc->sources[i].type == GS_GRAPHICS_SHADER_STAGE_COMPUTE) pip |= GSGL_GRAPHICS_SHADER_PIPELINE_COMPUTE;
+        c++;
 
         // Validity Check: Desc must have vertex source if compute not selected. All other source is optional.
         if ((pip & GSGL_GRAPHICS_SHADER_PIPELINE_COMPUTE) && ((pip & GSGL_GRAPHICS_SHADER_PIPELINE_GFX))) {
@@ -859,7 +860,7 @@ gs_handle(gs_graphics_shader_t) gs_graphics_shader_create(gs_graphics_shader_des
         uint32_t sid = glCreateShader(stage);
 
         if (!sid) {
-            gs_println ("Error: Failed to allocate memory for shader: '%s': stage: {put stage id here}.", desc->name);
+            gs_println ("Error: Failed to allocate memory for shader: '%s': stage: {put stage id here}", desc->name);
             gs_assert(sid);
         }
 

@@ -220,7 +220,7 @@ GS_API_DECL unsigned int gs_decompress(unsigned char* output, unsigned char* inp
 const f32 gsi_deg2rad = (f32)GS_PI / 180.f;
 
 // Shaders
-#ifdef GS_PLATFORM_WEB
+#if (defined GS_PLATFORM_WEB || defined GS_PLATFORM_ANDROID)
     #define GSI_GL_VERSION_STR "#version 300 es\n"
 #else
     #define GSI_GL_VERSION_STR "#version 330 core\n"
