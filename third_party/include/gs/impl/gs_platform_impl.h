@@ -171,14 +171,14 @@ void gs_platform_update_input(gs_platform_input_t* input)
         input->mouse.prev_button_map[i] = input->mouse.button_map[i];
     }
 
-    // input->mouse.prev_position = input->mouse.position;
-    input->mouse.wheel = gs_v2(0.0f, 0.0f);
-    input->mouse.delta = gs_v2(0.f, 0.f);
+    input->mouse.wheel = gs_v2s(0.0f);
+    input->mouse.delta = gs_v2s(0.f);
     input->mouse.moved_this_frame = false;
-    // gs_println("mouse pos: %.2f, %.2f", input->mouse.position.x, input->mouse.position.y);
-    // if (!input->mouse.locked) {
-    //     input->mouse.position = gs_v2(0.f, 0.f);
-    // }
+
+    // Update all touch deltas
+    for (uint32_t i = 0; i < GS_PLATFORM_MAX_TOUCH; ++i) {
+        input->touch.points[i].delta = gs_v2s(0.f);
+    }
 }
 
 void gs_platform_poll_all_events()
@@ -283,10 +283,13 @@ void gs_platform_poll_all_events()
                     {
                         for (uint32_t i = 0; i < evt.touch.pointer_count; ++i) {
                             if (evt.touch.points[i].down) {
+
                                 size_t id = evt.touch.points[i].id;
+                                gs_vec2* p = &platform->input.touch.points[id].position;
                                 gs_vec2* pos = &evt.touch.points[i].position;
+                                gs_vec2* d = &platform->input.touch.points[id].delta;
                                 platform->input.touch.points[id].down = true;
-                                platform->input.touch.points[id].position = *pos;
+                                *p = *pos;
                             }
                         }
                     } break;
@@ -306,8 +309,12 @@ void gs_platform_poll_all_events()
                         for (uint32_t i = 0; i < evt.touch.pointer_count; ++i) {
                             if (evt.touch.points[i].changed) {
                                 size_t id = evt.touch.points[i].id;
+                                gs_vec2* p = &platform->input.touch.points[id].position;
                                 gs_vec2* pos = &evt.touch.points[i].position;
-                                platform->input.touch.points[id].position = *pos;
+                                gs_vec2* d = &platform->input.touch.points[id].delta;
+                                platform->input.touch.points[id].down = true;
+                                *d = gs_vec2_sub(*pos, *p);
+                                *p = *pos;
                             }
                         }
                     } break;
@@ -494,6 +501,21 @@ void gs_platform_mouse_wheel(f32* x, f32* y)
 bool gs_platform_mouse_locked()
 {
     return (__gs_input())->mouse.locked;
+}
+
+void gs_platform_touch_delta(uint32_t idx, float* x, float* y)
+{
+    gs_platform_input_t* input = __gs_input();
+    uint32_t i = gs_clamp(idx, 0, GS_PLATFORM_MAX_TOUCH - 1);
+    *x = input->touch.points[i].delta.x;
+    *y = input->touch.points[i].delta.y;
+}
+
+gs_vec2 gs_platform_touch_deltav(uint32_t idx)
+{
+    gs_vec2 delta = gs_v2s(0.f);
+    gs_platform_touch_delta(idx, &delta.x, &delta.y);
+    return delta;
 }
 
 void gs_platform_press_key(gs_platform_keycode code)

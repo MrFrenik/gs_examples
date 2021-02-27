@@ -3891,6 +3891,7 @@ typedef struct gs_platform_touchpoint_t
 {
     size_t id;
     gs_vec2 position;
+    gs_vec2 delta;
     uint16_t changed;
     uint16_t down;
 } gs_platform_touchpoint_t;
@@ -4145,6 +4146,8 @@ GS_API_DECL void      gs_platform_mouse_position(int32_t* x, int32_t* y);
 GS_API_DECL void      gs_platform_mouse_wheel(float* x, float* y);
 GS_API_DECL bool      gs_platform_mouse_moved();
 GS_API_DECL bool      gs_platform_mouse_locked();
+GS_API_DECL gs_vec2   gs_platform_touch_deltav(uint32_t idx);
+GS_API_DECL void      gs_platform_touch_delta(uint32_t idx, float* x, float* y);
 
 // Platform Events
 GS_API_DECL bool      gs_platform_poll_events(gs_platform_event_t* evt, bool32_t consume);
