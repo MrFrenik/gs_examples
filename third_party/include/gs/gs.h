@@ -5023,9 +5023,8 @@ typedef struct gs_app_desc_t
     bool32 enable_vsync;
     bool32 is_running;
     void* user_data;
-    struct {
-        void* state; 
-    } android;
+    // Platform specific construction data
+    void* platform_data;
 } gs_app_desc_t;
 
 /*

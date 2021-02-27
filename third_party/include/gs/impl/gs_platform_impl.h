@@ -2135,13 +2135,16 @@ gs_platform_framebuffer_height(uint32_t handle)
 // Android Implemenation
 ========================*/
 
+// Modified from sokol_app.h android impl
+
 #ifdef GS_PLATFORM_IMPL_ANDROID
 
 // Platform includes
 #include <pthread.h>
 #include <unistd.h>
 #include <time.h>
-#include <android_native_app_glue.h>
+#include <android/native_activity.h>
+//#include <android_native_app_glue.h>
 #include <android/looper.h>
 #include <android/log.h>
 #include <EGL/egl.h>
@@ -2150,218 +2153,722 @@ gs_platform_framebuffer_height(uint32_t handle)
     #define GL_GLEXT_PROTOTYPES
 #endif
 
-typedef enum gs_android_state_type {
-    GS_ANDROID_STATE_START,
-    GS_ANDROID_START_RESUME
-};
+typedef enum gs_android_message_type {
+    GS_ANDROID_MSG_CREATE,
+    GS_ANDROID_MSG_RESUME,
+    GS_ANDROID_MSG_PAUSE,
+    GS_ANDROID_MSG_GAIN_FOCUS,
+    GS_ANDROID_MSG_LOSE_FOCUS,
+    GS_ANDROID_MSG_SET_NATIVE_WINDOW,
+    GS_ANDROID_MSG_SET_INPUT_QUEUE,
+    GS_ANDROID_MSG_DESTROY
+} gs_android_message_type;
 
-typedef struct gs_android_t {
-    struct android_app* state;
+typedef struct gs_android_thread_t {
+    pthread_t thread;
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    int32_t read_from_main_fd;
+    int32_t write_from_main_fd;
+    bool is_thread_started;
+    bool is_thread_stopping;
+    bool is_thread_stopped;
+    bool padding;
+} gs_android_thread_t;
+
+typedef struct gs_android_resources_t {
+    ANativeWindow* window;
+    AInputQueue* input;
+} gs_android_resources_t;
+
+typedef struct gs_android_egl_t {
+    int32_t width;
+    int32_t height;
+    int32_t fbwidth;
+    int32_t fbheight;
     EGLConfig config;
     EGLDisplay display;
     EGLContext context;
     EGLSurface surface;
-    int32_t width;
-    int32_t height;
+} gs_android_egl_t;
+
+typedef struct gs_android_state_t {
+    bool has_created;
+    bool has_resumed;
+    bool has_focus;
+    bool padding;
+} gs_android_state_t;
+
+typedef struct gs_android_t {
+    ANativeActivity* activity;
+    gs_android_thread_t gt;
+    gs_android_resources_t pending;
+    gs_android_resources_t current;
+    ALooper* looper; 
+    gs_android_egl_t egl;
+    gs_android_state_t state;
 } gs_android_t;
 
-#define ANDROID_DATA(...)\
-    ((gs_android_t*)gs_engine_subsystem(platform)->user_data)
+gs_android_t* g_android_data = NULL;
 
-void egl_terminate_window()
+#define ANDROID_DATA(...)\
+    (g_android_data)
+
+// void egl_terminate_window()
+// {
+//     gs_android_t* android = ANDROID_DATA();
+//     if (android->display != EGL_NO_DISPLAY) {
+//         eglMakeCurrent(android->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+//         /*
+//         if (android->context != EGL_NO_CONTEXT) {
+//             eglDestroyContext(android->display, android->context);
+//         }
+//         */
+//         if (android->surface != EGL_NO_SURFACE) {
+//             eglDestroySurface(android->display, android->surface);
+//         }
+//         eglTerminate(android->display);
+//     }
+//     android->display = EGL_NO_DISPLAY;
+//     /*
+//     android->context = EGL_NO_CONTEXT;
+//     */
+//     android->surface = EGL_NO_SURFACE;
+// }
+
+// void egl_init_window()
+// {
+//     gs_android_t* android = ANDROID_DATA();
+//     struct android_app* state = (struct android_app*)gs_engine_app()->android.state;
+//             gs_assert(state);
+
+//     android->display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+//     if (android->display == EGL_NO_DISPLAY) {
+//         return;
+//     }
+//     if (eglInitialize(android->display, NULL, NULL) == EGL_FALSE) {
+//         return;
+//     }
+
+//     // EGLint alpha_size = _sapp.desc.alpha ? 8 : 0;
+//     EGLint alpha_size = 8;
+//     const EGLint cfg_attributes[] = {
+//             EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+//             EGL_RED_SIZE, 8,
+//             EGL_GREEN_SIZE, 8,
+//             EGL_BLUE_SIZE, 8,
+//             EGL_ALPHA_SIZE, alpha_size,
+//             EGL_DEPTH_SIZE, 16,
+//             EGL_STENCIL_SIZE, 0,
+//             EGL_NONE,
+//     };
+//     EGLConfig available_cfgs[32];
+//     EGLint cfg_count;
+//     eglChooseConfig(android->display, cfg_attributes, available_cfgs, 32, &cfg_count);
+//     // SOKOL_ASSERT(cfg_count > 0);
+//     // SOKOL_ASSERT(cfg_count <= 32);
+
+//     /* find config with 8-bit rgb buffer if available, ndk sample does not trust egl spec */
+//     bool exact_cfg_found = false;
+//     for (int i = 0; i < cfg_count; ++i) {
+//         EGLConfig c = available_cfgs[i];
+//         EGLint r, g, b, a, d;
+//         if (eglGetConfigAttrib(android->display, c, EGL_RED_SIZE, &r) == EGL_TRUE &&
+//             eglGetConfigAttrib(android->display, c, EGL_GREEN_SIZE, &g) == EGL_TRUE &&
+//             eglGetConfigAttrib(android->display, c, EGL_BLUE_SIZE, &b) == EGL_TRUE &&
+//             eglGetConfigAttrib(android->display, c, EGL_ALPHA_SIZE, &a) == EGL_TRUE &&
+//             eglGetConfigAttrib(android->display, c, EGL_DEPTH_SIZE, &d) == EGL_TRUE &&
+//             r == 8 && g == 8 && b == 8 && (alpha_size == 0 || a == alpha_size) && d == 16) {
+//             exact_cfg_found = true;
+//             android->config = c;
+//             break;
+//         }
+//     }
+//     if (!exact_cfg_found) {
+//         android->config = available_cfgs[0];
+//     }
+
+//     EGLint ctx_attributes[] = {
+//             EGL_CONTEXT_CLIENT_VERSION, 3,
+//             EGL_NONE,
+//     };
+
+//     if (android->context == EGL_NO_CONTEXT) {
+//         android->context = eglCreateContext(android->display, android->config, EGL_NO_CONTEXT, ctx_attributes);
+//     }
+//     if (android->context == EGL_NO_CONTEXT) {
+//         gs_println("Platform Init: EGL context could not be created.");
+//         return;
+//     }
+
+//     /* create egl surface and make it current */
+//     android->surface = eglCreateWindowSurface(android->display, android->config, state->window, NULL);
+//     if (android->surface == EGL_NO_SURFACE) {
+//         gs_println("Platform Init: EGL surface could not be created.");
+//         return;
+//     }
+
+//     if (eglMakeCurrent(android->display, android->surface, android->surface, android->context) == EGL_FALSE) {
+//         gs_println("Platform Init: EGL surface could not be made current.");
+//         return;
+//     }
+
+//     // Query width/height of surface and store
+//     eglQuerySurface(android->display, android->surface, EGL_WIDTH, &android->width);
+//     eglQuerySurface(android->display, android->surface, EGL_HEIGHT, &android->height);
+
+//     // Check openGL on the system
+//     int32_t opengl_info[] = {GL_VENDOR, GL_RENDERER, GL_VERSION, GL_EXTENSIONS};
+//     for (int32_t i = 0; i < sizeof(opengl_info) / sizeof(int32_t); ++i) {
+//         const char* info = glGetString(opengl_info[i]);
+//         gs_println("OpenGL Info: %s", info);
+//     }
+// }
+
+// int32_t android_input_cb(struct android_app* app, AInputEvent* event) 
+// {
+//     return 1;
+// }
+
+// void android_cmd_cb(struct android_app* state, int32_t cmd) 
+// {
+//     gs_app_desc_t* app = (gs_app_desc_t*)state->userData;
+//     gs_assert(app);
+
+//     switch (cmd) 
+//     {
+//         // Initialize gunslinger here once window is initialized
+//         case APP_CMD_INIT_WINDOW: {
+//             gs_println("EGL: Init window");
+//             gs_assert(state->window);
+
+//             // Initialize entire framework
+//             if (!gs_engine_instance()) {
+//                 gs_engine_create(*app);
+//             }
+//             // Otherwise, we're recreating the window
+//             else {
+//                 egl_init_window();
+//             }
+//         } break;
+
+//         case APP_CMD_LOST_FOCUS: {
+//             gs_println("lost focus!");
+//         } break;
+
+//         case APP_CMD_GAINED_FOCUS: {
+//             gs_println("gained focus!");
+//         } break;
+
+//         case APP_CMD_START: {
+//             gs_println("start!");
+//         } break;
+
+//         case APP_CMD_RESUME: {
+//             gs_println("resume!");
+//         } break;
+
+//         case APP_CMD_PAUSE: {
+//             gs_println("pause!");
+//         } break;
+
+//         case APP_CMD_STOP: {
+//             gs_println("stop!");
+//         } break;
+
+//         case APP_CMD_SAVE_STATE: {
+//         } break;
+
+//         case APP_CMD_WINDOW_RESIZED: {
+//             gs_println("window resized!");
+//         } break;
+
+//         case APP_CMD_TERM_WINDOW: {
+//             egl_terminate_window();
+//             gs_println("term window!");
+//         } break;
+
+//         default:{
+//         } break;
+//     }
+// }
+
+/*
+// Main Entry
+void android_main(struct android_app* state) 
 {
-    gs_android_t* android = ANDROID_DATA();
-    if (android->display != EGL_NO_DISPLAY) {
-        eglMakeCurrent(android->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-        /*
-        if (android->context != EGL_NO_CONTEXT) {
-            eglDestroyContext(android->display, android->context);
-        }
-        */
-        if (android->surface != EGL_NO_SURFACE) {
-            eglDestroySurface(android->display, android->surface);
-        }
-        eglTerminate(android->display);
+    // Store callbacks
+    state->onAppCmd = android_cmd_cb;
+    state->onInputEvent = android_input_cb;
+
+    // Create app description and store state
+    gs_app_desc_t app = gs_main(0, NULL);
+    app.android.state = state;
+    if (state->savedState != NULL) {
+        app.android.state = state->savedState;
     }
-    android->display = EGL_NO_DISPLAY;
-    /*
-    android->context = EGL_NO_CONTEXT;
-    */
-    android->surface = EGL_NO_SURFACE;
+    state->userData = &app;
+
+    // Process loop
+    bool32_t running = true;
+    while (running) {
+
+        int ident, events;
+        struct android_poll_source* source;
+        while ((ident=ALooper_pollAll(0, NULL, &events,
+                                      (void**)&source)) >= 0) {
+            if (source != NULL) {
+                source->process(state, source);
+            }
+        }
+
+        // Not initialized yet
+        if (!gs_engine_instance()) continue;
+
+        gs_engine_frame();
+        running = gs_engine_app()->is_running;
+    }
+}
+*/
+
+bool gs_android_should_update(gs_android_t* android) 
+{
+    return (android->state.has_focus && android->egl.surface != EGL_NO_SURFACE);
 }
 
-void egl_init_window()
+bool gs_android_init_egl(gs_android_t* android)
 {
-    gs_android_t* android = ANDROID_DATA();
-    struct android_app* state = (struct android_app*)gs_engine_app()->android.state;
-            gs_assert(state);
+    gs_assert(android->egl.display == EGL_NO_DISPLAY);
+    gs_assert(android->egl.context == EGL_NO_CONTEXT);
 
-    android->display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-    if (android->display == EGL_NO_DISPLAY) {
-        return;
+    EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+    if (display == EGL_NO_DISPLAY) {
+        return false;
     }
-    if (eglInitialize(android->display, NULL, NULL) == EGL_FALSE) {
-        return;
+    if (eglInitialize(display, NULL, NULL) == EGL_FALSE) {
+        return false;
     }
 
     // EGLint alpha_size = _sapp.desc.alpha ? 8 : 0;
     EGLint alpha_size = 8;
     const EGLint cfg_attributes[] = {
-            EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-            EGL_RED_SIZE, 8,
-            EGL_GREEN_SIZE, 8,
-            EGL_BLUE_SIZE, 8,
-            EGL_ALPHA_SIZE, alpha_size,
-            EGL_DEPTH_SIZE, 16,
-            EGL_STENCIL_SIZE, 0,
-            EGL_NONE,
+        EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+        EGL_RED_SIZE, 8,
+        EGL_GREEN_SIZE, 8,
+        EGL_BLUE_SIZE, 8,
+        EGL_ALPHA_SIZE, alpha_size,
+        EGL_DEPTH_SIZE, 16,
+        EGL_STENCIL_SIZE, 0,
+        EGL_NONE,
     };
     EGLConfig available_cfgs[32];
     EGLint cfg_count;
-    eglChooseConfig(android->display, cfg_attributes, available_cfgs, 32, &cfg_count);
-    // SOKOL_ASSERT(cfg_count > 0);
-    // SOKOL_ASSERT(cfg_count <= 32);
+    eglChooseConfig(display, cfg_attributes, available_cfgs, 32, &cfg_count);
+    gs_assert(cfg_count > 0);
+    gs_assert(cfg_count <= 32);
 
     /* find config with 8-bit rgb buffer if available, ndk sample does not trust egl spec */
+    EGLConfig config;
     bool exact_cfg_found = false;
     for (int i = 0; i < cfg_count; ++i) {
         EGLConfig c = available_cfgs[i];
         EGLint r, g, b, a, d;
-        if (eglGetConfigAttrib(android->display, c, EGL_RED_SIZE, &r) == EGL_TRUE &&
-            eglGetConfigAttrib(android->display, c, EGL_GREEN_SIZE, &g) == EGL_TRUE &&
-            eglGetConfigAttrib(android->display, c, EGL_BLUE_SIZE, &b) == EGL_TRUE &&
-            eglGetConfigAttrib(android->display, c, EGL_ALPHA_SIZE, &a) == EGL_TRUE &&
-            eglGetConfigAttrib(android->display, c, EGL_DEPTH_SIZE, &d) == EGL_TRUE &&
+        if (eglGetConfigAttrib(display, c, EGL_RED_SIZE, &r) == EGL_TRUE &&
+            eglGetConfigAttrib(display, c, EGL_GREEN_SIZE, &g) == EGL_TRUE &&
+            eglGetConfigAttrib(display, c, EGL_BLUE_SIZE, &b) == EGL_TRUE &&
+            eglGetConfigAttrib(display, c, EGL_ALPHA_SIZE, &a) == EGL_TRUE &&
+            eglGetConfigAttrib(display, c, EGL_DEPTH_SIZE, &d) == EGL_TRUE &&
             r == 8 && g == 8 && b == 8 && (alpha_size == 0 || a == alpha_size) && d == 16) {
             exact_cfg_found = true;
-            android->config = c;
+            config = c;
             break;
         }
     }
     if (!exact_cfg_found) {
-        android->config = available_cfgs[0];
+        config = available_cfgs[0];
     }
 
+    // Force GLES3 for now
     EGLint ctx_attributes[] = {
-            EGL_CONTEXT_CLIENT_VERSION, 3,
-            EGL_NONE,
+        EGL_CONTEXT_CLIENT_VERSION, 3,
+        EGL_NONE,
     };
-
-    if (android->context == EGL_NO_CONTEXT) {
-        android->context = eglCreateContext(android->display, android->config, EGL_NO_CONTEXT, ctx_attributes);
-    }
-    if (android->context == EGL_NO_CONTEXT) {
-        gs_println("Platform Init: EGL context could not be created.");
-        return;
+    EGLContext context = eglCreateContext(display, config, EGL_NO_CONTEXT, ctx_attributes);
+    if (context == EGL_NO_CONTEXT) {
+        return false;
     }
 
-    /* create egl surface and make it current */
-    android->surface = eglCreateWindowSurface(android->display, android->config, state->window, NULL);
-    if (android->surface == EGL_NO_SURFACE) {
-        gs_println("Platform Init: EGL surface could not be created.");
-        return;
+    gs_println("EGL: Successfully initialized.");
+
+    android->egl.config = config;
+    android->egl.display = display;
+    android->egl.context = context;
+    return true;
+}
+
+bool gs_android_create_egl_surface(gs_android_t* android, ANativeWindow* window)
+{
+    gs_assert(android);
+    gs_assert(android->egl.display != EGL_NO_DISPLAY);
+    gs_assert(android->egl.context != EGL_NO_CONTEXT);
+    gs_assert(window);
+
+    // Construct egl surface, make current
+    EGLSurface surface = eglCreateWindowSurface(android->egl.display, android->egl.config, window, NULL);
+    if (surface == EGL_NO_SURFACE) {
+        return false;
+    }
+    if (eglMakeCurrent(android->egl.display, surface, surface, android->egl.context) == EGL_FALSE) {
+        return false;
+    }
+    android->egl.surface = surface;
+    return true;
+}
+
+bool gs_android_destroy_egl_surface(gs_android_t* android)
+{
+    if (android->egl.display == EGL_NO_DISPLAY) {
+        return false;
     }
 
-    if (eglMakeCurrent(android->display, android->surface, android->surface, android->context) == EGL_FALSE) {
-        gs_println("Platform Init: EGL surface could not be made current.");
-        return;
+    eglMakeCurrent(android->egl.display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    if (android->egl.surface != EGL_NO_SURFACE) {
+        eglDestroySurface(android->egl.display, android->egl.surface);
+        android->egl.surface = EGL_NO_SURFACE;
+    }
+    return true;
+}
+
+void gs_android_update_dimensions(gs_android_t* android, ANativeWindow* window, bool force_update)
+{
+    gs_assert(android->egl.display != EGL_NO_DISPLAY);
+    gs_assert(android->egl.context != EGL_NO_CONTEXT);
+    gs_assert(android->egl.surface != EGL_NO_SURFACE);
+    gs_assert(window);
+
+    const int32_t win_w = ANativeWindow_getWidth(window);
+    const int32_t win_h = ANativeWindow_getHeight(window);
+    gs_assert(win_w >= 0 && win_h >= 0);
+    const bool win_changed = (win_w != android->egl.width) || (win_h != android->egl.height);
+    android->egl.width = win_w;
+    android->egl.height = win_h;
+    if (win_changed || force_update) {
+        if (true) { // High dpi setting
+//            const int32_t buf_w = win_w / 2;
+//            const int32_t buf_h = win_h / 2;
+//            EGLint format;
+//            EGLBoolean egl_result = eglGetConfigAttrib(android->egl.display, android->egl.config, EGL_NATIVE_VISUAL_ID, &format);
+//            gs_assert(egl_result == EGL_TRUE);
+//            int32_t result = ANativeWindow_setBuffersGeometry(window, buf_w, buf_h, format);
+//            gs_assert(result == 0);
+        }
     }
 
-    // Query width/height of surface and store
-    eglQuerySurface(android->display, android->surface, EGL_WIDTH, &android->width);
-    eglQuerySurface(android->display, android->surface, EGL_HEIGHT, &android->height);
-
-    // Check openGL on the system
-    int32_t opengl_info[] = {GL_VENDOR, GL_RENDERER, GL_VERSION, GL_EXTENSIONS};
-    for (int32_t i = 0; i < sizeof(opengl_info) / sizeof(int32_t); ++i) {
-        const char* info = glGetString(opengl_info[i]);
-        gs_println("OpenGL Info: %s", info);
+    /* query surface size */
+    EGLint fb_w, fb_h;
+    EGLBoolean egl_result_w = eglQuerySurface(android->egl.display, android->egl.surface, EGL_WIDTH, &fb_w);
+    EGLBoolean egl_result_h = eglQuerySurface(android->egl.display, android->egl.surface, EGL_HEIGHT, &fb_h);
+    gs_assert(egl_result_w == EGL_TRUE);
+    gs_assert(egl_result_h == EGL_TRUE);
+    const bool fb_changed = (fb_w != android->egl.fbwidth) || (fb_h != android->egl.fbheight);
+    android->egl.fbwidth = fb_w;
+    android->egl.fbheight = fb_h;
+    gs_println("fb: <%.2f, %.2f>, ws: <%.2f, %.2f>", (float)fb_w, (float)fb_h, (float)win_w, (float)win_h);
+    // _sapp.dpi_scale = (float)_sapp.framebuffer_width / (float)_sapp.window_width;
+    if (win_changed || fb_changed || force_update) {
+        // if (!_sapp.first_frame) {
+        //     SOKOL_LOG("SAPP_EVENTTYPE_RESIZED");
+        //     _sapp_android_app_event(SAPP_EVENTTYPE_RESIZED);
+        // }
     }
 }
 
-int32_t android_input_cb(struct android_app* app, AInputEvent* event) 
+int32_t gs_android_main_cb(int32_t fd, int32_t events, void* data) 
 {
+    gs_android_t* android = (gs_android_t*)data;
+    gs_assert(android);
+
+    if ((events & ALOOPER_EVENT_INPUT) == 0) {
+        gs_println("Android Main CB:Unsupported event: %zu", events);
+        return 1;
+    }
+
+    gs_android_message_type msg;
+    if (read(fd, &msg, sizeof(msg)) != sizeof(msg)) {
+        gs_println("Could not write to read_from_main_fd");
+        return 1;
+    }
+
+    pthread_mutex_lock(&android->gt.mutex);
+
+    switch (msg) 
+    {
+        case GS_ANDROID_MSG_CREATE: {
+            gs_println("MSG_CREATE");
+            android->state.has_created = true;
+        } break;
+
+        case GS_ANDROID_MSG_RESUME: {
+            gs_println("MSG_RESUME");
+            // _sapp.android.has_resumed = true;
+            // _sapp_android_app_event(SAPP_EVENTTYPE_RESUMED);
+            // break;
+        } break;
+
+        case GS_ANDROID_MSG_PAUSE: {
+            gs_println("MSG_PAUSE");
+        //     _sapp.android.has_resumed = false;
+        //     _sapp_android_app_event(SAPP_EVENTTYPE_SUSPENDED);
+        } break;
+
+        case GS_ANDROID_MSG_GAIN_FOCUS: {
+            gs_println("MSG_FOCUS");
+        //     _sapp.android.has_focus = true;
+        } break;
+
+        case GS_ANDROID_MSG_LOSE_FOCUS: {
+            gs_println("MSG_NO_FOCUS");
+        //     _sapp.android.has_focus = false;
+        } break;
+
+        case GS_ANDROID_MSG_SET_NATIVE_WINDOW:
+        {
+            if (!gs_engine_instance()) {
+                gs_println("Creating engine...");
+                gs_app_desc_t app = gs_main(0, NULL);
+                app.platform_data = android;
+                gs_engine_create(app);
+                android->state.has_focus = true;
+            }
+            else {
+                gs_println("MSG_SET_NATIVE_WINDOW");
+                if (android->current.window != android->pending.window) {
+                    if (android->current.window != NULL) {
+                        gs_android_destroy_egl_surface(android);
+                    }
+                    if (android->pending.window != NULL) {
+                        gs_println("Creating egl surface ...");
+                        if (gs_android_create_egl_surface(android, android->pending.window)) {
+                            gs_println("... ok!");
+                            gs_android_update_dimensions(android, android->pending.window, true);
+                        } else {
+                            gs_println("... failed!");
+                            // _sapp_android_shutdown();
+                        }
+                    }
+                }
+            }
+            android->current.window = android->pending.window;
+        } break;
+
+        case GS_ANDROID_MSG_SET_INPUT_QUEUE: 
+        {
+            gs_println("MSG_SET_INPUT_QUEUE");
+            // if (_sapp.android.current.input != _sapp.android.pending.input) {
+            //     if (_sapp.android.current.input != NULL) {
+            //         AInputQueue_detachLooper(_sapp.android.current.input);
+            //     }
+            //     if (_sapp.android.pending.input != NULL) {
+            //         AInputQueue_attachLooper(
+            //             _sapp.android.pending.input,
+            //             _sapp.android.looper,
+            //             ALOOPER_POLL_CALLBACK,
+            //             _sapp_android_input_cb,
+            //             NULL); /* data */
+            //     }
+            // }
+            // _sapp.android.current.input = _sapp.android.pending.input;
+        } break;
+
+        case GS_ANDROID_MSG_DESTROY: {
+            gs_println("MSG_DESTROY");
+            // _sapp_android_cleanup();
+            // _sapp.valid = false;
+            // _sapp.android.is_thread_stopping = true;
+        } break;
+
+        default: {
+            gs_println("Unknown msg type received");
+        } break;
+    }
+
+    pthread_cond_broadcast(&android->gt.cond);
+    pthread_mutex_unlock(&android->gt.mutex);
+
     return 1;
 }
 
-void android_cmd_cb(struct android_app* state, int32_t cmd) 
+void gs_android_msg(gs_android_t* android, gs_android_message_type msg) 
 {
-    gs_app_desc_t* app = (gs_app_desc_t*)state->userData;
-    gs_assert(app);
-
-    switch (cmd) 
-    {
-        // Initialize gunslinger here once window is initialized
-        case APP_CMD_INIT_WINDOW: {
-            gs_println("EGL: Init window");
-            gs_assert(state->window);
-
-            // Initialize entire framework
-            if (!gs_engine_instance()) {
-                gs_engine_create(*app);
-            }
-            // Otherwise, we're recreating the window
-            else {
-                egl_init_window();
-            }
-        } break;
-
-        case APP_CMD_LOST_FOCUS: {
-            gs_println("lost focus!");
-        } break;
-
-        case APP_CMD_GAINED_FOCUS: {
-            gs_println("gained focus!");
-        } break;
-
-        case APP_CMD_START: {
-            gs_println("start!");
-        } break;
-
-        case APP_CMD_RESUME: {
-            gs_println("resume!");
-        } break;
-
-        case APP_CMD_PAUSE: {
-            gs_println("pause!");
-        } break;
-
-        case APP_CMD_STOP: {
-            gs_println("stop!");
-        } break;
-
-        case APP_CMD_SAVE_STATE: {
-        } break;
-
-        case APP_CMD_WINDOW_RESIZED: {
-            gs_println("window resized!");
-        } break;
-
-        case APP_CMD_TERM_WINDOW: {
-            egl_terminate_window();
-            gs_println("term window!");
-        } break;
-
-        default:{
-        } break;
+    gs_assert(android);
+    if (write(android->gt.write_from_main_fd, &msg, sizeof(msg)) != sizeof(msg)) {
+        gs_println("Could not write to write_from_main_fd");
     }
+    gs_println("Write message sucessfully");
+}
+
+void gs_android_msg_set_native_window(ANativeWindow* window)
+{
+    gs_android_t* android = ANDROID_DATA();
+    pthread_mutex_lock(&android->gt.mutex);
+    android->pending.window = window;
+    gs_android_msg(android, GS_ANDROID_MSG_SET_NATIVE_WINDOW);
+    // Spin until we set the appropriate window
+    while (android->current.window != window) {
+        pthread_cond_wait(&android->gt.cond, &android->gt.mutex);
+    }
+    pthread_mutex_unlock(&android->gt.mutex);
+}
+
+void gs_android_native_window_created_cb(ANativeActivity* activity, ANativeWindow* window)
+{
+    gs_println("NativeActivity onNativeWindowCreated()");
+    gs_android_msg_set_native_window(window);
+}
+
+GS_API_DECL void* gs_android_loop(void* arg);
+
+void* gs_android_loop(void* arg) 
+{
+    gs_println("main loop");
+
+    gs_android_t* android = (gs_android_t*)arg;
+    gs_assert(android);
+
+    // Set up callback for polling events
+    android->looper = ALooper_prepare(0);
+    ALooper_addFd(android->looper, android->gt.read_from_main_fd, ALOOPER_POLL_CALLBACK, ALOOPER_EVENT_INPUT, gs_android_main_cb, android);
+
+    // Signal to start main thread
+    pthread_mutex_lock(&android->gt.mutex);
+    android->gt.is_thread_started = true;
+    pthread_cond_broadcast(&android->gt.cond);
+    pthread_mutex_unlock(&android->gt.mutex);
+
+    // Main application loop
+    while (!android->gt.is_thread_stopping)
+    {
+        if (gs_android_should_update(android)) {
+            gs_timed_action(60, {
+                gs_println("ready!");
+            });
+            gs_engine_frame();
+        }
+
+        // Process all events
+        bool process = true;
+        while (process && !android->gt.is_thread_stopping) 
+        {
+            bool block_until_evt = !android->gt.is_thread_stopping && !gs_android_should_update(android);
+            process = ALooper_pollOnce(block_until_evt ? -1 : 0, NULL, NULL, NULL) == ALOOPER_POLL_CALLBACK;
+        }
+    }
+
+    // Cleanup thread after done
+    if (android->current.input != NULL) {
+        AInputQueue_detachLooper(android->current.input);
+    }
+
+    pthread_mutex_lock(&android->gt.mutex);
+    android->gt.is_thread_stopped = true;
+    pthread_cond_broadcast(&android->gt.cond);
+    pthread_mutex_unlock(&android->gt.mutex);
+    gs_println("Android:Thread cleanup done.");
+
+    return NULL;
+}
+
+JNIEXPORT
+void ANativeActivity_onCreate(ANativeActivity* activity, void* saved_state, size_t saved_state_size)
+{
+    // Construct app description
+    g_android_data = gs_malloc_init(gs_android_t);
+    gs_android_t* android = g_android_data;
+    gs_assert(android);
+
+    int32_t pfd[2];
+    if (pipe(pfd) != 0) {
+        gs_println("Error:ANativeActivity_onCreate:Could not create thread pipe.");
+        return;
+    }
+
+    android->gt.read_from_main_fd = pfd[0];
+    android->gt.write_from_main_fd = pfd[1];
+
+    pthread_mutex_init(&android->gt.mutex, NULL);
+    pthread_cond_init(&android->gt.cond, NULL);
+
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    gs_println("detach state");
+    pthread_create(&android->gt.thread, &attr, gs_android_loop, android);
+    gs_println("create pthread");
+    pthread_attr_destroy(&attr);
+    gs_println("destroy attribute");
+
+    // Wait until main loop has started
+    pthread_mutex_lock(&android->gt.mutex);
+    while (!android->gt.is_thread_started) {
+        pthread_cond_wait(&android->gt.cond, &android->gt.mutex);
+    }
+    pthread_mutex_unlock(&android->gt.mutex);
+
+    // Send create message
+    pthread_mutex_lock(&android->gt.mutex);
+    gs_android_msg(android, GS_ANDROID_MSG_CREATE);
+    while (!android->state.has_created) {
+        pthread_cond_wait(&android->gt.cond, &android->gt.mutex);
+    }
+    pthread_mutex_unlock(&android->gt.mutex);
+
+    // Register all callbacks
+//    activity->callbacks->onStart = _sapp_android_on_start;
+//    activity->callbacks->onResume = _sapp_android_on_resume;
+//    activity->callbacks->onSaveInstanceState = _sapp_android_on_save_instance_state;
+//    activity->callbacks->onWindowFocusChanged = _sapp_android_on_window_focus_changed;
+//    activity->callbacks->onPause = _sapp_android_on_pause;
+//    activity->callbacks->onStop = _sapp_android_on_stop;
+//    activity->callbacks->onDestroy = _sapp_android_on_destroy;
+    activity->callbacks->onNativeWindowCreated = gs_android_native_window_created_cb;
+//    /* activity->callbacks->onNativeWindowResized = _sapp_android_on_native_window_resized; */
+//    /* activity->callbacks->onNativeWindowRedrawNeeded = _sapp_android_on_native_window_redraw_needed; */
+//    activity->callbacks->onNativeWindowDestroyed = _sapp_android_on_native_window_destroyed;
+//    activity->callbacks->onInputQueueCreated = _sapp_android_on_input_queue_created;
+//    activity->callbacks->onInputQueueDestroyed = _sapp_android_on_input_queue_destroyed;
+//    /* activity->callbacks->onContentRectChanged = _sapp_android_on_content_rect_changed; */
+//    activity->callbacks->onConfigurationChanged = _sapp_android_on_config_changed;
+//    activity->callbacks->onLowMemory = _sapp_android_on_low_memory;
+
+    gs_println("NativeActivity successfully created");
 }
 
 GS_API_DECL void            
 gs_platform_init(gs_platform_t* platform)
 {
-    gs_android_t* android = gs_malloc_init(gs_android_t);
-    platform->user_data = android;
-    egl_init_window();
+    gs_android_t* android = ANDROID_DATA();
+    gs_assert(android);
+    gs_app_desc_t* app = gs_engine_app();
+    platform->user_data = app->platform_data;
+    gs_println("Android: Init platform");
+    gs_android_init_egl(platform->user_data);
+    gs_println("Creating egl surface ...");
+    if (gs_android_create_egl_surface(android, android->pending.window)) {
+        gs_println("... ok!");
+        gs_android_update_dimensions(android, android->pending.window, true);
+    } else {
+        gs_println("... failed!");
+        // _sapp_android_shutdown();
+    }
 }
 
-GS_API_DECL void           
+GS_API_DECL void
 gs_platform_shutdown(gs_platform_t* platform)
 {
 }
 
 // Platform Util
-GS_API_DECL double 
+GS_API_DECL double
 gs_platform_elapsed_time()
 {
     gs_android_t* android = ANDROID_DATA();
@@ -2418,8 +2925,8 @@ GS_API_DECL void
 gs_platform_window_swap_buffer(uint32_t handle)
 {
     gs_android_t* android = ANDROID_DATA();
-    if (android->display != EGL_NO_DISPLAY && android->surface != EGL_NO_SURFACE) {
-        eglSwapBuffers(android->display, android->surface);
+    if (gs_android_should_update(android)) {
+        eglSwapBuffers(android->egl.display, android->egl.surface);
     }
 }
 
@@ -2427,29 +2934,29 @@ GS_API_DECL gs_vec2
 gs_platform_window_sizev(uint32_t handle)
 {
     gs_android_t* android = ANDROID_DATA();
-    return gs_v2(android->width, android->height);
+    return gs_v2(android->egl.width, android->egl.height);
 }
 
 GS_API_DECL void     
 gs_platform_window_size(uint32_t handle, uint32_t* width, uint32_t* height)
 {
     gs_android_t* android = ANDROID_DATA();
-    *width = android->width;
-    *height = android->height;
+    *width = android->egl.width;
+    *height = android->egl.height;
 }
 
 GS_API_DECL uint32_t 
 gs_platform_window_width(uint32_t handle)
 {
     gs_android_t* android = ANDROID_DATA();
-    return android->width;
+    return android->egl.width;
 }
 
 GS_API_DECL uint32_t 
 gs_platform_window_height(uint32_t handle)
 {
     gs_android_t* android = ANDROID_DATA();
-    return android->height;
+    return android->egl.height;
 }
 
 GS_API_DECL void     
@@ -2491,66 +2998,31 @@ GS_API_DECL gs_vec2
 gs_platform_framebuffer_sizev(uint32_t handle)
 {
     gs_android_t* android = ANDROID_DATA();
-    return gs_v2(android->width, android->height);
+    return gs_v2(android->egl.fbwidth, android->egl.fbheight);
 }
 
 GS_API_DECL void     
 gs_platform_framebuffer_size(uint32_t handle, uint32_t* w, uint32_t* h)
 {
     gs_android_t* android = ANDROID_DATA();
-    *w = android->width;
-    *h = android->height;
+    *w = android->egl.fbwidth;
+    *h = android->egl.fbheight;
 }
 
 GS_API_DECL uint32_t 
 gs_platform_framebuffer_width(uint32_t handle)
 {
     gs_android_t* android = ANDROID_DATA();
-    return android->width;
+    return android->egl.fbwidth;
 }
 
 GS_API_DECL uint32_t 
 gs_platform_framebuffer_height(uint32_t handle)
 {
     gs_android_t* android = ANDROID_DATA();
-    return android->height;
+    return android->egl.fbheight;
 }
 
-// Main Entry
-void android_main(struct android_app* state) 
-{
-    // Store callbacks
-    state->onAppCmd = android_cmd_cb;
-    state->onInputEvent = android_input_cb;
-
-    // Create app description and store state
-    gs_app_desc_t app = gs_main(0, NULL);
-    app.android.state = state;
-    if (state->savedState != NULL) {
-        app.android.state = state->savedState;
-    }
-    state->userData = &app;
-
-    // Process loop
-    bool32_t running = true;
-    while (running) {
-
-        int ident, events;
-        struct android_poll_source* source;
-        while ((ident=ALooper_pollAll(0, NULL, &events,
-                                      (void**)&source)) >= 0) {
-            if (source != NULL) {
-                source->process(state, source);
-            }
-        }
-
-        // Not initialized yet
-        if (!gs_engine_instance()) continue;
-
-        gs_engine_frame();
-        running = gs_engine_app()->is_running;
-    }
-}
 
 #undef GS_PLATFORM_IMPL_ANDROID
 #endif // GS_PLATFORM_IMPL_ANDROID
