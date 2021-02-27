@@ -272,6 +272,65 @@ void gs_platform_poll_all_events()
 
             } break;
 
+            case GS_PLATFORM_EVENT_TOUCH:
+            {
+                // Number of touches in event
+                gs_println("Num points: %zu", evt.touch.pointer_count);
+
+                switch (evt.touch.action)
+                {
+                    case GS_PLATFORM_TOUCH_DOWN:
+                    {
+                        for (uint32_t i = 0; i < evt.touch.pointer_count; ++i) {
+                            if (evt.touch.points[i].down) {
+                                size_t id = evt.touch.points[i].id;
+                                gs_vec2* pos = &evt.touch.points[i].position;
+                                platform->input.touch.points[id].down = true;
+                                platform->input.touch.points[id].position = *pos;
+                            }
+                        }
+                    } break;
+
+                    case GS_PLATFORM_TOUCH_UP:
+                    {
+                        for (uint32_t i = 0; i < evt.touch.pointer_count; ++i) {
+                            if (!evt.touch.points[i].down) {
+                                size_t id = evt.touch.points[i].id;
+                                platform->input.touch.points[id].down = false;
+                            }
+                        }
+                    } break;
+
+                    case GS_PLATFORM_TOUCH_MOVE:
+                    {
+                        for (uint32_t i = 0; i < evt.touch.pointer_count; ++i) {
+                            if (evt.touch.points[i].changed) {
+                                size_t id = evt.touch.points[i].id;
+                                gs_vec2* pos = &evt.touch.points[i].position;
+                                platform->input.touch.points[id].position = *pos;
+                            }
+                        }
+                    } break;
+
+                    case GS_PLATFORM_TOUCH_CANCEL:
+                    {
+                        for (uint32_t i = 0; i < evt.touch.pointer_count; ++i) {
+                            if (evt.touch.points[i].changed) {
+                                size_t id = evt.touch.points[i].id;
+                                platform->input.touch.points[id].down = false;
+                            }
+                        }
+                    } break;
+                }
+
+                // Iterate though all events, print state
+                for (uint32_t i = 0; i < GS_PLATFORM_MAX_TOUCH; ++i) {
+                    gs_platform_touchpoint_t* pt = &platform->input.touch.points[i];
+                    gs_println("[i: %zu, pos: <%.2f, %.2f>]", pt->id, pt->position.x, pt->position.y);
+                }
+
+            } break;
+
             default: break;
         } 
     }
@@ -310,6 +369,13 @@ bool gs_platform_poll_events(gs_platform_event_t* evt, bool32_t consume)
     }
 
     return true;
+}
+
+void gs_platform_add_event(gs_platform_event_t* evt)
+{
+    gs_platform_t* platform = gs_engine_subsystem(platform);
+    if (!evt) return;
+    gs_dyn_array_push(platform->events, *evt);
 }
 
 bool gs_platform_was_key_down(gs_platform_keycode code)
@@ -1061,7 +1127,7 @@ void __glfw_key_callback(GLFWwindow* window, s32 code, s32 scancode, s32 action,
     }
 
     // Add action
-    gs_dyn_array_push(platform->events, evt);
+    gs_platform_add_event(&evt);
 }
 
 void __glfw_mouse_button_callback(GLFWwindow* window, s32 code, s32 action, s32 mods)
@@ -1103,7 +1169,7 @@ void __glfw_mouse_button_callback(GLFWwindow* window, s32 code, s32 action, s32 
     }
 
     // Add action
-    gs_dyn_array_push(platform->events, evt);
+    gs_platform_add_event(&evt);
 }
 
 void __glfw_mouse_cursor_position_callback(GLFWwindow* window, f64 x, f64 y)
@@ -1129,7 +1195,7 @@ void __glfw_mouse_cursor_position_callback(GLFWwindow* window, f64 x, f64 y)
     }
 
     // Push back event into platform events
-    gs_dyn_array_push(platform->events, gs_evt);
+    gs_platform_add_event(&gs_evt);
 }
 
 void __glfw_mouse_scroll_wheel_callback(GLFWwindow* window, f64 x, f64 y)
@@ -1142,7 +1208,7 @@ void __glfw_mouse_scroll_wheel_callback(GLFWwindow* window, f64 x, f64 y)
     gs_evt.type = GS_PLATFORM_EVENT_MOUSE;
     gs_evt.mouse.action = GS_PLATFORM_MOUSE_WHEEL;
     gs_evt.mouse.wheel = gs_v2((f32)x, (f32)y);
-    gs_dyn_array_push(platform->events, gs_evt);
+    gs_platform_add_event(&gs_evt);
 }
 
 // Gets called when mouse enters or leaves frame of window
@@ -1152,7 +1218,7 @@ void __glfw_mouse_cursor_enter_callback(GLFWwindow* window, s32 entered)
     gs_platform_event_t gs_evt = gs_default_val();
     gs_evt.type = GS_PLATFORM_EVENT_MOUSE;
     gs_evt.mouse.action = entered ? GS_PLATFORM_MOUSE_ENTER : GS_PLATFORM_MOUSE_LEAVE;
-    gs_dyn_array_push(platform->events, gs_evt);
+    gs_platform_add_event(&gs_evt);
 }
 
 void __glfw_frame_buffer_size_callback(GLFWwindow* window, s32 width, s32 height)
@@ -1769,7 +1835,7 @@ EM_BOOL gs_ems_key_cb(int32_t type, const EmscriptenKeyboardEvent* evt, void* us
     }
 
     // Add action
-    gs_dyn_array_push(gs_engine_subsystem(platform)->events, gs_evt);
+    gs_platform_add_event(&gs_evt);
 
     return evt->which < 32;
 }
@@ -1847,7 +1913,7 @@ EM_BOOL gs_ems_mouse_cb(int32_t type, const EmscriptenMouseEvent* evt, void* use
         }break;
     }
 
-    gs_dyn_array_push(gs_engine_subsystem(platform)->events, gs_evt);
+    gs_platform_add_event(&gs_evt);
 
     return true;
 }
@@ -1862,7 +1928,7 @@ EM_BOOL gs_ems_mousewheel_cb(int32_t type, const EmscriptenWheelEvent* evt, void
     gs_evt.type = GS_PLATFORM_EVENT_MOUSE;
     gs_evt.mouse.action = GS_PLATFORM_MOUSE_WHEEL;
     gs_evt.mouse.wheel = gs_v2((float)evt->deltaX, -(float)evt->deltaY);
-    gs_dyn_array_push(gs_engine_subsystem(platform)->events, gs_evt);
+    gs_platform_add_event(&gs_evt);
 
     return true;
 }
@@ -2219,6 +2285,11 @@ bool gs_android_should_update(gs_android_t* android)
     return (android->state.has_focus && android->state.has_resumed && android->egl.surface != EGL_NO_SURFACE);
 }
 
+void gs_android_shutdown(gs_android_t* android)
+{
+    android->gt.is_thread_stopping = true;
+}
+
 bool gs_android_init_egl(gs_android_t* android)
 {
     gs_assert(android->egl.display == EGL_NO_DISPLAY);
@@ -2232,7 +2303,6 @@ bool gs_android_init_egl(gs_android_t* android)
         return false;
     }
 
-    // EGLint alpha_size = _sapp.desc.alpha ? 8 : 0;
     EGLint alpha_size = 8;
     const EGLint cfg_attributes[] = {
         EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
@@ -2337,13 +2407,15 @@ void gs_android_update_dimensions(gs_android_t* android, ANativeWindow* window, 
     android->egl.height = win_h;
     if (win_changed || force_update) {
         if (true) { // High dpi setting
-//            const int32_t buf_w = win_w / 2;
-//            const int32_t buf_h = win_h / 2;
-//            EGLint format;
-//            EGLBoolean egl_result = eglGetConfigAttrib(android->egl.display, android->egl.config, EGL_NATIVE_VISUAL_ID, &format);
-//            gs_assert(egl_result == EGL_TRUE);
-//            int32_t result = ANativeWindow_setBuffersGeometry(window, buf_w, buf_h, format);
-//            gs_assert(result == 0);
+            /*
+            const int32_t buf_w = win_w / 2;
+            const int32_t buf_h = win_h / 2;
+            EGLint format;
+            EGLBoolean egl_result = eglGetConfigAttrib(android->egl.display, android->egl.config, EGL_NATIVE_VISUAL_ID, &format);
+            gs_assert(egl_result == EGL_TRUE);
+            int32_t result = ANativeWindow_setBuffersGeometry(window, buf_w, buf_h, format);
+            gs_assert(result == 0);
+            */
         }
     }
 
@@ -2359,11 +2431,140 @@ void gs_android_update_dimensions(gs_android_t* android, ANativeWindow* window, 
     gs_println("fb: <%.2f, %.2f>, ws: <%.2f, %.2f>", (float)fb_w, (float)fb_h, (float)win_w, (float)win_h);
     // _sapp.dpi_scale = (float)_sapp.framebuffer_width / (float)_sapp.window_width;
     if (win_changed || fb_changed || force_update) {
-        // if (!_sapp.first_frame) {
-        //     SOKOL_LOG("SAPP_EVENTTYPE_RESIZED");
-        //     _sapp_android_app_event(SAPP_EVENTTYPE_RESIZED);
-        // }
+        /*
+         if (!_sapp.first_frame) {
+             SOKOL_LOG("SAPP_EVENTTYPE_RESIZED");
+             _sapp_android_app_event(SAPP_EVENTTYPE_RESIZED);
+         }
+         */
     }
+}
+
+bool gs_android_touch_event(AInputEvent* evt)
+{
+    gs_android_t* android = GS_PLATFORM_ANDROID_DATA();
+    gs_assert(android);
+    gs_assert(android->current.input);
+
+    if (AInputEvent_getType(evt) != AINPUT_EVENT_TYPE_MOTION) {
+        return false;
+    }
+    // Construct touch events here and call add into platform layer
+    int32_t action_idx = AMotionEvent_getAction(evt);
+    int32_t action = action_idx & AMOTION_EVENT_ACTION_MASK;
+
+    // Construct platform event to add
+    gs_platform_event_t gsevt = gs_default_val();
+    gsevt.type = GS_PLATFORM_EVENT_TOUCH;
+
+    gs_println("ACTION");
+
+    switch (action)
+    {
+        case AMOTION_EVENT_ACTION_DOWN:
+        {
+            gsevt.touch.action = GS_PLATFORM_TOUCH_DOWN;
+            gs_println("Action down!");
+        } break;
+
+        case AMOTION_EVENT_ACTION_UP:
+        {
+            gsevt.touch.action = GS_PLATFORM_TOUCH_UP;
+            gs_println("Action up!");
+        } break;
+
+        case AMOTION_EVENT_ACTION_POINTER_DOWN:
+        {
+            gsevt.touch.action = GS_PLATFORM_TOUCH_DOWN;
+            gs_println("Action pointer down!");
+        } break;
+
+        case AMOTION_EVENT_ACTION_POINTER_UP:
+        {
+            gsevt.touch.action = GS_PLATFORM_TOUCH_UP;
+            gs_println("Action pointer up!");
+        } break;
+
+        case AMOTION_EVENT_ACTION_MOVE:
+        {
+            gsevt.touch.action = GS_PLATFORM_TOUCH_MOVE;
+            gs_println("Action move!");
+        } break;
+
+        case AMOTION_EVENT_ACTION_CANCEL:
+        {
+            gsevt.touch.action = GS_PLATFORM_TOUCH_CANCEL;
+            gs_println("Action cancel!");
+        } break;
+    }
+
+    uint32_t idx = action_idx >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
+    gsevt.touch.pointer_count = gs_min((uint32_t)AMotionEvent_getPointerCount(evt), GS_PLATFORM_MAX_TOUCH);
+    for (uint32_t i = 0; i < gsevt.touch.pointer_count; ++i)
+    {
+        gs_platform_touchpoint_t* pt = &gsevt.touch.points[i];
+        pt->id = (uintptr_t)AMotionEvent_getPointerId(evt, (size_t)i);
+        pt->position.x = (AMotionEvent_getRawX(evt, (size_t)i) / android->egl.width) * android->egl.fbwidth;
+        pt->position.y = (AMotionEvent_getRawY(evt, (size_t)i) / android->egl.height) * android->egl.fbheight;
+
+        if (action == AMOTION_EVENT_ACTION_POINTER_DOWN || action == AMOTION_EVENT_ACTION_POINTER_UP) {
+            pt->changed = (uint16_t)(i == idx);
+        } else {
+            pt->changed = (uint16_t)(true);
+        }
+
+        pt->down = (action == AMOTION_EVENT_ACTION_DOWN || AMOTION_EVENT_ACTION_POINTER_DOWN);
+    }
+
+    // Add event to list
+    gs_platform_add_event(&gsevt);
+
+    return true;
+}
+
+bool gs_android_key_event(AInputEvent* evt)
+{
+    if (AInputEvent_getType(evt) != AINPUT_EVENT_TYPE_KEY) {
+        return false;
+    }
+    // Shutdown event?
+    if (AKeyEvent_getKeyCode(evt) == AKEYCODE_BACK) {
+        gs_println("Android: back key pressed");
+        return false;
+    }
+
+    return false;
+}
+
+int32_t gs_android_input_cb(int32_t fd, int32_t events, void* data)
+{
+    gs_android_t* android = (gs_android_t*)data;
+    gs_assert(android);
+    gs_assert(android->current.input);
+
+    if ((events & ALOOPER_EVENT_INPUT) == 0) {
+        gs_println("Android Main CB:Unsupported event: %zu", events);
+        return 1;
+    }
+
+    // Poll for all input events
+    AInputEvent* evt = NULL;
+    while (AInputQueue_getEvent(android->current.input, &evt) >= 0)
+    {
+        if (AInputQueue_preDispatchEvent(android->current.input, evt) != 0) {
+            continue;
+        }
+
+        // Register event with platform events
+        int32_t handled = 0;
+        if (gs_android_touch_event(evt) || gs_android_key_event(evt)) {
+            handled = 1;
+        }
+        // Finish events
+        AInputQueue_finishEvent(android->current.input, evt, handled);
+    }
+
+    return 1;
 }
 
 int32_t gs_android_main_cb(int32_t fd, int32_t events, void* data) 
@@ -2395,21 +2596,18 @@ int32_t gs_android_main_cb(int32_t fd, int32_t events, void* data)
             gs_println("MSG_START");
             android->state.has_resumed = true;
             // _sapp_android_app_event(SAPP_EVENTTYPE_RESUMED);
-            // break;
         } break;
 
         case GS_ANDROID_MSG_STOP: {
             gs_println("MSG_STOP");
             android->state.has_resumed = false;
             // _sapp_android_app_event(SAPP_EVENTTYPE_RESUMED);
-            // break;
         } break;
 
         case GS_ANDROID_MSG_RESUME: {
             gs_println("MSG_RESUME");
             android->state.has_resumed = true;
             // _sapp_android_app_event(SAPP_EVENTTYPE_RESUMED);
-            // break;
         } break;
 
         case GS_ANDROID_MSG_PAUSE: {
@@ -2451,7 +2649,7 @@ int32_t gs_android_main_cb(int32_t fd, int32_t events, void* data)
                             gs_android_update_dimensions(android, android->pending.window, true);
                         } else {
                             gs_println("... failed!");
-                            // _sapp_android_shutdown();
+                            gs_engine_quit();
                         }
                     }
                 }
@@ -2462,27 +2660,25 @@ int32_t gs_android_main_cb(int32_t fd, int32_t events, void* data)
         case GS_ANDROID_MSG_SET_INPUT_QUEUE: 
         {
             gs_println("MSG_SET_INPUT_QUEUE");
-            // if (_sapp.android.current.input != _sapp.android.pending.input) {
-            //     if (_sapp.android.current.input != NULL) {
-            //         AInputQueue_detachLooper(_sapp.android.current.input);
-            //     }
-            //     if (_sapp.android.pending.input != NULL) {
-            //         AInputQueue_attachLooper(
-            //             _sapp.android.pending.input,
-            //             _sapp.android.looper,
-            //             ALOOPER_POLL_CALLBACK,
-            //             _sapp_android_input_cb,
-            //             NULL); /* data */
-            //     }
-            // }
-            // _sapp.android.current.input = _sapp.android.pending.input;
+             if (android->current.input != android->pending.input) {
+                 if (android->current.input != NULL) {
+                     AInputQueue_detachLooper(android->current.input);
+                 }
+                 if (android->pending.input != NULL) {
+                     AInputQueue_attachLooper(
+                         android->pending.input,
+                         android->looper,
+                         ALOOPER_POLL_CALLBACK,
+                         gs_android_input_cb,
+                         android); /* data */
+                 }
+             }
+             android->current.input = android->pending.input;
         } break;
 
         case GS_ANDROID_MSG_DESTROY: {
             gs_println("MSG_DESTROY");
-            // _sapp_android_cleanup();
-            // _sapp.valid = false;
-            // _sapp.android.is_thread_stopping = true;
+            gs_engine_quit();
         } break;
 
         default: {
@@ -2514,6 +2710,19 @@ void gs_android_msg_set_native_window(ANativeActivity* activity, ANativeWindow* 
     gs_android_msg(android, GS_ANDROID_MSG_SET_NATIVE_WINDOW);
     // Spin until we set the appropriate window
     while (android->current.window != window) {
+        pthread_cond_wait(&android->gt.cond, &android->gt.mutex);
+    }
+    pthread_mutex_unlock(&android->gt.mutex);
+}
+
+void gs_android_msg_set_input_queue(ANativeActivity* activity, AInputQueue* input)
+{
+    gs_android_t* android = (gs_android_t*)activity->instance;
+    gs_assert(android);
+    pthread_mutex_lock(&android->gt.mutex);
+    android->pending.input = input;
+    gs_android_msg(android, GS_ANDROID_MSG_SET_INPUT_QUEUE);
+    while (android->current.input != input) {
         pthread_cond_wait(&android->gt.cond, &android->gt.mutex);
     }
     pthread_mutex_unlock(&android->gt.mutex);
@@ -2568,6 +2777,29 @@ void gs_android_stop_cb(ANativeActivity* activity)
     gs_android_msg(android, GS_ANDROID_MSG_STOP);
 }
 
+void gs_android_input_queue_created_cb(ANativeActivity* activity, AInputQueue* queue)
+{
+    gs_android_msg_set_input_queue(activity, queue);
+}
+
+void gs_android_destroy_cb(ANativeActivity* activity)
+{
+    gs_android_t* android = (gs_android_t*)activity->instance;
+    gs_assert(android);
+    gs_println("NativeActivity:onNativeDestroy()");
+    gs_android_msg(android, GS_ANDROID_MSG_DESTROY);
+}
+
+void gs_android_low_memory_cb(ANativeActivity* activity)
+{
+    gs_println("NativeActivity:onLowMemory()");
+}
+
+void gs_android_config_changed_cb(ANativeActivity* activity)
+{
+    gs_println("NativeActivity:onConfigurationChanged()");
+}
+
 GS_API_DECL void* gs_android_loop(void* arg)
 {
     gs_println("main loop");
@@ -2589,9 +2821,6 @@ GS_API_DECL void* gs_android_loop(void* arg)
     while (!android->gt.is_thread_stopping)
     {
         if (gs_android_should_update(android)) {
-            gs_timed_action(60, {
-                gs_println("ready!");
-            });
             gs_engine_frame();
         }
 
@@ -2666,18 +2895,18 @@ void ANativeActivity_onCreate(ANativeActivity* activity, void* saved_state, size
     activity->callbacks->onResume = gs_android_resume_cb;
     activity->callbacks->onPause = gs_android_pause_cb;
     activity->callbacks->onStop = gs_android_stop_cb;
-//    activity->callbacks->onDestroy = _sapp_android_on_destroy;
+    activity->callbacks->onDestroy = gs_android_destroy_cb;
 //    activity->callbacks->onSaveInstanceState = _sapp_android_on_save_instance_state;
     activity->callbacks->onNativeWindowCreated = gs_android_native_window_created_cb;
     activity->callbacks->onWindowFocusChanged = gs_android_window_focus_change_cb;
 //    /* activity->callbacks->onNativeWindowResized = _sapp_android_on_native_window_resized; */
 //    /* activity->callbacks->onNativeWindowRedrawNeeded = _sapp_android_on_native_window_redraw_needed; */
 //    activity->callbacks->onNativeWindowDestroyed = _sapp_android_on_native_window_destroyed;
-//    activity->callbacks->onInputQueueCreated = _sapp_android_on_input_queue_created;
+    activity->callbacks->onInputQueueCreated = gs_android_input_queue_created_cb;
 //    activity->callbacks->onInputQueueDestroyed = _sapp_android_on_input_queue_destroyed;
 //    /* activity->callbacks->onContentRectChanged = _sapp_android_on_content_rect_changed; */
-//    activity->callbacks->onConfigurationChanged = _sapp_android_on_config_changed;
-//    activity->callbacks->onLowMemory = _sapp_android_on_low_memory;
+    activity->callbacks->onConfigurationChanged = gs_android_config_changed_cb;
+    activity->callbacks->onLowMemory = gs_android_low_memory_cb;
 
     gs_println("NativeActivity successfully created");
 }
@@ -2705,6 +2934,7 @@ gs_platform_init(gs_platform_t* platform)
 GS_API_DECL void
 gs_platform_shutdown(gs_platform_t* platform)
 {
+    gs_android_shutdown(platform->user_data);
 }
 
 // Platform Util

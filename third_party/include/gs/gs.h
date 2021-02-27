@@ -3885,12 +3885,33 @@ typedef struct gs_platform_mouse_t
     b32 locked;
 } gs_platform_mouse_t;
 
+#define GS_PLATFORM_MAX_TOUCH   5
+
+typedef struct gs_platform_touchpoint_t
+{
+    size_t id;
+    gs_vec2 position;
+    uint16_t changed;
+    uint16_t down;
+} gs_platform_touchpoint_t;
+
+typedef struct gs_platform_touch_t
+{
+    gs_platform_touchpoint_t points[GS_PLATFORM_MAX_TOUCH];
+} gs_platform_touch_t;
+
 typedef struct gs_platform_input_t
 {
     b32 key_map[GS_KEYCODE_COUNT];
     b32 prev_key_map[GS_KEYCODE_COUNT];
     gs_platform_mouse_t mouse;
+    gs_platform_touch_t touch;
 } gs_platform_input_t;
+
+// Not sure if this is necessary...could just store events instead?
+//typedef struct gs_platform_touch_t
+//{
+//} gs_platform_touch_t;
 
 // Enumeration of all platform type
 typedef enum gs_platform_type
@@ -3949,11 +3970,14 @@ typedef struct gs_platform_settings_t
     gs_platform_video_settings_t video;
 } gs_platform_settings_t;
 
-typedef enum gs_platform_event_type 
+// Platform Events
+
+typedef enum gs_platform_event_type
 {
     GS_PLATFORM_EVENT_MOUSE,
     GS_PLATFORM_EVENT_KEY,
-    GS_PLATFORM_EVENT_WINDOW
+    GS_PLATFORM_EVENT_WINDOW,
+    GS_PLATFORM_EVENT_TOUCH
 } gs_platform_event_type;
 
 typedef enum gs_platform_key_modifier_type
@@ -4003,7 +4027,11 @@ typedef struct gs_platform_mouse_event_t
 
 typedef enum gs_platform_window_action_type
 {
-    GS_PLATFORM_WINDOW_RESIZE
+    GS_PLATFORM_WINDOW_RESIZE,
+    GS_PLATFORM_WINDOW_LOSE_FOCUS,
+    GS_PLATFORM_WINDOW_GAIN_FOCUS,
+    GS_PLATFORM_WINDOW_CREATE,
+    GS_PLATFORM_WINDOW_DESTROY
 } gs_platform_window_action_type;
 
 typedef struct gs_platform_window_event_t
@@ -4012,14 +4040,30 @@ typedef struct gs_platform_window_event_t
     gs_platform_window_action_type action;
 } gs_platform_window_event_t;
 
+typedef enum gs_platform_touch_action_type
+{
+    GS_PLATFORM_TOUCH_DOWN,
+    GS_PLATFORM_TOUCH_UP,
+    GS_PLATFORM_TOUCH_MOVE,
+    GS_PLATFORM_TOUCH_CANCEL
+} gs_platform_touch_action_type;
+
+typedef struct gs_platform_touch_event_t
+{
+    gs_platform_touch_action_type action;
+    gs_platform_touchpoint_t points[GS_PLATFORM_MAX_TOUCH];
+    uint32_t pointer_count;
+} gs_platform_touch_event_t;
+
 // Platform events
 typedef struct gs_platform_event_t
 {
     gs_platform_event_type type;
     union {
-        gs_platform_key_event_t key;
-        gs_platform_mouse_event_t mouse;
-        gs_platform_window_event_t window;
+        gs_platform_key_event_t     key;
+        gs_platform_mouse_event_t   mouse;
+        gs_platform_window_event_t  window;
+        gs_platform_touch_event_t   touch;
     };
     uint32_t idx;
 } gs_platform_event_t;
@@ -4104,6 +4148,7 @@ GS_API_DECL bool      gs_platform_mouse_locked();
 
 // Platform Events
 GS_API_DECL bool      gs_platform_poll_events(gs_platform_event_t* evt, bool32_t consume);
+GS_API_DECL void      gs_platform_add_event(gs_platform_event_t* evt);
 
 // Platform Window
 GS_API_DECL uint32_t gs_platform_create_window(const char* title, uint32_t width, uint32_t height);
