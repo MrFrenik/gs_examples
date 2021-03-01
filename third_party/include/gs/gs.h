@@ -573,10 +573,6 @@
 
 #endif
 
-#ifndef __ANDROID__
-#error "FUCK"
-#endif
-
 /*============================================================
 // C primitive types
 ============================================================*/
@@ -3893,12 +3889,14 @@ typedef struct gs_platform_touchpoint_t
     gs_vec2 position;
     gs_vec2 delta;
     uint16_t changed;
+    uint16_t pressed;
     uint16_t down;
 } gs_platform_touchpoint_t;
 
 typedef struct gs_platform_touch_t
 {
     gs_platform_touchpoint_t points[GS_PLATFORM_MAX_TOUCH];
+    uint16_t size;  // Current number of touches active
 } gs_platform_touch_t;
 
 typedef struct gs_platform_input_t
@@ -3909,18 +3907,17 @@ typedef struct gs_platform_input_t
     gs_platform_touch_t touch;
 } gs_platform_input_t;
 
-// Not sure if this is necessary...could just store events instead?
-//typedef struct gs_platform_touch_t
-//{
-//} gs_platform_touch_t;
-
-// Enumeration of all platform type
+// Enumeration of all platform types
 typedef enum gs_platform_type
 {
     GS_PLATFORM_TYPE_UNKNOWN = 0,
     GS_PLATFORM_TYPE_WINDOWS,
     GS_PLATFORM_TYPE_LINUX,
-    GS_PLATFORM_TYPE_MAC
+    GS_PLATFORM_TYPE_MAC,
+    GS_PLATFORM_TYPE_ANDROID,
+    GS_PLATFORM_TYPE_IOS,
+    GS_PLATFORM_TYPE_HTML5,
+    GS_PLATFORM_TYPE_RPI
 } gs_platform_type;
 
 typedef enum gs_platform_video_driver_type
@@ -3971,14 +3968,13 @@ typedef struct gs_platform_settings_t
     gs_platform_video_settings_t video;
 } gs_platform_settings_t;
 
-// Platform Events
-
 typedef enum gs_platform_event_type
 {
     GS_PLATFORM_EVENT_MOUSE,
     GS_PLATFORM_EVENT_KEY,
     GS_PLATFORM_EVENT_WINDOW,
-    GS_PLATFORM_EVENT_TOUCH
+    GS_PLATFORM_EVENT_TOUCH,
+    GS_PLATFORM_EVENT_APP
 } gs_platform_event_type;
 
 typedef enum gs_platform_key_modifier_type
@@ -4049,12 +4045,30 @@ typedef enum gs_platform_touch_action_type
     GS_PLATFORM_TOUCH_CANCEL
 } gs_platform_touch_action_type;
 
+typedef struct gs_platform_point_event_data_t {
+   uintptr_t id;
+   gs_vec2 position;
+   uint16_t changed;
+} gs_platform_point_event_data_t;
+
 typedef struct gs_platform_touch_event_t
 {
     gs_platform_touch_action_type action;
-    gs_platform_touchpoint_t points[GS_PLATFORM_MAX_TOUCH];
-    uint32_t pointer_count;
+    gs_platform_point_event_data_t point;
 } gs_platform_touch_event_t;
+
+typedef enum gs_platform_app_action_type
+{
+    GS_PLATFORM_APP_START,
+    GS_PLATFORM_APP_PAUSE,
+    GS_PLATFORM_APP_RESUME,
+    GS_PLATFORM_APP_STOP
+} gs_platform_app_action_type;
+
+typedef struct gs_platform_app_event_t
+{
+    gs_platform_app_action_type action;
+} gs_platform_app_event_t;
 
 // Platform events
 typedef struct gs_platform_event_t
@@ -4065,6 +4079,7 @@ typedef struct gs_platform_event_t
         gs_platform_mouse_event_t   mouse;
         gs_platform_window_event_t  window;
         gs_platform_touch_event_t   touch;
+        gs_platform_app_event_t     app;
     };
     uint32_t idx;
 } gs_platform_event_t;
@@ -4111,7 +4126,6 @@ typedef struct gs_platform_t
 
 // Platform Create / Destroy
 GS_API_DECL gs_platform_t*  gs_platform_create();
-GS_API_DECL void            gs_platform_register_instance(gs_platform_t* platform);     // Sets global instance of platform layer
 GS_API_DECL void            gs_platform_destroy(gs_platform_t* platform);
 
  // Platform Init / Update / Shutdown
@@ -4130,12 +4144,19 @@ GS_API_DECL void      gs_platform_update_input(gs_platform_input_t* input);
 GS_API_DECL void      gs_platform_press_key(gs_platform_keycode code);
 GS_API_DECL void      gs_platform_release_key(gs_platform_keycode code);
 GS_API_DECL bool      gs_platform_was_key_down(gs_platform_keycode code);
-GS_API_DECL bool      gs_platform_key_pressed(gs_platform_keycode code);
-GS_API_DECL bool      gs_platform_key_down(gs_platform_keycode code);
-GS_API_DECL bool      gs_platform_key_released(gs_platform_keycode code);
 GS_API_DECL void      gs_platform_press_mouse_button(gs_platform_mouse_button_code code);
 GS_API_DECL void      gs_platform_release_mouse_button(gs_platform_mouse_button_code code);
 GS_API_DECL bool      gs_platform_was_mouse_down(gs_platform_mouse_button_code code);
+GS_API_DECL void      gs_platform_press_touch(uint32_t idx);
+GS_API_DECL void      gs_platform_release_touch(uint32_t idx);
+GS_API_DECL bool      gs_platform_was_touch_down(uint32_t idx);
+
+GS_API_DECL bool      gs_platform_key_pressed(gs_platform_keycode code);
+GS_API_DECL bool      gs_platform_key_down(gs_platform_keycode code);
+GS_API_DECL bool      gs_platform_key_released(gs_platform_keycode code);
+GS_API_DECL bool      gs_platform_touch_pressed(uint32_t idx);
+GS_API_DECL bool      gs_platform_touch_down(uint32_t idx);
+GS_API_DECL bool      gs_platform_touch_released(uint32_t idx);
 GS_API_DECL bool      gs_platform_mouse_pressed(gs_platform_mouse_button_code code);
 GS_API_DECL bool      gs_platform_mouse_down(gs_platform_mouse_button_code code);
 GS_API_DECL bool      gs_platform_mouse_released(gs_platform_mouse_button_code code);
@@ -4148,6 +4169,8 @@ GS_API_DECL bool      gs_platform_mouse_moved();
 GS_API_DECL bool      gs_platform_mouse_locked();
 GS_API_DECL gs_vec2   gs_platform_touch_deltav(uint32_t idx);
 GS_API_DECL void      gs_platform_touch_delta(uint32_t idx, float* x, float* y);
+GS_API_DECL gs_vec2   gs_platform_touch_positionv(uint32_t idx);
+GS_API_DECL void      gs_platform_touch_position(uint32_t idx, float* x, float* y);
 
 // Platform Events
 GS_API_DECL bool      gs_platform_poll_events(gs_platform_event_t* evt, bool32_t consume);
@@ -4157,12 +4180,32 @@ GS_API_DECL void      gs_platform_add_event(gs_platform_event_t* evt);
 GS_API_DECL uint32_t gs_platform_create_window(const char* title, uint32_t width, uint32_t height);
 GS_API_DECL uint32_t gs_platform_main_window();
 
-// Platform File IO
-GS_API_DECL char*      gs_platform_read_file_contents(const char* file_path, const char* mode, size_t* sz);
-GS_API_DECL gs_result  gs_platform_write_file_contents(const char* file_path, const char* mode, void* data, size_t data_size);
-GS_API_DECL bool       gs_platform_file_exists(const char* file_path);
-GS_API_DECL int32_t    gs_platform_file_size_in_bytes(const char* file_path);
-GS_API_DECL void       gs_platform_file_extension(char* buffer, size_t buffer_sz, const char* file_path);
+// Platform File IO (this all needs to be made available for impl rewrites)
+GS_API_DECL char*      gs_platform_read_file_contents_default_impl(const char* file_path, const char* mode, size_t* sz);
+GS_API_DECL gs_result  gs_platform_write_file_contents_default_impl(const char* file_path, const char* mode, void* data, size_t data_size);
+GS_API_DECL bool       gs_platform_file_exists_default_impl(const char* file_path);
+GS_API_DECL int32_t    gs_platform_file_size_in_bytes_default_impl(const char* file_path);
+GS_API_DECL void       gs_platform_file_extension_default_impl(char* buffer, size_t buffer_sz, const char* file_path);
+
+// Default file implementations
+#ifndef gs_platform_read_file_contents
+#define gs_platform_read_file_contents gs_platform_read_file_contents_default_impl
+#endif
+#ifndef gs_platform_write_file_contents
+#define gs_platform_write_file_contents gs_platform_write_file_contents_default_impl
+#endif
+#ifndef gs_platform_file_exists
+#define gs_platform_file_exists gs_platform_file_exists_default_impl
+#endif
+#ifndef gs_platform_file_exists
+#define gs_platform_file_exists gs_platform_file_exists_default_impl
+#endif
+#ifndef gs_platform_file_size_in_bytes
+#define gs_platform_file_size_in_bytes gs_platform_file_size_in_bytes_default_impl
+#endif
+#ifndef gs_platform_file_extension
+#define gs_platform_file_extension gs_platform_file_extension_default_impl
+#endif
 
 /* == Platform Dependent API == */
 
@@ -4866,8 +4909,15 @@ typedef struct gs_graphics_draw_desc_t
     } range;
 } gs_graphics_draw_desc_t;
 
+gs_inline gs_handle(gs_graphics_render_pass_t)
+__gs_render_pass_default_impl() 
+{
+    gs_handle(gs_graphics_render_pass_t) hndl = gs_default_val();
+    return hndl;
+}
+
 // Convenience define for default render pass to back buffer
-#define GS_GRAPHICS_RENDER_PASS_DEFAULT ((gs_handle(gs_graphics_render_pass_t)){0})
+#define GS_GRAPHICS_RENDER_PASS_DEFAULT (__gs_render_pass_default_impl())
 
 typedef struct gs_graphics_info_t
 {
@@ -5071,8 +5121,15 @@ typedef struct gs_app_desc_t
     bool32 enable_vsync;
     bool32 is_running;
     void* user_data;
-    // Platform specific construction data
-    void* platform_data;
+
+    // Platform specific data
+    #ifdef GS_PLATFORM_ANDROID
+        struct {
+            void* activity;
+            const char* internal_data_path;
+        } android;
+    #endif
+
 } gs_app_desc_t;
 
 /*
@@ -5469,7 +5526,11 @@ bool32_t gs_util_load_texture_data_from_file(const char* file_path, int32_t* wid
     stbi_set_flip_vertically_on_load(flip_vertically_on_load);
 
     // NOTE(john): For now, this data will always have 4 components, since STBI_rgb_alpha is being passed in as required components param. Could optimize this later.
-    *data = stbi_load(file_path, (s32*)width, (s32*)height, (s32*)num_comps, STBI_rgb_alpha);
+    size_t len = 0;
+    char* file_data = gs_platform_read_file_contents(file_path, "rb", &len);
+    gs_assert(file_data);
+    *data =  stbi_load_from_memory((const stbi_uc*)file_data, (int32_t)len, (int32_t*)width, (int32_t*)height, (int32_t*)num_comps, STBI_rgb_alpha);
+    gs_free(file_data);
 
     if (!*data) {
         gs_println("Warning: could not load texture: %s", file_path);
@@ -5585,7 +5646,7 @@ bool gs_asset_font_load_from_file(const char* path, void* out, uint32_t point_si
     }
 
     stbtt_fontinfo font = gs_default_val();
-    char* ttf = gs_read_file_contents_into_string_null_term(path, "rb", NULL);
+    char* ttf = gs_platform_read_file_contents(path, "rb", NULL);
     const u32 w = 512;
     const u32 h = 512;
     const u32 num_comps = 4;
@@ -5653,7 +5714,10 @@ void gs_util_load_gltf_data_from_file(const char* path, gs_asset_mesh_decl_t* de
     // Use cgltf like a boss
     cgltf_options options = gs_default_val();
     cgltf_data* data = NULL;
-    cgltf_result result = cgltf_parse_file(&options, path, &data);
+    size_t len = 0;
+    char* file_data = gs_platform_read_file_contents(path, "rb", &len);
+    cgltf_result result = cgltf_parse(&options, file_data, (cgltf_size)len, &data);
+    gs_free(file_data);
 
     if (result != cgltf_result_success)
     {

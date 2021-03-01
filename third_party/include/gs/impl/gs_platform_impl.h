@@ -160,14 +160,12 @@ void gs_platform_update_input(gs_platform_input_t* input)
 {
     // Update all input and mouse keys from previous frame
     // Previous key presses
-    gs_for_range_i(GS_KEYCODE_COUNT)
-    {
+    gs_for_range_i(GS_KEYCODE_COUNT) {
         input->prev_key_map[i] = input->key_map[i];
     }
 
     // Previous mouse button presses
-    gs_for_range_i(GS_MOUSE_BUTTON_CODE_COUNT)
-    {
+    gs_for_range_i(GS_MOUSE_BUTTON_CODE_COUNT) {
         input->mouse.prev_button_map[i] = input->mouse.button_map[i];
     }
 
@@ -178,6 +176,7 @@ void gs_platform_update_input(gs_platform_input_t* input)
     // Update all touch deltas
     for (uint32_t i = 0; i < GS_PLATFORM_MAX_TOUCH; ++i) {
         input->touch.points[i].delta = gs_v2s(0.f);
+        input->touch.points[i].down = input->touch.points[i].pressed;
     }
 }
 
@@ -274,68 +273,47 @@ void gs_platform_poll_all_events()
 
             case GS_PLATFORM_EVENT_TOUCH:
             {
-                // Number of touches in event
-                gs_println("Num points: %zu", evt.touch.pointer_count);
+                gs_platform_point_event_data_t* point = &evt.touch.point;
 
                 switch (evt.touch.action)
                 {
                     case GS_PLATFORM_TOUCH_DOWN:
                     {
-                        for (uint32_t i = 0; i < evt.touch.pointer_count; ++i) {
-                            if (evt.touch.points[i].down) {
-
-                                size_t id = evt.touch.points[i].id;
-                                gs_vec2* p = &platform->input.touch.points[id].position;
-                                gs_vec2* pos = &evt.touch.points[i].position;
-                                gs_vec2* d = &platform->input.touch.points[id].delta;
-                                platform->input.touch.points[id].down = true;
-                                *p = *pos;
-                            }
-                        }
+                        uintptr_t id = point->id;
+                        gs_vec2 *pos = &point->position;
+                        gs_vec2 *p = &platform->input.touch.points[id].position;
+                        gs_vec2 *d = &platform->input.touch.points[id].delta;
+                        gs_platform_press_touch(id);
+                        *p = *pos;
+                        gs_engine_subsystem(platform)->input.touch.size++;
                     } break;
 
                     case GS_PLATFORM_TOUCH_UP:
                     {
-                        for (uint32_t i = 0; i < evt.touch.pointer_count; ++i) {
-                            if (!evt.touch.points[i].down) {
-                                size_t id = evt.touch.points[i].id;
-                                platform->input.touch.points[id].down = false;
-                            }
-                        }
+                        uintptr_t id = point->id;
+                        gs_println("Releasing ID: %zu", id);
+                        gs_platform_release_touch(id);
+                        gs_engine_subsystem(platform)->input.touch.size--;
                     } break;
 
                     case GS_PLATFORM_TOUCH_MOVE:
                     {
-                        for (uint32_t i = 0; i < evt.touch.pointer_count; ++i) {
-                            if (evt.touch.points[i].changed) {
-                                size_t id = evt.touch.points[i].id;
-                                gs_vec2* p = &platform->input.touch.points[id].position;
-                                gs_vec2* pos = &evt.touch.points[i].position;
-                                gs_vec2* d = &platform->input.touch.points[id].delta;
-                                platform->input.touch.points[id].down = true;
-                                *d = gs_vec2_sub(*pos, *p);
-                                *p = *pos;
-                            }
-                        }
+                        uintptr_t id = point->id;
+                        gs_vec2* pos = &point->position;
+                        gs_vec2* p = &platform->input.touch.points[id].position;
+                        gs_vec2* d = &platform->input.touch.points[id].delta;
+                        gs_platform_press_touch(id);  // Not sure if this is causing issues...
+                        *d = gs_vec2_sub(*pos, *p);
+                        *p = *pos;
                     } break;
 
                     case GS_PLATFORM_TOUCH_CANCEL:
                     {
-                        for (uint32_t i = 0; i < evt.touch.pointer_count; ++i) {
-                            if (evt.touch.points[i].changed) {
-                                size_t id = evt.touch.points[i].id;
-                                platform->input.touch.points[id].down = false;
-                            }
-                        }
+                        uintptr_t id = point->id;
+                        gs_platform_release_touch(id);
+                        gs_engine_subsystem(platform)->input.touch.size--;
                     } break;
                 }
-
-                // Iterate though all events, print state
-                for (uint32_t i = 0; i < GS_PLATFORM_MAX_TOUCH; ++i) {
-                    gs_platform_touchpoint_t* pt = &platform->input.touch.points[i];
-                    gs_println("[i: %zu, pos: <%.2f, %.2f>]", pt->id, pt->position.x, pt->position.y);
-                }
-
             } break;
 
             default: break;
@@ -400,17 +378,40 @@ bool gs_platform_key_down(gs_platform_keycode code)
 bool gs_platform_key_pressed(gs_platform_keycode code)
 {
     gs_platform_input_t* input = __gs_input();
-    if (gs_platform_key_down(code) && !gs_platform_was_key_down(code))
-    {
-        return true;
-    }
-    return false;
+    return (gs_platform_key_down(code) && !gs_platform_was_key_down(code));
 }
 
 bool gs_platform_key_released(gs_platform_keycode code)
 {
     gs_platform_input_t* input = __gs_input();
     return (gs_platform_was_key_down(code) && !gs_platform_key_down(code));
+}
+
+bool gs_platform_touch_down(uint32_t idx)
+{
+    gs_platform_input_t* input = __gs_input();
+    if (idx < GS_PLATFORM_MAX_TOUCH) {
+        return input->touch.points[idx].pressed;
+    }
+    return false;
+}
+
+bool gs_platform_touch_pressed(uint32_t idx)
+{
+    gs_platform_input_t* input = __gs_input();
+    if (idx < GS_PLATFORM_MAX_TOUCH) {
+        return (gs_platform_was_touch_down(idx) && !gs_platform_touch_down(idx));
+    }
+    return false;
+}
+
+bool gs_platform_touch_released(uint32_t idx)
+{
+    gs_platform_input_t* input = __gs_input();
+    if (idx < GS_PLATFORM_MAX_TOUCH) {
+        return (gs_platform_was_touch_down(idx) && !gs_platform_touch_down(idx));
+    }
+    return false;
 }
 
 bool gs_platform_was_mouse_down(gs_platform_mouse_button_code code)
@@ -506,9 +507,10 @@ bool gs_platform_mouse_locked()
 void gs_platform_touch_delta(uint32_t idx, float* x, float* y)
 {
     gs_platform_input_t* input = __gs_input();
-    uint32_t i = gs_clamp(idx, 0, GS_PLATFORM_MAX_TOUCH - 1);
-    *x = input->touch.points[i].delta.x;
-    *y = input->touch.points[i].delta.y;
+    if (idx < GS_PLATFORM_MAX_TOUCH) {
+        *x = input->touch.points[idx].delta.x;
+        *y = input->touch.points[idx].delta.y;
+    }
 }
 
 gs_vec2 gs_platform_touch_deltav(uint32_t idx)
@@ -518,11 +520,52 @@ gs_vec2 gs_platform_touch_deltav(uint32_t idx)
     return delta;
 }
 
+void gs_platform_touch_position(uint32_t idx, float* x, float* y)
+{
+    gs_platform_input_t* input = __gs_input();
+    if (idx < GS_PLATFORM_MAX_TOUCH) {
+        *x = input->touch.points[idx].position.x;
+        *y = input->touch.points[idx].position.y;
+    }
+}
+
+gs_vec2 gs_platform_touch_positionv(uint32_t idx)
+{
+    gs_vec2 p = gs_default_val();
+    gs_platform_touch_position(idx, &p.x, &p.y);
+    return p;
+}
+
+void gs_platform_press_touch(uint32_t idx)
+{
+    gs_platform_input_t* input = __gs_input();
+    if (idx < GS_PLATFORM_MAX_TOUCH) {
+        input->touch.points[idx].pressed = true;
+    }
+}
+
+void gs_platform_release_touch(uint32_t idx)
+{
+    gs_platform_input_t* input = __gs_input();
+    if (idx < GS_PLATFORM_MAX_TOUCH) {
+        gs_println("releasing: %zu", idx);
+        input->touch.points[idx].pressed = false;
+    }
+}
+
+bool gs_platform_was_touch_down(uint32_t idx)
+{
+    gs_platform_input_t* input = __gs_input();
+    if (idx < GS_PLATFORM_MAX_TOUCH) {
+        return input->touch.points[idx].down;
+    }
+    return false;
+}
+
 void gs_platform_press_key(gs_platform_keycode code)
 {
     gs_platform_input_t* input = __gs_input();
-    if (code < GS_KEYCODE_COUNT) 
-    {
+    if (code < GS_KEYCODE_COUNT) {
         input->key_map[code] = true;
     }
 }
@@ -530,17 +573,24 @@ void gs_platform_press_key(gs_platform_keycode code)
 void gs_platform_release_key(gs_platform_keycode code)
 {
     gs_platform_input_t* input = __gs_input();
-    if (code < GS_KEYCODE_COUNT) 
-    {
+    if (code < GS_KEYCODE_COUNT) {
         input->key_map[code] = false;
     }
 }
 
 // Platform File IO
-char* gs_platform_read_file_contents(const char* file_path, const char* mode, size_t* sz)
+char* gs_platform_read_file_contents_default_impl(const char* file_path, const char* mode, size_t* sz)
 {
-     char* buffer = 0;
-    FILE* fp = fopen(file_path, mode);
+    const char* path = file_path;
+
+    #ifdef GS_PLATFORM_ANDROID
+        const char* internal_data_path = gs_engine_app()->android.internal_data_path;
+        gs_snprintfc(tmp_path, 1024, "%s/%s", internal_data_path, file_path);
+        path = tmp_path;
+    #endif
+
+    char* buffer = 0;
+    FILE* fp = fopen(path, mode);
     size_t read_sz = 0;
     if (fp)
     {
@@ -558,9 +608,17 @@ char* gs_platform_read_file_contents(const char* file_path, const char* mode, si
     return buffer;
 }
 
-gs_result gs_platform_write_file_contents(const char* file_path, const char* mode, void* data, size_t sz)
+gs_result gs_platform_write_file_contents_default_impl(const char* file_path, const char* mode, void* data, size_t sz)
 {
-    FILE* fp = fopen(file_path, mode);
+    const char* path = file_path;
+
+    #ifdef GS_PLATFORM_ANDROID
+        const char* internal_data_path = gs_engine_app()->android.internal_data_path;
+        gs_snprintfc(tmp_path, 1024, "%s/%s", internal_data_path, file_path);
+        path = tmp_path;
+    #endif
+
+    FILE* fp = fopen(path, mode);
     if (fp) 
     {
         size_t ret = fwrite(data, sizeof(uint8_t), sz, fp);
@@ -574,12 +632,26 @@ gs_result gs_platform_write_file_contents(const char* file_path, const char* mod
     return GS_RESULT_FAILURE;
 }
 
-bool gs_platform_file_exists(const char* file_path)
+bool gs_platform_file_exists_default_impl(const char* file_path)
 {
-    return (gs_util_file_exists(file_path));
+    const char* path = file_path;
+
+    #ifdef GS_PLATFORM_ANDROID
+        const char* internal_data_path = gs_engine_app()->android.internal_data_path;
+        gs_snprintfc(tmp_path, 1024, "%s/%s", internal_data_path, file_path);
+        path = tmp_path;
+    #endif
+
+    gs_println("Checking: %s", path);
+    FILE* fp = fopen(path, "r");
+    if (fp) {
+        fclose(fp);
+        return true;
+    }
+    return false;
 }
 
-int32_t gs_platform_file_size_in_bytes(const char* file_path)
+int32_t gs_platform_file_size_in_bytes_default_impl(const char* file_path)
 {
     #ifdef GS_PLATFORM_WIN
 
@@ -599,6 +671,14 @@ int32_t gs_platform_file_size_in_bytes(const char* file_path)
         CloseHandle(hFile);
         return gs_util_safe_truncate_u64(size.QuadPart);
 
+    #elif (defined GS_PLATFORM_ANDROID)
+
+        const char* internal_data_path = gs_engine_app()->android.internal_data_path;
+        gs_snprintfc(tmp_path, 1024, "%s/%s", internal_data_path, file_path);
+        struct stat st;
+        stat(tmp_path, &st);
+        return (int32_t)st.st_size;
+
     #else
 
         struct stat st;
@@ -608,7 +688,7 @@ int32_t gs_platform_file_size_in_bytes(const char* file_path)
     #endif
 }
 
-void gs_platform_file_extension(char* buffer, size_t buffer_sz, const char* file_path)
+void gs_platform_file_extension_default_impl(char* buffer, size_t buffer_sz, const char* file_path)
 {
     gs_util_get_file_extension(buffer, buffer_sz, file_path);
 }
@@ -2297,6 +2377,7 @@ typedef struct gs_android_t {
     ALooper* looper; 
     gs_android_egl_t egl;
     gs_android_state_t state;
+    const char* internal_data_path;
 } gs_android_t;
 
 #define GS_PLATFORM_ANDROID_DATA(...)\
@@ -2479,67 +2560,50 @@ bool gs_android_touch_event(AInputEvent* evt)
     gs_platform_event_t gsevt = gs_default_val();
     gsevt.type = GS_PLATFORM_EVENT_TOUCH;
 
-    gs_println("ACTION");
+    switch (action) {
 
-    switch (action)
-    {
         case AMOTION_EVENT_ACTION_DOWN:
-        {
+        case AMOTION_EVENT_ACTION_POINTER_DOWN: {
             gsevt.touch.action = GS_PLATFORM_TOUCH_DOWN;
-            gs_println("Action down!");
         } break;
 
         case AMOTION_EVENT_ACTION_UP:
-        {
+        case AMOTION_EVENT_ACTION_POINTER_UP: {
             gsevt.touch.action = GS_PLATFORM_TOUCH_UP;
-            gs_println("Action up!");
         } break;
 
-        case AMOTION_EVENT_ACTION_POINTER_DOWN:
-        {
-            gsevt.touch.action = GS_PLATFORM_TOUCH_DOWN;
-            gs_println("Action pointer down!");
-        } break;
-
-        case AMOTION_EVENT_ACTION_POINTER_UP:
-        {
-            gsevt.touch.action = GS_PLATFORM_TOUCH_UP;
-            gs_println("Action pointer up!");
-        } break;
-
-        case AMOTION_EVENT_ACTION_MOVE:
-        {
+        case AMOTION_EVENT_ACTION_MOVE: {
             gsevt.touch.action = GS_PLATFORM_TOUCH_MOVE;
-            gs_println("Action move!");
         } break;
 
-        case AMOTION_EVENT_ACTION_CANCEL:
-        {
+        case AMOTION_EVENT_ACTION_CANCEL: {
             gsevt.touch.action = GS_PLATFORM_TOUCH_CANCEL;
-            gs_println("Action cancel!");
+        } break;
+
+        default: {
+            return false;
         } break;
     }
 
-    uint32_t idx = action_idx >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
-    gsevt.touch.pointer_count = gs_min((uint32_t)AMotionEvent_getPointerCount(evt), GS_PLATFORM_MAX_TOUCH);
-    for (uint32_t i = 0; i < gsevt.touch.pointer_count; ++i)
-    {
-        gs_platform_touchpoint_t* pt = &gsevt.touch.points[i];
-        pt->id = (uintptr_t)AMotionEvent_getPointerId(evt, (size_t)i);
-        pt->position.x = (AMotionEvent_getRawX(evt, (size_t)i) / android->egl.width) * android->egl.fbwidth;
-        pt->position.y = (AMotionEvent_getRawY(evt, (size_t)i) / android->egl.height) * android->egl.fbheight;
+    int32_t idx = action_idx >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
+    uint32_t num_touches = (uint32_t)AMotionEvent_getPointerCount(evt);
 
-        if (action == AMOTION_EVENT_ACTION_POINTER_DOWN || action == AMOTION_EVENT_ACTION_POINTER_UP) {
-            pt->changed = (uint16_t)(i == idx);
-        } else {
-            pt->changed = (uint16_t)(true);
-        }
-
-        pt->down = (action == AMOTION_EVENT_ACTION_DOWN || AMOTION_EVENT_ACTION_POINTER_DOWN);
+    if (num_touches > GS_PLATFORM_MAX_TOUCH) {
+        num_touches = GS_PLATFORM_MAX_TOUCH;
     }
 
-    // Add event to list
-    gs_platform_add_event(&gsevt);
+    for (uint32_t i = 0; i < num_touches; ++i) {
+        gsevt.touch.point.id = (uintptr_t)AMotionEvent_getPointerId(evt, (size_t)i);
+        gsevt.touch.point.position.x = (AMotionEvent_getRawX(evt, (size_t)i) / android->egl.width) * android->egl.fbwidth;
+        gsevt.touch.point.position.y = (AMotionEvent_getRawY(evt, (size_t)i) / android->egl.height) * android->egl.fbheight;
+        if (action == AMOTION_EVENT_ACTION_POINTER_DOWN ||
+            action == AMOTION_EVENT_ACTION_POINTER_UP) {
+            gsevt.touch.point.changed = (uint16_t)(i == idx);
+        } else {
+            gsevt.touch.point.changed = (uint16_t)true;
+        }
+        gs_platform_add_event(&gsevt);
+    }
 
     return true;
 }
@@ -2605,6 +2669,8 @@ int32_t gs_android_main_cb(int32_t fd, int32_t events, void* data)
         return 1;
     }
 
+    gs_platform_event_t gsevt = gs_default_val();
+
     pthread_mutex_lock(&android->gt.mutex);
 
     switch (msg) 
@@ -2617,35 +2683,61 @@ int32_t gs_android_main_cb(int32_t fd, int32_t events, void* data)
         case GS_ANDROID_MSG_START: {
             gs_println("MSG_START");
             android->state.has_resumed = true;
-            // _sapp_android_app_event(SAPP_EVENTTYPE_RESUMED);
+            if (gs_engine_instance()) {
+                gsevt.type = GS_PLATFORM_EVENT_APP;
+                gsevt.app.action = GS_PLATFORM_APP_START;
+                gs_platform_add_event(&gsevt);
+            }
         } break;
 
         case GS_ANDROID_MSG_STOP: {
             gs_println("MSG_STOP");
             android->state.has_resumed = false;
-            // _sapp_android_app_event(SAPP_EVENTTYPE_RESUMED);
+            if (gs_engine_instance()) {
+                gsevt.type = GS_PLATFORM_EVENT_APP;
+                gsevt.app.action = GS_PLATFORM_APP_STOP;
+                gs_platform_add_event(&gsevt);
+            }
         } break;
 
         case GS_ANDROID_MSG_RESUME: {
             gs_println("MSG_RESUME");
             android->state.has_resumed = true;
-            // _sapp_android_app_event(SAPP_EVENTTYPE_RESUMED);
+            if (gs_engine_instance()) {
+                gsevt.type = GS_PLATFORM_EVENT_APP;
+                gsevt.app.action = GS_PLATFORM_APP_RESUME;
+                gs_platform_add_event(&gsevt);
+            }
         } break;
 
         case GS_ANDROID_MSG_PAUSE: {
             gs_println("MSG_PAUSE");
-             android->state.has_resumed = false;
-//             _sapp_android_app_event(SAPP_EVENTTYPE_SUSPENDED);
+            android->state.has_resumed = false;
+            if (gs_engine_instance()) {
+                gsevt.type = GS_PLATFORM_EVENT_APP;
+                gsevt.app.action = GS_PLATFORM_APP_PAUSE;
+                gs_platform_add_event(&gsevt);
+            }
         } break;
 
         case GS_ANDROID_MSG_GAIN_FOCUS: {
             gs_println("MSG_GAIN_FOCUS");
-             android->state.has_focus = true;
+            android->state.has_focus = true;
+            if (gs_engine_instance()) {
+                gsevt.type = GS_PLATFORM_EVENT_WINDOW;
+                gsevt.app.action = GS_PLATFORM_WINDOW_GAIN_FOCUS;
+                gs_platform_add_event(&gsevt);
+            }
         } break;
 
         case GS_ANDROID_MSG_LOSE_FOCUS: {
             gs_println("MSG_NO_FOCUS");
             android->state.has_focus = false;
+            if (gs_engine_instance()) {
+                gsevt.type = GS_PLATFORM_EVENT_WINDOW;
+                gsevt.app.action = GS_PLATFORM_WINDOW_LOSE_FOCUS;
+                gs_platform_add_event(&gsevt);
+            }
         } break;
 
         case GS_ANDROID_MSG_SET_NATIVE_WINDOW:
@@ -2653,7 +2745,8 @@ int32_t gs_android_main_cb(int32_t fd, int32_t events, void* data)
             if (!gs_engine_instance()) {
                 gs_println("Creating engine...");
                 gs_app_desc_t app = gs_main(0, NULL);
-                app.platform_data = android;
+                app.android.activity = android;
+                app.android.internal_data_path = android->internal_data_path;
                 gs_engine_create(app);
                 android->state.has_focus = true;
                 android->state.has_resumed = true;
@@ -2700,6 +2793,11 @@ int32_t gs_android_main_cb(int32_t fd, int32_t events, void* data)
 
         case GS_ANDROID_MSG_DESTROY: {
             gs_println("MSG_DESTROY");
+            if (gs_engine_instance()) {
+                gsevt.type = GS_PLATFORM_EVENT_WINDOW;
+                gsevt.app.action = GS_PLATFORM_WINDOW_DESTROY;
+                gs_platform_add_event(&gsevt);
+            }
             gs_engine_quit();
         } break;
 
@@ -2876,6 +2974,10 @@ void ANativeActivity_onCreate(ANativeActivity* activity, void* saved_state, size
     gs_android_t* android = (gs_android_t*)activity->instance;
     gs_assert(android);
 
+    // Store internal data path
+    gs_println("internal data path: %s", activity->internalDataPath);
+    android->internal_data_path = activity->internalDataPath;
+
     int32_t pfd[2];
     if (pipe(pfd) != 0) {
         gs_println("Error:ANativeActivity_onCreate:Could not create thread pipe.");
@@ -2937,10 +3039,10 @@ GS_API_DECL void
 gs_platform_init(gs_platform_t* platform)
 {
     // Get from application platform data
-    gs_android_t* android = (gs_android_t*)gs_engine_app()->platform_data;
+    gs_android_t* android = (gs_android_t*)gs_engine_app()->android.activity;
     gs_assert(android);
     gs_app_desc_t* app = gs_engine_app();
-    platform->user_data = app->platform_data;
+    platform->user_data = android;
     gs_println("Android: Init platform");
     gs_android_init_egl(platform->user_data);
     gs_println("Creating egl surface ...");

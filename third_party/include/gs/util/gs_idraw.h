@@ -1120,7 +1120,6 @@ void gsi_box(gs_immediate_draw_t* gsi, float x, float y, float z, float hx, floa
 
 		} break;
 	}
-
 }
 
 void gsi_sphere(gs_immediate_draw_t* gsi, float cx, float cy, float cz, float radius, uint8_t r, uint8_t g, uint8_t b, uint8_t a, gs_graphics_primitive_type type)
