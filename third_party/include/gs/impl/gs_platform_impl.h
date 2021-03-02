@@ -13,7 +13,7 @@
 =================================*/
 
 // Define default platform implementation if certain platforms are enabled
-#if (!defined GS_PLATFORM_IMPL_CUSTOM)
+#if (!defined GS_PLATFORM_IMPL_NO_DEFAULT)
     #define GS_PLATFORM_IMPL_DEFAULT
 #endif
 

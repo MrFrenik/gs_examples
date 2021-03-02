@@ -5563,6 +5563,10 @@ bool32_t gs_util_load_texture_data_from_file(const char* file_path, int32_t* wid
 	#endif
 #endif
 
+#ifdef GS_PLATFORM_IMPL_FILE
+    #include GS_PLATFORM_IMPL_FILE
+#endif
+
 #include "impl/gs_platform_impl.h"
 
 /*=============================
@@ -6077,7 +6081,6 @@ bool gs_asset_mesh_load_from_file(const char* path, void* out, gs_asset_mesh_dec
 // GS_ENGINE
 =============================*/
 
-void gs_engine_shutdown();
 void gs_default_app_func();
 void gs_default_main_window_close_callback(void* window);
 
@@ -6104,7 +6107,7 @@ gs_engine_t* gs_engine_create(gs_app_desc_t app_desc)
         gs_engine_instance()->ctx.app = app_desc;
 
         // Set up function pointers
-        gs_engine_instance()->shutdown  = &gs_engine_shutdown;
+        gs_engine_instance()->shutdown  = &gs_engine_destroy;
 
         // Need to have video settings passed down from user
         gs_engine_subsystem(platform) = gs_platform_create();
@@ -6226,7 +6229,7 @@ GS_API_DECL void gs_engine_frame()
     }
 }
 
-void gs_engine_shutdown()
+void gs_engine_destroy()
 {
     // Shutdown application
     gs_engine_ctx()->app.shutdown();
