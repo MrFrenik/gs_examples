@@ -1138,29 +1138,34 @@ void gs_util_normalize_path
     // Normalize the path somehow...
 }
 
-#ifdef __MINGW32__
+// Custom printf defines
+#ifndef gs_printf
 
-    #define gs_printf(__FMT, ...) __mingw_printf(__FMT, ##__VA_ARGS__)
+    #ifdef __MINGW32__
 
-#elif (defined GS_PLATFORM_ANDROID)
+        #define gs_printf(__FMT, ...) __mingw_printf(__FMT, ##__VA_ARGS__)
 
-    #include <android/log.h>
+    #elif (defined GS_PLATFORM_ANDROID)
 
-    #define gs_printf(__FMT, ...) ((void)__android_log_print(ANDROID_LOG_INFO, "native-activity", __FMT, ## __VA_ARGS__))
+        #include <android/log.h>
 
-#else
-    gs_force_inline void 
-    gs_printf
-    (
-        const char* fmt,
-        ... 
-    )
-    {
-        va_list args;
-        va_start (args, fmt);
-        vprintf(fmt, args);
-        va_end(args);
-    }
+        #define gs_printf(__FMT, ...) ((void)__android_log_print(ANDROID_LOG_INFO, "native-activity", __FMT, ## __VA_ARGS__))
+
+    #else
+        gs_force_inline void
+        gs_printf
+        (
+            const char* fmt,
+            ...
+        )
+        {
+            va_list args;
+            va_start (args, fmt);
+            vprintf(fmt, args);
+            va_end(args);
+        }
+    #endif
+
 #endif
 
 #define gs_println(__FMT, ...)\
@@ -1169,19 +1174,21 @@ void gs_util_normalize_path
         gs_printf("\n");\
     } while (0)
 
-gs_force_inline 
-void gs_fprintf
-(
-    FILE* fp, 
-    const char* fmt, 
-    ... 
-)
-{
-    va_list args;
-    va_start (args, fmt);
-    vfprintf(fp, fmt, args);
-    va_end(args);
-}
+#ifndef gs_fprintf
+    gs_force_inline
+    void gs_fprintf
+    (
+        FILE* fp,
+        const char* fmt,
+        ...
+    )
+    {
+        va_list args;
+        va_start (args, fmt);
+        vfprintf(fp, fmt, args);
+        va_end(args);
+    }
+#endif
 
 gs_force_inline 
 void gs_fprintln
