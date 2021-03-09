@@ -1429,6 +1429,7 @@ size_t gs_hash_bytes(void *p, size_t len, size_t seed)
 
 /* Resource Loading Util */
 GS_API_DECL bool32_t gs_util_load_texture_data_from_file(const char* file_path, int32_t* width, int32_t* height, uint32_t* num_comps, void** data, bool32_t flip_vertically_on_load);
+GS_API_DECL bool32_t gs_util_load_texture_data_from_memory(const void* memory, size_t sz, int32_t* width, int32_t* height, uint32_t* num_comps, void** data, bool32_t flip_vertically_on_load);
 
 /*========================
 // GS_CONTAINERS
@@ -1529,6 +1530,9 @@ GS_API_DECL gs_result gs_byte_buffer_write_to_file(gs_byte_buffer_t* buffer, con
 
 /* Desc */
 GS_API_DECL gs_result gs_byte_buffer_read_from_file(gs_byte_buffer_t* buffer, const char* file_path);   // Assumes an allocated byte buffer
+
+/* Desc */
+GS_API_DECL void gs_byte_buffer_memset(gs_byte_buffer_t* buffer, uint8_t val);
 
 /*===================================
 // Dynamic Array
@@ -2672,6 +2676,12 @@ gs_vec4_sub(gs_vec4 v0, gs_vec4 v1)
 }
 
 gs_inline gs_vec4
+gs_vec4_mul(gs_vec4 v0, gs_vec4 v1) 
+{
+    return gs_vec4_ctor(v0.x * v1.x, v0.y * v1.y, v0.z * v1.z, v0.w * v1.w);
+}
+
+gs_inline gs_vec4
 gs_vec4_div(gs_vec4 v0, gs_vec4 v1) 
 {
     return gs_vec4_ctor(v0.x / v1.x, v0.y / v1.y, v0.z / v1.z, v0.w / v1.w);
@@ -3126,25 +3136,23 @@ gs_mat4_look_at(gs_vec3 position, gs_vec3 target, gs_vec3 up)
 gs_inline
 gs_vec3 gs_mat4_mul_vec3(gs_mat4 m, gs_vec3 v)
 {
-    m = gs_mat4_transpose(m);
     return gs_vec3_ctor
     (
-        m.elements[0 * 4 + 0] * v.x + m.elements[0 * 4 + 1] * v.y + m.elements[0 * 4 + 2] * v.z,  
-        m.elements[1 * 4 + 0] * v.x + m.elements[1 * 4 + 1] * v.y + m.elements[1 * 4 + 2] * v.z,  
-        m.elements[2 * 4 + 0] * v.x + m.elements[2 * 4 + 1] * v.y + m.elements[2 * 4 + 2] * v.z
+        m.elements[0 + 4 * 0] * v.x + m.elements[0 + 4 * 1] * v.y + m.elements[0 + 4 * 2] * v.z,  
+        m.elements[1 + 4 * 0] * v.x + m.elements[1 + 4 * 1] * v.y + m.elements[1 + 4 * 2] * v.z,  
+        m.elements[2 + 4 * 0] * v.x + m.elements[2 + 4 * 1] * v.y + m.elements[2 + 4 * 2] * v.z
     );
 }
     
 gs_inline
 gs_vec4 gs_mat4_mul_vec4(gs_mat4 m, gs_vec4 v)
 {
-    m = gs_mat4_transpose(m);
     return gs_vec4_ctor
     (
-        m.elements[0 * 4 + 0] * v.x + m.elements[0 * 4 + 1] * v.y + m.elements[0 * 4 + 2] * v.z + m.elements[0 * 4 + 3] * v.w,  
-        m.elements[1 * 4 + 0] * v.x + m.elements[1 * 4 + 1] * v.y + m.elements[1 * 4 + 2] * v.z + m.elements[1 * 4 + 3] * v.w,  
-        m.elements[2 * 4 + 0] * v.x + m.elements[2 * 4 + 1] * v.y + m.elements[2 * 4 + 2] * v.z + m.elements[2 * 4 + 3] * v.w,  
-        m.elements[3 * 4 + 0] * v.x + m.elements[3 * 4 + 1] * v.y + m.elements[3 * 4 + 2] * v.z + m.elements[3 * 4 + 3] * v.w
+        m.elements[0 + 4 * 0] * v.x + m.elements[0 + 4 * 1] * v.y + m.elements[0 + 4 * 2] * v.z + m.elements[0 + 4 * 3] * v.w,  
+        m.elements[1 + 4 * 0] * v.x + m.elements[1 + 4 * 1] * v.y + m.elements[1 + 4 * 2] * v.z + m.elements[1 + 4 * 3] * v.w,  
+        m.elements[2 + 4 * 0] * v.x + m.elements[2 + 4 * 1] * v.y + m.elements[2 + 4 * 2] * v.z + m.elements[2 + 4 * 3] * v.w,  
+        m.elements[3 + 4 * 0] * v.x + m.elements[3 + 4 * 1] * v.y + m.elements[3 + 4 * 2] * v.z + m.elements[3 + 4 * 3] * v.w
     );
 }
 
@@ -5019,6 +5027,7 @@ typedef struct gs_asset_texture_t
 } gs_asset_texture_t;
 
 GS_API_DECL bool gs_asset_texture_load_from_file(const char* path, void* out, gs_graphics_texture_desc_t* desc, bool32_t flip_on_load, bool32_t keep_data);
+GS_API_DECL bool gs_asset_texture_load_from_memory(const void* memory, size_t sz, void* out, gs_graphics_texture_desc_t* desc, bool32_t flip_on_load, bool32_t keep_data);
 
 // Font
 typedef struct gs_baked_char_t
@@ -5035,6 +5044,7 @@ typedef struct gs_asset_font_t
 } gs_asset_font_t; 
 
 GS_API_DECL bool gs_asset_font_load_from_file(const char* path, void* out, uint32_t point_size);
+GS_API_DECL bool gs_asset_font_load_from_memory(const void* memory, size_t sz, void* out, uint32_t point_size);
 
 // Audio
 typedef struct gs_asset_audio_t
@@ -5090,8 +5100,19 @@ typedef struct gs_asset_mesh_raw_data_t
 } gs_asset_mesh_raw_data_t;
 
 GS_API_DECL bool gs_asset_mesh_load_from_file(const char* path, void* out, gs_asset_mesh_decl_t* decl, void* data_out, size_t data_size);
+GS_API_DECL bool gs_util_load_gltf_data_from_file(const char* path, gs_asset_mesh_decl_t* decl, gs_asset_mesh_raw_data_t** out, uint32_t* mesh_count);
+GS_API_DECL bool gs_util_load_gltf_data_from_memory(const void* memory, size_t sz, gs_asset_mesh_decl_t* decl, gs_asset_mesh_raw_data_t** out, uint32_t* mesh_count);
 
-GS_API_DECL void gs_util_load_gltf_data_from_file(const char* path, gs_asset_mesh_decl_t* decl, gs_asset_mesh_raw_data_t** out, uint32_t* mesh_count);
+// Material
+// How to do this? Materials really are utility types...
+// So should they be relegated to a utility file?
+/*
+    gs_util_material? 
+*/
+
+// Pipeline
+
+// Uniform
 
 /*
     // Could pass in a mesh decl? Then it'll just give you back packed vertex/index data for each primitive?
@@ -5338,6 +5359,11 @@ gs_byte_buffer_read_from_file
     return GS_RESULT_SUCCESS;
 }
 
+GS_API_DECL void gs_byte_buffer_memset(gs_byte_buffer_t* buffer, uint8_t val)
+{
+    memset(buffer->data, val, buffer->capacity);
+}
+
 /*=============================
 // Camera
 =============================*/
@@ -5529,22 +5555,26 @@ void gs_camera_offset_orientation(gs_camera_t* cam, f32 yaw, f32 pitch)
 
 bool32_t gs_util_load_texture_data_from_file(const char* file_path, int32_t* width, int32_t* height, uint32_t* num_comps, void** data, bool32_t flip_vertically_on_load)
 {
-    // Load texture data
-    stbi_set_flip_vertically_on_load(flip_vertically_on_load);
-
-    // NOTE(john): For now, this data will always have 4 components, since STBI_rgb_alpha is being passed in as required components param. Could optimize this later.
     size_t len = 0;
     char* file_data = gs_platform_read_file_contents(file_path, "rb", &len);
     gs_assert(file_data);
-    *data =  stbi_load_from_memory((const stbi_uc*)file_data, (int32_t)len, (int32_t*)width, (int32_t*)height, (int32_t*)num_comps, STBI_rgb_alpha);
-    gs_free(file_data);
-
-    if (!*data) {
+    bool32_t ret = gs_util_load_texture_data_from_memory(file_data, len, width, height, num_comps, data, flip_vertically_on_load);
+    if (!ret) {
         gs_println("Warning: could not load texture: %s", file_path);
+    }
+    gs_free(file_data);
+    return ret;
+}
+
+bool32_t gs_util_load_texture_data_from_memory(const void* memory, size_t sz, int32_t* width, int32_t* height, uint32_t* num_comps, void** data, bool32_t flip_vertically_on_load)
+{
+    // Load texture data
+    stbi_set_flip_vertically_on_load(flip_vertically_on_load);
+    *data =  stbi_load_from_memory((const stbi_uc*)memory, (int32_t)sz, (int32_t*)width, (int32_t*)height, (int32_t*)num_comps, STBI_rgb_alpha);
+    if (!*data) {
         gs_free(*data);
         return false;
     }
-
     return true;
 }
 
@@ -5614,6 +5644,16 @@ bool32_t gs_util_load_texture_data_from_file(const char* file_path, int32_t* wid
 
 bool gs_asset_texture_load_from_file(const char* path, void* out, gs_graphics_texture_desc_t* desc, bool32_t flip_on_load, bool32_t keep_data)
 {
+    size_t len = 0;
+    char* file_data = gs_platform_read_file_contents(path, "rb", &len);
+    gs_assert(file_data);
+    bool32_t ret = gs_asset_texture_load_from_memory(file_data, len, out, desc, flip_on_load, keep_data);
+    gs_free(file_data);
+    return ret;
+}
+
+bool gs_asset_texture_load_from_memory(const void* memory, size_t sz, void* out, gs_graphics_texture_desc_t* desc, bool32_t flip_on_load, bool32_t keep_data)
+{
     gs_asset_texture_t* t = (gs_asset_texture_t*)out; 
 
     memset(&t->desc, 0, sizeof(gs_graphics_texture_desc_t));
@@ -5630,7 +5670,7 @@ bool gs_asset_texture_load_from_file(const char* path, void* out, gs_graphics_te
 
     // Load texture data
     int32_t num_comps = 0;
-    bool32_t loaded = gs_util_load_texture_data_from_file(path, (int32_t*)&t->desc.width, 
+    bool32_t loaded = gs_util_load_texture_data_from_memory(memory, sz, (int32_t*)&t->desc.width, 
         (int32_t*)&t->desc.height, (uint32_t*)&num_comps, (void**)&t->desc.data, flip_on_load);
 
     if (!loaded) {
@@ -5648,16 +5688,33 @@ bool gs_asset_texture_load_from_file(const char* path, void* out, gs_graphics_te
 }
 
 bool gs_asset_font_load_from_file(const char* path, void* out, uint32_t point_size)
-{ 
-    gs_asset_font_t* f = (gs_asset_font_t*)out;
-
+{
+    size_t len = 0;
+    char* ttf = gs_platform_read_file_contents(path, "rb", &len);
     if (!point_size) {
         gs_println("Warning: Font: %s: Point size not declared. Setting to default 16.", path);
         point_size = 16;
     }
+    bool ret = gs_asset_font_load_from_memory(ttf, len, out, point_size);
+    if (!ret) {
+        gs_println("Font Failed to Load: %s", path);
+    } else {
+        gs_println("Font Successfully Loaded: %s", path);
+    }
+    gs_free(ttf);
+    return ret;
+}
+
+bool gs_asset_font_load_from_memory(const void* memory, size_t sz, void* out, uint32_t point_size)
+{ 
+    gs_asset_font_t* f = (gs_asset_font_t*)out;
+
+    if (!point_size) {
+        gs_println("Warning: Font: Point size not declared. Setting to default 16.");
+        point_size = 16;
+    }
 
     stbtt_fontinfo font = gs_default_val();
-    char* ttf = gs_platform_read_file_contents(path, "rb", NULL);
     const u32 w = 512;
     const u32 h = 512;
     const u32 num_comps = 4;
@@ -5665,7 +5722,7 @@ bool gs_asset_font_load_from_file(const char* path, void* out, uint32_t point_si
     u8* flipmap = (u8*)gs_malloc(w * h * num_comps);
     memset(alpha_bitmap, 0, w * h);
     memset(flipmap, 0, w * h * num_comps);
-    s32 v = stbtt_BakeFontBitmap((u8*)ttf, 0, (float)point_size, alpha_bitmap, w, h, 32, 96, (stbtt_bakedchar*)f->glyphs); // no guarantee this fits!
+    s32 v = stbtt_BakeFontBitmap((u8*)memory, 0, (float)point_size, alpha_bitmap, w, h, 32, 96, (stbtt_bakedchar*)f->glyphs); // no guarantee this fits!
 
     // Flip texture
     u32 r = h - 1;
@@ -5698,14 +5755,13 @@ bool gs_asset_font_load_from_file(const char* path, void* out, uint32_t point_si
 
     bool success = false;
     if (v == 0) {
-        gs_println("Font Failed to Load: %s, %d", path, v);
+        gs_println("Font Failed to Load: %d", v);
     }
     else {
-        gs_println("Font Successfully Loaded: %s, %d", path, v);
+        gs_println("Font Successfully Loaded: %d", v);
         success = true;
     }
 
-    gs_free(ttf);
     gs_free(alpha_bitmap);
     gs_free(flipmap);
     return success;
@@ -5719,30 +5775,30 @@ bool gs_asset_audio_load_from_file(const char* path, void* out)
     return gs_handle_is_valid(a->hndl);
 }
 
-// Mesh
-void gs_util_load_gltf_data_from_file(const char* path, gs_asset_mesh_decl_t* decl, gs_asset_mesh_raw_data_t** out, uint32_t* mesh_count)
+bool gs_util_load_gltf_data_from_file(const char* path, gs_asset_mesh_decl_t* decl, gs_asset_mesh_raw_data_t** out, uint32_t* mesh_count)
 {
     // Use cgltf like a boss
     cgltf_options options = gs_default_val();
-    cgltf_data* data = NULL;
     size_t len = 0;
     char* file_data = gs_platform_read_file_contents(path, "rb", &len);
+    gs_println("Loading GLTF: %s", path);
+
+    cgltf_data* data = NULL;
     cgltf_result result = cgltf_parse(&options, file_data, (cgltf_size)len, &data);
     gs_free(file_data);
 
-    if (result != cgltf_result_success)
-    {
-        gs_println("Mesh:LoadFromFile:Failed load gltf: %s", path);
-        return;
+    if (result != cgltf_result_success) {
+        gs_println("Mesh:LoadFromFile:Failed load gltf");
+        cgltf_free(data);
+        return false;
     }
 
     // Load buffers as well
     result = cgltf_load_buffers(&options, data, path);
-    if (result != cgltf_result_success)
-    {
+    if (result != cgltf_result_success) {
         cgltf_free(data);
-        gs_println("Mesh:LoadFromFile:Failed to load buffers: %s", path);
-        return;
+        gs_println("Mesh:LoadFromFile:Failed to load buffers");
+        return false;
     }
 
     // Type of index data
@@ -6010,6 +6066,7 @@ void gs_util_load_gltf_data_from_file(const char* path, gs_asset_mesh_decl_t* de
     gs_dyn_array_free(layouts);
     gs_byte_buffer_free(&v_data);
     gs_byte_buffer_free(&i_data);
+    return true;
 }
 
 bool gs_asset_mesh_load_from_file(const char* path, void* out, gs_asset_mesh_decl_t* decl, void* data_out, size_t data_size)
