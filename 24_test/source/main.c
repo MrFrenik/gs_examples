@@ -238,7 +238,7 @@ void app_update()
             // Just want to figure out "extra" amount to billboard to based on where camera is from step value
             float yoff  = floor((yfwa + s2) / step) * step;
             float sydeg = floor((ydeg + s2) / step) * step;
-            float rota = fmodf((ydeg - sydeg + yoff) + 180.f, 360.f);
+            float rota = fmodf((ydeg - sydeg - yoff) + 180.f, 360.f);
 
             mvp = gs_mat4_mul_list(
                 4, 
