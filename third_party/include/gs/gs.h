@@ -2636,6 +2636,16 @@ gs_inline void gs_vec3_scale_ip(gs_vec3* vp, f32 s)
     vp->z *= s;
 }
 
+gs_inline float gs_vec3_angle_between(gs_vec3 v0, gs_vec3 v1)
+{
+    return acosf(gs_vec3_dot(v0, v1));
+}
+
+gs_inline float gs_vec3_angle_between_signed(gs_vec3 v0, gs_vec3 v1)
+{
+    return asinf(gs_vec3_len(gs_vec3_cross(v0, v1)));
+}
+
 /*================================================================================
 // Vec4
 ================================================================================*/
