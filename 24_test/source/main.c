@@ -44,7 +44,7 @@ void app_init()
     // Construct camera
     fps.cam = gs_camera_perspective();
     fps.cam.transform.position = gs_v3(0.f, 2.f, 1.f);
-    fps.cam.fov = 60.f;
+    // fps.cam.fov = 20.f;
 
     // Lock mouse at start by default
     gs_platform_lock_mouse(gs_platform_main_window(), true);
@@ -129,7 +129,7 @@ void app_update()
 
     // Calculate angle between, then mod/clamp each element to set rotation
     gs_mat4 rot = {0};
-    const uint32_t ct = 8;
+    const uint32_t ct = 32;
     const float step = 360.f / (float)ct;
 
     // Draw simple cube with forward vector
@@ -143,7 +143,7 @@ void app_update()
         const float t = gs_platform_elapsed_time();
         gs_mat4 cr = gs_mat4_inverse(gs_quat_to_mat4(fps.cam.transform.rotation));
         gs_vec3 pos = gs_v3(0.f, 1.f, -2.f);
-        gs_vec3 target = gs_vec3_norm(gs_vec3_sub(fps.cam.transform.position, pos));
+        gs_vec3 target = gs_vec3_norm(gs_vec3_sub(gs_vec3_add(fps.cam.transform.position, gs_camera_forward(&fps.cam)), pos));
         const float s2 = step * 0.5f;
 
         // Y radians
@@ -185,6 +185,8 @@ void app_update()
     const gs_vec2 fb = gs_platform_framebuffer_sizev(0);
     const gs_vec2 ws = gs_platform_window_sizev(0);
 
+    // Render cube to RT, blit to quad (cube never rotates, but keep camera position for rendering locked and on set intervals)
+
     gs_graphics_clear_desc_t clear = {.actions = &(gs_graphics_clear_action_t){.color = 0.1f, 0.1f, 0.1f, 255}};
 
     // Bind render pass for backbuffer
@@ -216,9 +218,12 @@ void app_update()
             // Calculate "lookat" billboard matrix
             const float t = gs_platform_elapsed_time();
             gs_vec3 pos = positions[j];
-            gs_vec3 target = gs_vec3_sub(fps.cam.transform.position, pos);
+            gs_vec3 target = gs_vec3_sub(gs_vec3_add(fps.cam.transform.position, gs_camera_forward(&fps.cam)), pos);
             // gs_mat4 lookat = gs_mat4_inverse(gs_mat4_look_at(pos, gs_v3(target.x, pos.y, target.z), GS_YAXIS));
             const float s2 = step * 0.5f;
+
+            const float xstep = 360.f / 16.f;
+            const float xs2 = xstep * 0.5f;
 
             // Y radians
             static gs_quat tr = {0};
@@ -231,20 +236,35 @@ void app_update()
             tr = gs_quat_default();
             gs_vec3 fw = gs_quat_rotate(tr, GS_ZAXIS);
 
-            float yfwa = fmodf(gs_rad2deg((atan2f(fw.z, fw.x))) + 360.f, 360.f);
+            float yfwa = fmodf(gs_rad2deg((atan2f(fw.z, fw.x))) + 180.f, 360.f);
             float yangle = atan2f(target.z, target.x);
-            float ydeg = fmodf(gs_rad2deg(yangle) + 360.f, 360.f);
+            float ydeg = fmodf(gs_rad2deg(yangle) + 180.f, 360.f);
 
             // Just want to figure out "extra" amount to billboard to based on where camera is from step value
             float yoff  = floor((yfwa + s2) / step) * step;
             float sydeg = floor((ydeg + s2) / step) * step;
-            float rota = fmodf((ydeg - sydeg - yoff) + 180.f, 360.f);
+            float roty = fmodf((ydeg) + 180.f, 360.f);
+
+            float xfwa = fmodf(gs_rad2deg((atan2f(fw.x, fw.y))) + 180.f, 360.f);
+            float xangle = atan2f(target.x, target.y);
+            float xdeg = fmodf(gs_rad2deg(xangle) + 180.f, 360.f);
+
+            // Just want to figure out "extra" amount to billboard to based on where camera is from step value
+            float xoff  = floor((xfwa) / xstep) * xstep;
+            float sxdeg = floor((xdeg) / xstep) * xstep;
+            float rotx = fmodf((xdeg - sxdeg - xoff) + 180.f, 360.f);
+
+            gs_mat4 final_rot = gs_mat4_mul_list(
+                1,
+                gs_mat4_rotatev(-gs_deg2rad(roty), GS_YAXIS), 
+                gs_mat4_rotatev(gs_deg2rad(rotx), GS_ZAXIS)
+            );
 
             mvp = gs_mat4_mul_list(
                 4, 
                 mvp,
                 gs_mat4_translate(pos.x, pos.y, pos.z),
-                gs_mat4_rotatev(-gs_deg2rad(rota), GS_YAXIS), 
+                final_rot,
                 gs_mat4_scale(0.01f, 0.01f, 0.01f)
             );
 
@@ -313,12 +333,12 @@ void fps_camera_update(fps_camera_t* fps)
     fps->cam.transform.position = gs_vec3_add(fps->cam.transform.position, gs_vec3_scale(gs_vec3_norm(vel), dt * CAM_SPEED * mod));
 
     // If moved, then we'll "bob" the camera some
-    // if (gs_vec3_len(vel) != 0.f) {
-    //     fps->bob_time += dt * 8.f;
-    //     float sb = sin(fps->bob_time);
-    //     float bob_amt = (sb * 0.5f + 0.5f) * 0.1f * mod;
-    //     float rot_amt = sb * 0.0004f * mod;
-    //     fps->cam.transform.position.y = 2.f + bob_amt;        
-    //     fps->cam.transform.rotation = gs_quat_mul(fps->cam.transform.rotation, gs_quat_angle_axis(rot_amt, GS_ZAXIS));
-    // }
+    if (gs_vec3_len(vel) != 0.f) {
+        fps->bob_time += dt * 8.f;
+        float sb = sin(fps->bob_time);
+        float bob_amt = (sb * 0.5f + 0.5f) * 0.1f * mod;
+        float rot_amt = sb * 0.0004f * mod;
+        fps->cam.transform.position.y = 2.f + bob_amt;        
+        fps->cam.transform.rotation = gs_quat_mul(fps->cam.transform.rotation, gs_quat_angle_axis(rot_amt, GS_ZAXIS));
+    }
 }
