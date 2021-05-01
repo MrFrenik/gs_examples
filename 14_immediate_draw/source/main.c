@@ -67,7 +67,7 @@ void update()
         gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0005f, GS_ZAXIS);
         gsi_texture(&gsi, tex.hndl);
         gsi_scalef(&gsi, 1.5f, 1.5f, 1.5f);
-        gsi_box(&gsi, 0.f, 0.f, 0.f, 1.f, 1.f, 1.f, 255, 255, 255, 255, GS_GRAPHICS_PRIMITIVE_TRIANGLES);
+        gsi_box(&gsi, 0.f, 0.f, 0.f, 0.5f, 0.5f, 0.5f, 255, 255, 255, 255, GS_GRAPHICS_PRIMITIVE_TRIANGLES);
         gsi_texture(&gsi, (gs_handle(gs_graphics_texture_t)){0});
     }
     gsi_pop_matrix(&gsi);
@@ -80,7 +80,7 @@ void update()
         gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0008f, GS_ZAXIS);
         gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0009f, GS_XAXIS);
         gsi_scalef(&gsi, 1.5f, 1.5f, 1.5f);
-        gsi_box(&gsi, 0.f, 0.f, 0.f, 1.f, 1.f, 1.f, 255, 200, 100, 255, GS_GRAPHICS_PRIMITIVE_LINES);
+        gsi_box(&gsi, 0.f, 0.f, 0.f, 0.5f, 0.5f, 0.5f, 255, 200, 100, 255, GS_GRAPHICS_PRIMITIVE_LINES);
     }
     gsi_pop_matrix(&gsi);
     
