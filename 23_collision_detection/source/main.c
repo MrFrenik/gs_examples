@@ -141,7 +141,7 @@ void app_init()
     cb = gs_command_buffer_new();
     gsi = gs_immediate_draw_new();
 
-    // Initialize all necessary  collision shapes
+    // Initialize all necessary collision shapes
     aabb = gs_aabb(.min = gs_v3s(-0.5f), .max = gs_v3s(0.5f));
     sphere = gs_sphere(.c = gs_v3s(0.f), .r = 1.f);
     pyramid = gs_pyramid_poly(gs_v3s(0.f), gs_v3(0.f, 2.f, 0.f), 1.f);
