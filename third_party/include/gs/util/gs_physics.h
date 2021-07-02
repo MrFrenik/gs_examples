@@ -381,6 +381,7 @@ GS_API_DECL int32_t gs_sphere_vs_sphere(const gs_sphere_t* a, gs_vqs* xform_a, c
         d = gs_vec3_scale(res->normal, b->r * bs);
         res->points[0] = gs_vec3_add(wa, d);
         res->points[1] = gs_vec3_sub(wb, d);
+        res->hit = true;
     }
 
     return true;
