@@ -622,6 +622,11 @@ typedef bool32_t          bool32;
 // gs utils
 ============================================================*/
 
+/** @defgroup gs_util Common Utils
+ *  Gunslinger Common Utils
+ *  @{
+ */
+
 // Helper macro for compiling to nothing
 #define gs_empty_instruction(...)
 
@@ -1437,16 +1442,30 @@ size_t gs_hash_bytes(void *p, size_t len, size_t seed)
 GS_API_DECL bool32_t gs_util_load_texture_data_from_file(const char* file_path, int32_t* width, int32_t* height, uint32_t* num_comps, void** data, bool32_t flip_vertically_on_load);
 GS_API_DECL bool32_t gs_util_load_texture_data_from_memory(const void* memory, size_t sz, int32_t* width, int32_t* height, uint32_t* num_comps, void** data, bool32_t flip_vertically_on_load);
 
+/** @} */ // end of gs_util
+
 /*========================
 // GS_CONTAINERS
 ========================*/
+
+/** @defgroup gs_containers Containers
+ *  Gunslinger Containers
+ *  @{
+ */
 
 /*========================
 // Byte Buffer
 ========================*/
 
+/** @defgroup gs_byte_buffer Byte Buffer
+ *  @ingroup gs_containers
+ *  Byte Buffer
+ */
+
 #define GS_BYTE_BUFFER_DEFAULT_CAPCITY  1024
 
+/** @addtogroup gs_byte_buffer
+ */
 typedef struct gs_byte_buffer_t
 {
     uint8_t* data;      // Buffer that actually holds all relevant byte data
@@ -1544,6 +1563,13 @@ GS_API_DECL void gs_byte_buffer_memset(gs_byte_buffer_t* buffer, uint8_t val);
 // Dynamic Array
 ===================================*/
 
+/** @defgroup gs_dyn_array Dynamic Array
+ *  @ingroup gs_containers
+ *  Dynamic Array
+ */
+
+/** @addtogroup gs_dyn_array
+ */
 typedef struct gs_dyn_array
 {
     int32_t size;
@@ -2310,9 +2336,16 @@ void gs_command_buffer_free(gs_command_buffer_t* cb)
     typedef gs_command_buffer_t gs_cmdbuf;
 #endif
 
+/** @} */ // end of gs_containers
+
 /*========================
 // GS_MEMORY
 ========================*/
+
+/** @defgroup gs_memory Memory
+ *  Gunslinger Memory
+ *  @{
+ */
 
 #define gs_ptr_add(P, BYTES) \
     (((uint8_t*)P + (BYTES)))
@@ -2428,9 +2461,16 @@ GS_API_DECL void* gs_paged_allocator_allocate(gs_paged_allocator_t* pa);
 GS_API_DECL void gs_paged_allocator_deallocate(gs_paged_allocator_t* pa, void* data);
 GS_API_DECL void gs_paged_allocator_clear(gs_paged_allocator_t* pa);
 
+/** @} */ // end of gs_memory
+
 /*========================
 // GS_MATH
 ========================*/
+
+/** @defgroup gs_math Math
+ *  Gunslinger Math
+ *  @{
+ */
 
 // Defines
 #define GS_EPSILON  (1e-6)
@@ -2539,6 +2579,7 @@ float gs_ease_cubic_in_out(float t, float b, float c, float d)
 // Vec2
 ================================================================================*/
 
+/** @brief struct gs_vec2 in gs math */
 typedef struct 
 {
     union 
@@ -3945,9 +3986,16 @@ gs_vec4 gs_aabb_window_coords(gs_aabb_t* aabb, gs_camera_t* camera, gs_vec2 wind
 }
 */
 
+/** @} */ // end of gs_math
+
 /*========================
 // GS_PLATFORM
 ========================*/
+
+/** @defgroup gs_platform Platform
+ *  Gunslinger Platform
+ *  @{
+ */
 
 /*============================================================
 // Platform Time
@@ -4511,9 +4559,16 @@ GS_API_DECL void     gs_platform_framebuffer_size(uint32_t handle, uint32_t* w, 
 GS_API_DECL uint32_t gs_platform_framebuffer_width(uint32_t handle);
 GS_API_DECL uint32_t gs_platform_framebuffer_height(uint32_t handle);
 
+/** @} */ // end of gs_platform
+
 /*=============================
 // GS_AUDIO
 =============================*/
+
+/** @defgroup gs_audio Audio
+ *  Gunslinger Audio
+ *  @{
+ */
 
 typedef enum gs_audio_file_type
 {
@@ -4653,9 +4708,16 @@ GS_API_DECL bool32_t gs_audio_load_mp3_data_from_file(const char* file_path, int
     #define gsa_restart   gs_audio_restart
 #endif
 
+/** @} */ // end of gs_audio
+
 /*=============================
 // GS_GRAPHICS
 =============================*/
+
+/** @defgroup gs_graphics Graphics
+ *  Gunslinger Graphics
+ *  @{
+ */
 
 // Graphics Pipeline
 
@@ -5267,9 +5329,15 @@ typedef gs_handle(gs_graphics_pipeline_t)    gs_pipeline;
 
 #endif
 
+/** @} */ // end of gs_graphics
+
 /*==========================
 // GS_ASSET_TYPES
 ==========================*/
+
+/** @addtogroup gs_util
+ *  @{
+ */
 
 // Texture
 typedef struct gs_asset_texture_t
@@ -5297,6 +5365,7 @@ typedef struct gs_asset_font_t
 
 GS_API_DECL bool gs_asset_font_load_from_file(const char* path, void* out, uint32_t point_size);
 GS_API_DECL bool gs_asset_font_load_from_memory(const void* memory, size_t sz, void* out, uint32_t point_size);
+GS_API_DECL gs_vec2 gs_asset_font_get_text_dimensions(const gs_asset_font_t* font, const char* text);
 
 // Audio
 typedef struct gs_asset_audio_t
@@ -5355,6 +5424,8 @@ GS_API_DECL bool gs_asset_mesh_load_from_file(const char* path, void* out, gs_as
 GS_API_DECL bool gs_util_load_gltf_data_from_file(const char* path, gs_asset_mesh_decl_t* decl, gs_asset_mesh_raw_data_t** out, uint32_t* mesh_count);
 GS_API_DECL bool gs_util_load_gltf_data_from_memory(const void* memory, size_t sz, gs_asset_mesh_decl_t* decl, gs_asset_mesh_raw_data_t** out, uint32_t* mesh_count);
 
+/** @} */ // end of gs_util
+
 // Material
 // How to do this? Materials really are utility types...
 // So should they be relegated to a utility file?
@@ -5386,6 +5457,11 @@ GS_API_DECL bool gs_util_load_gltf_data_from_memory(const void* memory, size_t s
 /*==========================
 // GS_ENGINE / GS_APP
 ==========================*/
+
+/** @defgroup gs_app App/Engine
+ *  Gunslinger App/Engine
+ *  @{
+ */
 
 // Application descriptor for user application
 typedef struct gs_app_desc_t
@@ -5455,6 +5531,8 @@ GS_API_DECL gs_app_desc_t gs_main(int32_t argc, char** argv);
 
 #define gs_engine_user_data(__T)\
     (__T*)(gs_engine_instance()->ctx.app.user_data)
+
+/** @} */ // end of gs_app
 
 /*==================================================================================================================================
 // ===== Gunslinger Implementation ============================================================================================== //
@@ -6371,6 +6449,30 @@ bool gs_asset_font_load_from_memory(const void* memory, size_t sz, void* out, ui
     gs_free(alpha_bitmap);
     gs_free(flipmap);
     return success;
+}
+
+GS_API_DECL gs_vec2 gs_asset_font_get_text_dimensions(const gs_asset_font_t* fp, const char* text)
+{
+    gs_vec2 dimensions = gs_v2s(0.f);
+
+    if (!fp || !text) return dimensions;
+    float x = 0.f;
+    float y = 0.f;
+
+    while (text[0] != '\0')
+    {
+        char c = text[0];
+        if (c >= 32 && c <= 127) 
+        {
+            stbtt_aligned_quad q = gs_default_val();
+            stbtt_GetBakedQuad((stbtt_bakedchar*)fp->glyphs, fp->texture.desc.width, fp->texture.desc.height, c - 32, &x, &y, &q, 1);
+            dimensions.x = gs_max(dimensions.x, x);
+            dimensions.y = gs_max(gs_max(dimensions.y, fabsf(q.y0)), fabsf(q.y1));
+        }
+        text++;
+    };
+
+    return dimensions;
 }
 
 // Audio
