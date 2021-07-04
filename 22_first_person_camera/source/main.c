@@ -123,14 +123,13 @@ void fps_camera_update(fps_camera_t* fps)
     gs_vec2 dp = gs_vec2_scale(gs_platform_mouse_deltav(), SENSITIVITY);
     const float mod = gs_platform_key_down(GS_KEYCODE_LEFT_SHIFT) ? 2.f : 1.f; 
     float dt = platform->time.delta;
-    float pitch = fps->pitch;
+    float old_pitch = fps->pitch;
 
     // Keep track of previous amount to clamp the camera's orientation
-    fps->pitch = gs_clamp(pitch + dp.y, -90.f, 90.f);
-    dp.y = (pitch + dp.y <= 90.f && pitch + dp.y >= -90.f) ? dp.y : 0.f;
+    fps->pitch = gs_clamp(old_pitch + dp.y, -90.f, 90.f);
 
     // Rotate camera
-    gs_camera_offset_orientation(&fps->cam, -dp.x, -dp.y);
+    gs_camera_offset_orientation(&fps->cam, -dp.x, old_pitch - fps->pitch);
 
     gs_vec3 vel = {0};
     if (gs_platform_key_down(GS_KEYCODE_W)) vel = gs_vec3_add(vel, gs_camera_forward(&fps->cam));
