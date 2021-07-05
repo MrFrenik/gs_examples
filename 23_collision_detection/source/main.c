@@ -2,15 +2,6 @@
     * Copyright: 2020 John Jackson
     * simple collision detection example
 
-    Not sure what I want for this. Just a scene with a bunch of objects colliding/not colliding
-    with collision info displayed for each one? 
-
-    Scene with just two objects colliding at a time, bouncing, then display information about them
-    as they collide? 
-
-    Rotating camera around scene with two objects colliding in and out? User can change which objects are being displayed
-    as well as slow down/speed up time? Can zoom camera in/out, maybe have control over of camera as well?
-
     Press `esc` to exit the application.
 =================================================================*/
 
@@ -25,10 +16,20 @@
 
 #include "data.c"
 
+#define MANIFOLD_CONTACT_POINTS 10
+
+typedef struct manifold_t {
+    uint32_t ct, idx;
+    gs_gjk_contact_info_t pts[MANIFOLD_CONTACT_POINTS];
+} manifold_t;
+
 typedef enum shape_selection {
     SHAPE_SELECTION_SPHERE = 0x00,
     SHAPE_SELECTION_AABB, 
     SHAPE_SELECTION_PYRAMID,
+    SHAPE_SELECTION_TRIANGLE,
+    SHAPE_SELECTION_CYLINDER,
+    SHAPE_SELECTION_CONE,
     SHAPE_SELECTION_COUNT
 } shape_selection;
 
@@ -36,9 +37,12 @@ gs_command_buffer_t  cb  = {0};
 gs_immediate_draw_t  gsi = {0};
 
 // Physics shapes
-gs_aabb_t   aabb    = {0};
-gs_sphere_t sphere  = {0};
-gs_poly_t   pyramid = {0};
+gs_aabb_t       aabb     = {0};
+gs_sphere_t     sphere   = {0};
+gs_poly_t       pyramid  = {0};
+gs_poly_t       triangle = {0};
+gs_cylinder_t   cylinder = {0};
+gs_cone_t       cone     = {0};
 
 // Transforms
 gs_vqs transforms[2] = {0};
@@ -46,6 +50,9 @@ bool transform_enabled = true;
 
 // Selected shapes
 shape_selection shapes[2] = {0};
+
+// Manifold
+manifold_t manifold = {0};
 
 // Time controls
 float t = 0.f;
@@ -56,6 +63,18 @@ bool32 render_display_info = true;
 // Rendering
 gs_graphics_primitive_type rendering_type = GS_GRAPHICS_PRIMITIVE_LINES;
 
+#define GS_CONTACT_FUNC(T, OBJ)\
+    {\
+        switch (shapes[1]) {\
+            case SHAPE_SELECTION_SPHERE:    gs_##T##_vs_sphere(&OBJ, t0, &sphere, t1, &info); break;\
+            case SHAPE_SELECTION_AABB:      gs_##T##_vs_aabb(&OBJ, t0, &aabb, t1, &info); break;\
+            case SHAPE_SELECTION_PYRAMID:   gs_##T##_vs_poly(&OBJ, t0, &pyramid, t1, &info); break;\
+            case SHAPE_SELECTION_TRIANGLE:  gs_##T##_vs_poly(&OBJ, t0, &triangle, t1, &info); break;\
+            case SHAPE_SELECTION_CYLINDER:  gs_##T##_vs_cylinder(&OBJ, t0, &cylinder, t1, &info); break;\
+            case SHAPE_SELECTION_CONE:      gs_##T##_vs_cone(&OBJ, t0, &cone, t1, &info); break;\
+        }\
+    }
+
 gs_gjk_contact_info_t app_do_collisions()
 {
     // Depending on whether or not transform 0 is enabled, we'll use the transform or a null pointer
@@ -65,30 +84,12 @@ gs_gjk_contact_info_t app_do_collisions()
     gs_gjk_contact_info_t info = {0};
     switch (shapes[0])
     {
-        case SHAPE_SELECTION_SPHERE: 
-        {
-            switch (shapes[1]) {
-                case SHAPE_SELECTION_SPHERE:  gs_sphere_vs_sphere(&sphere, t0, &sphere, t1, &info); break;
-                case SHAPE_SELECTION_AABB:    gs_sphere_vs_aabb(&sphere, t0, &aabb, t1, &info); break;
-                case SHAPE_SELECTION_PYRAMID: gs_sphere_vs_poly(&sphere, t0, &pyramid, t1, &info); break;
-            }
-        } break;
-        case SHAPE_SELECTION_AABB: 
-        {
-            switch (shapes[1]) {
-                case SHAPE_SELECTION_SPHERE:  gs_aabb_vs_sphere(&aabb, t0, &sphere, t1, &info); break;
-                case SHAPE_SELECTION_AABB:    gs_aabb_vs_aabb(&aabb, t0, &aabb, t1, &info); break;
-                case SHAPE_SELECTION_PYRAMID: gs_aabb_vs_poly(&aabb, t0, &pyramid, t1, &info); break;
-            }
-        } break;
-        case SHAPE_SELECTION_PYRAMID: 
-        {
-            switch (shapes[1]) {
-                case SHAPE_SELECTION_SPHERE:  gs_poly_vs_sphere(&pyramid, t0, &sphere, t1, &info); break;
-                case SHAPE_SELECTION_AABB:    gs_poly_vs_aabb(&pyramid, t0, &aabb, t1, &info); break;
-                case SHAPE_SELECTION_PYRAMID: gs_poly_vs_poly(&pyramid, t0, &pyramid, t1, &info); break;
-            }
-        } break;
+        case SHAPE_SELECTION_SPHERE:    GS_CONTACT_FUNC(sphere, sphere); break;
+        case SHAPE_SELECTION_AABB:      GS_CONTACT_FUNC(aabb, aabb);    break; 
+        case SHAPE_SELECTION_PYRAMID:   GS_CONTACT_FUNC(poly, pyramid); break; 
+        case SHAPE_SELECTION_TRIANGLE:  GS_CONTACT_FUNC(poly, triangle); break;
+        case SHAPE_SELECTION_CYLINDER:  GS_CONTACT_FUNC(cylinder, cylinder); break; 
+        case SHAPE_SELECTION_CONE:      GS_CONTACT_FUNC(cone, cone); break;
     }
 
     return info;
@@ -99,12 +100,41 @@ const char* shape_to_str(shape_selection sel)
     switch (sel)
     {
         default: 
-        case SHAPE_SELECTION_COUNT:   return "invalid"; break;
-        case SHAPE_SELECTION_SPHERE:  return "sphere"; break;
-        case SHAPE_SELECTION_PYRAMID: return "pyramid"; break;
-        case SHAPE_SELECTION_AABB:    return "aabb"; break;
+        case SHAPE_SELECTION_COUNT:     return "invalid"; break;
+        case SHAPE_SELECTION_SPHERE:    return "sphere"; break;
+        case SHAPE_SELECTION_PYRAMID:   return "pyramid"; break;
+        case SHAPE_SELECTION_AABB:      return "aabb"; break;
+        case SHAPE_SELECTION_TRIANGLE:  return "triangle"; break;
+        case SHAPE_SELECTION_CYLINDER:  return "cylinder"; break;
+        case SHAPE_SELECTION_CONE:      return "cone"; break;
     }
     return "invalid";
+}
+
+void reset_manifold(manifold_t* manifold)
+{
+    manifold->ct = 0;
+    manifold->idx = 0;
+}
+
+void update_manifold(manifold_t* manifold, gs_gjk_contact_info_t* info)
+{
+    // Add a new contact point, update point
+    if (info->hit) 
+    {
+        manifold->idx = (manifold->idx + 1) % MANIFOLD_CONTACT_POINTS;
+        manifold->ct = gs_clamp(manifold->ct + 1, 0, MANIFOLD_CONTACT_POINTS);
+        manifold->pts[manifold->idx] = *info;
+    } 
+    else 
+    {
+        reset_manifold(manifold); 
+    }
+}
+
+bool manifold_is_valid(manifold_t* manifold)
+{
+    return (manifold->ct >= MANIFOLD_CONTACT_POINTS);
 }
 
 void app_do_input()
@@ -113,8 +143,8 @@ void app_do_input()
     if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_engine_quit();
 
     // Alternate shape selections
-    if (gs_platform_key_pressed(GS_KEYCODE_M)) shapes[0] = (shapes[0] + 1) % SHAPE_SELECTION_COUNT; 
-    if (gs_platform_key_pressed(GS_KEYCODE_N)) shapes[1] = (shapes[1] + 1) % SHAPE_SELECTION_COUNT; 
+    if (gs_platform_key_pressed(GS_KEYCODE_M)) {shapes[0] = (shapes[0] + 1) % SHAPE_SELECTION_COUNT; reset_manifold(&manifold);}
+    if (gs_platform_key_pressed(GS_KEYCODE_N)) {shapes[1] = (shapes[1] + 1) % SHAPE_SELECTION_COUNT; reset_manifold(&manifold);} 
 
     // Speed up / Slow time
     if (gs_platform_key_pressed(GS_KEYCODE_E)) tmul += 0.1f;
@@ -145,6 +175,9 @@ void app_init()
     aabb = gs_aabb(.min = gs_v3s(-0.5f), .max = gs_v3s(0.5f));
     sphere = gs_sphere(.c = gs_v3s(0.f), .r = 1.f);
     pyramid = gs_pyramid_poly(gs_v3s(0.f), gs_v3(0.f, 2.f, 0.f), 1.f);
+    triangle = gs_triangle_poly(gs_v3(-0.5f, -0.5f, 0.f), gs_v3(0.5f, -0.5f, 0.f), gs_v3(0.f, 0.5f, 0.f));
+    cylinder = gs_cylinder(.r = 0.5f, .base = gs_v3(0.f, 0.f, 0.f), .height = 3.f);
+    cone = gs_cone(.r = 0.5f, .base = gs_v3(0.f, 0.f, 0.f), .height = 3.f);
 }
 
 void app_update()
@@ -168,7 +201,7 @@ void app_update()
     // before performing collision detection/resolution code on them. We'll create two separate transforms
     // here to use for collisions.
     transforms[0] = (gs_vqs){
-        .position = gs_v3(2.f, sin(t) * 2.1f, 0.f),
+        .position = gs_v3(1.f, sin(t) * 2.1f, 0.f),
         .rotation = gs_quat_mul_list(3, 
             gs_quat_angle_axis(t * 2.f,  GS_XAXIS),
             gs_quat_angle_axis(t * 0.5f, GS_YAXIS),
@@ -178,8 +211,10 @@ void app_update()
     };
 
     transforms[1] = (gs_vqs){
-        .position = gs_v3(1.f, sin(t * 0.5f) * -2.1f, 0.f),
+        .position = gs_v3(1.f, sin(t * 0.5f) * -2.5f, 0.f),
         .rotation = gs_quat_mul_list(3, 
+            // gs_quat_default(),
+            // gs_quat_default(),
             gs_quat_angle_axis(t * 5.f,  GS_XAXIS),
             gs_quat_angle_axis(t * 1.5f, GS_YAXIS),
             gs_quat_angle_axis(t * 0.4f, GS_ZAXIS)
@@ -188,10 +223,13 @@ void app_update()
     };
 
     // Detect two shapes based on selections
-    gs_gjk_contact_info_t info = app_do_collisions();
+    gs_gjk_contact_info_t ci = app_do_collisions();
+
+    // Update manifold with current info
+    update_manifold(&manifold, &ci);
 
     // Render shapes
-    const gs_color_t col = info.hit ? GS_COLOR_RED : GS_COLOR_GREEN;
+    const gs_color_t col = manifold_is_valid(&manifold) ? GS_COLOR_RED : GS_COLOR_GREEN;
 
     // Cache transform pointers for rendering
     gs_vqs* xforms[2] = {
@@ -223,30 +261,90 @@ void app_update()
                     gs_vec3 c = gs_vec3_add(aabb.min, hd);
                     gsi_box(&gsi, c.x, c.y, c.z, hd.x, hd.y, hd.z, col.r, col.g, col.b, col.a, rendering_type);
                 } break;
+                case SHAPE_SELECTION_TRIANGLE: 
+                {
+                    gs_vec3* a = &triangle.verts[0];
+                    gs_vec3* b = &triangle.verts[1];
+                    gs_vec3* c = &triangle.verts[2];
+                    gsi_trianglevx(&gsi, *a, *b, *c, gs_v2s(0.f), gs_v2s(1.f), gs_v2s(0.5f), col, rendering_type);
+                } break;
+                case SHAPE_SELECTION_CYLINDER: 
+                {
+                    // Need to draw a cylinder with gsi
+                    gsi_cylinder(&gsi, cylinder.base.x, cylinder.base.y, cylinder.base.z, 
+                        cylinder.r, cylinder.r, cylinder.height, 32, col.r, col.g, col.b, col.a, rendering_type); 
+
+                    // Disc and point for support functions, using base information
+                    gs_vec3 pts[6 + 6] = gs_default_val();
+                    const float step = 360.f / 6.f;
+                    for (uint32_t i = 0; i < 6; ++i) {
+                        float a = gs_deg2rad(step * (float)i);
+                        pts[i] = gs_v3(sinf(a) * cylinder.r, cylinder.base.y, cosf(a) * cylinder.r);
+                    }
+                    for (uint32_t i = 6; i < 12; ++i) {
+                        float a = gs_deg2rad(step * (float)i);
+                        pts[i] = gs_v3(sinf(a) * cylinder.r, cylinder.base.y + cylinder.height, cosf(a) * cylinder.r);
+                    }
+
+                    // Draw spheres?
+                    for (uint32_t i = 0; i < 12; ++i)
+                    {
+                        gsi_sphere(&gsi, pts[i].x, pts[i].y, pts[i].z, 0.1f, 255, 255, 255, 255, GS_GRAPHICS_PRIMITIVE_LINES);
+                    }
+
+                } break;
+                case SHAPE_SELECTION_CONE: 
+                {
+                    // Need to draw a cylinder with gsi
+                    gsi_cone(&gsi, cone.base.x, cone.base.y, cone.base.z, 
+                        cone.r, cone.height, 32, col.r, col.g, col.b, col.a, rendering_type); 
+
+
+                    // Disc and point for support functions, using base information
+                    gs_vec3 pts[7] = gs_default_val();
+                    const float step = 360.f / 6.f;
+                    for (uint32_t i = 0; i < 6; ++i) {
+                        float a = gs_deg2rad(step * (float)i);
+                        pts[i] = gs_v3(sinf(a) * cone.r, cone.base.y, cosf(a) * cone.r);
+                    }
+                    pts[6] = gs_vec3_add(cone.base, gs_v3(0.f, cone.height, 0.f));
+
+                    // Draw spheres?
+                    for (uint32_t i = 0; i < 7; ++i)
+                    {
+                        gsi_sphere(&gsi, pts[i].x, pts[i].y, pts[i].z, 0.1f, 255, 255, 255, 255, GS_GRAPHICS_PRIMITIVE_LINES);
+                    }
+
+                } break;
             }
         }
         gsi_pop_matrix(&gsi);
     }
 
-    // Render collision info
-    if (info.hit)
+    // Render collision info (only if manifold is valid)
+    if (manifold_is_valid(&manifold))
     {
-        // Cache pointers
-        gs_vec3* p0 = &info.points[0];
-        gs_vec3* p1 = &info.points[1];
-        gs_vec3* n = &info.normal;
+        for (uint32_t i = 0; i < gs_min(manifold.ct, MANIFOLD_CONTACT_POINTS); ++i)
+        {
+            gs_gjk_contact_info_t* info = &manifold.pts[i];  
 
-        // Contact points (one for each collider)
-        gsi_sphere(&gsi, p0->x, p0->y, p0->z, 0.1f, 255, 0, 255, 255, GS_GRAPHICS_PRIMITIVE_LINES);
-        gsi_sphere(&gsi, p1->x, p1->y, p1->z, 0.1f, 255, 0, 255, 255, GS_GRAPHICS_PRIMITIVE_LINES);
+            // Cache pointers
+            gs_vec3* p0 = &info->points[0];
+            gs_vec3* p1 = &info->points[1];
+            gs_vec3* n = &info->normal;
 
-        // Normal from contact point 0
-        gs_vec3 e = gs_vec3_sub(*p0, gs_vec3_scale(*n, info.depth));
-        gsi_line3Dv(&gsi, *p0, e, gs_color(255, 255, 0, 255));
+            // Contact points (one for each collider)
+            gsi_sphere(&gsi, p0->x, p0->y, p0->z, 0.1f, 0, 255, 0, 255, GS_GRAPHICS_PRIMITIVE_LINES);
+            gsi_sphere(&gsi, p1->x, p1->y, p1->z, 0.1f, 0, 255, 0, 255, GS_GRAPHICS_PRIMITIVE_LINES);
 
-        // Normal from contact point 1
-        e = gs_vec3_add(*p1, gs_vec3_scale(*n, info.depth));
-        gsi_line3Dv(&gsi, *p1, e, gs_color(255, 255, 0, 255));
+            // Normal from contact point 0
+            gs_vec3 e = gs_vec3_sub(*p0, gs_vec3_scale(*n, info->depth));
+            gsi_line3Dv(&gsi, *p0, e, gs_color(255, 255, 0, 255));
+
+            // Normal from contact point 1
+            e = gs_vec3_add(*p1, gs_vec3_scale(*n, info->depth));
+            gsi_line3Dv(&gsi, *p1, e, gs_color(255, 255, 0, 255));
+        }
     }
 
     // Render app control info
@@ -276,20 +374,26 @@ void app_update()
         gsi_text(&gsi, 25.f, 175.f, s1, NULL, false, 255, 255, 255, 255);
 
         // Display collision info
-        gs_vec3* p0 = &info.points[0];
-        gs_vec3* p1 = &info.points[1];
-        gs_vec3* n = &info.normal;
-        float* d = &info.depth;
-        gs_snprintfc(sp0, 256, "- Collision Point 0: <%.2f, %.2f, %.2f>", p0->x, p0->y, p0->z);
-        gs_snprintfc(sp1, 256, "- Collision Point 1: <%.2f, %.2f, %.2f>", p1->x, p1->y, p1->z);
-        gs_snprintfc(sn, 256, "- Collision Normal: <%.2f, %.2f, %.2f>", n->x, n->y, n->z);
-        gs_snprintfc(sd, 256, "- Collision Depth: %.2f", *d);
-        gs_snprintfc(sh, 256, "- Collision: %s", info.hit ? "hit" : "none");
-        gsi_text(&gsi, 25.f, 190.f, sp0, NULL, false, 255, 255, 255, 255);
-        gsi_text(&gsi, 25.f, 205.f, sp1, NULL, false, 255, 255, 255, 255);
-        gsi_text(&gsi, 25.f, 220.f, sn, NULL, false, 255, 255, 255, 255);
-        gsi_text(&gsi, 25.f, 235.f, sd, NULL, false, 255, 255, 255, 255);
-        gsi_text(&gsi, 25.f, 250.f, sh, NULL, false, 255, 255, 255, 255);
+        if (manifold_is_valid(&manifold)) {
+            gs_gjk_contact_info_t* info = &manifold.pts[0];
+            gs_vec3* p0 = &info->points[0];
+            gs_vec3* p1 = &info->points[1];
+            gs_vec3* n = &info->normal;
+            float* d = &info->depth;
+            gs_snprintfc(sp0, 256, "- Collision Point 0: <%.2f, %.2f, %.2f>", p0->x, p0->y, p0->z);
+            gs_snprintfc(sp1, 256, "- Collision Point 1: <%.2f, %.2f, %.2f>", p1->x, p1->y, p1->z);
+            gs_snprintfc(sn, 256, "- Collision Normal: <%.2f, %.2f, %.2f>", n->x, n->y, n->z);
+            gs_snprintfc(sd, 256, "- Collision Depth: %.2f", *d);
+            gs_snprintfc(sh, 256, "- Collision: %s", info->hit ? "hit" : "none");
+            gsi_text(&gsi, 25.f, 190.f, sp0, NULL, false, 255, 255, 255, 255);
+            gsi_text(&gsi, 25.f, 205.f, sp1, NULL, false, 255, 255, 255, 255);
+            gsi_text(&gsi, 25.f, 220.f, sn, NULL, false, 255, 255, 255, 255);
+            gsi_text(&gsi, 25.f, 235.f, sd, NULL, false, 255, 255, 255, 255);
+            gsi_text(&gsi, 25.f, 250.f, sh, NULL, false, 255, 255, 255, 255);
+        }
+        else {
+            gsi_text(&gsi, 25.f, 190.f, "- No Collisions", NULL, false, 255, 255, 255, 255);
+        }
 
         // Display time
         gs_snprintfc(st, 256, "- Time: %.2f", t);

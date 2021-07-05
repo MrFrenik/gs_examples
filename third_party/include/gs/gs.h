@@ -2831,6 +2831,11 @@ gs_inline float gs_vec3_angle_between_signed(gs_vec3 v0, gs_vec3 v1)
     return asinf(gs_vec3_len(gs_vec3_cross(v0, v1)));
 }
 
+gs_inline gs_vec3 gs_vec3_triple_cross_product(gs_vec3 a, gs_vec3 b, gs_vec3 c)
+{
+    return gs_vec3_sub((gs_vec3_scale(b, gs_vec3_dot(c, a))), (gs_vec3_scale(a, gs_vec3_dot(c, b))));
+}
+
 /*================================================================================
 // Vec4
 ================================================================================*/
@@ -3052,11 +3057,11 @@ gs_mat3_inverse(gs_mat3 m)
 {
     gs_mat3 r = gs_default_val();
 
-    float det = m.m[0 * 3 + 0] * (m.m[1 * 3 + 1] * m.m[2 * 3 + 2] - m.m[2 * 3 + 1] * m.m[1 * 3 + 2]) -
+    double det = (double)(m.m[0 * 3 + 0] * (m.m[1 * 3 + 1] * m.m[2 * 3 + 2] - m.m[2 * 3 + 1] * m.m[1 * 3 + 2]) -
                 m.m[0 * 3 + 1] * (m.m[1 * 3 + 0] * m.m[2 * 3 + 2] - m.m[1 * 3 + 2] * m.m[2 * 3 + 0]) +
-                m.m[0 * 3 + 2] * (m.m[1 * 3 + 0] * m.m[2 * 3 + 1] - m.m[1 * 3 + 1] * m.m[2 * 3 + 0]); 
+                m.m[0 * 3 + 2] * (m.m[1 * 3 + 0] * m.m[2 * 3 + 1] - m.m[1 * 3 + 1] * m.m[2 * 3 + 0]));
 
-    float inv_det = det ? 1.f / det : 0.f;
+    double inv_det = det ? 1.0 / det : 0.0;
 
     r.m[0 * 3 + 0] = (m.m[1 * 3 + 1] * m.m[2 * 3 + 2] - m.m[2 * 3 + 1] * m.m[1 * 3 + 2]) * inv_det;
     r.m[0 * 3 + 1] = (m.m[0 * 3 + 2] * m.m[2 * 3 + 1] - m.m[0 * 3 + 1] * m.m[2 * 3 + 2]) * inv_det;

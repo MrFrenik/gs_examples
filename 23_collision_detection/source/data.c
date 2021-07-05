@@ -27,6 +27,15 @@ gs_poly_t gs_pyramid_poly(gs_vec3 from, gs_vec3 to, float size) {
     return p;
 }
 
+gs_poly_t gs_triangle_poly(gs_vec3 a, gs_vec3 b, gs_vec3 c) {
+    gs_poly_t p = {0};
+    p.verts = gs_malloc(sizeof(*p.verts) * 3); p.cnt = 3; /*+1 for diamond case*/ // array_resize(p.verts, 5+1); p.cnt = 5;
+    p.verts[0] = a;
+    p.verts[1] = b;
+    p.verts[2] = c;
+    return p;
+}
+
 void gsi_pyramid(gs_immediate_draw_t* gsi, gs_poly_t* p, gs_color_t color, gs_graphics_primitive_type type)
 {
  	// Draw square
@@ -50,3 +59,6 @@ void gsi_pyramid(gs_immediate_draw_t* gsi, gs_poly_t* p, gs_color_t color, gs_gr
 	// gsi_line3Dv(gsi, p->verts[2], p->verts[4], lc);
 	// gsi_line3Dv(gsi, p->verts[3], p->verts[4], lc);
 }
+
+
+
