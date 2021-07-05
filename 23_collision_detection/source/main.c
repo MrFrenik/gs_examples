@@ -16,7 +16,7 @@
 
 #include "data.c"
 
-#define MANIFOLD_CONTACT_POINTS 10
+#define MANIFOLD_CONTACT_POINTS 1
 
 typedef struct manifold_t {
     uint32_t ct, idx;
@@ -30,6 +30,8 @@ typedef enum shape_selection {
     SHAPE_SELECTION_TRIANGLE,
     SHAPE_SELECTION_CYLINDER,
     SHAPE_SELECTION_CONE,
+    SHAPE_SELECTION_CAPSULE,
+    SHAPE_SELECTION_QUAD,
     SHAPE_SELECTION_COUNT
 } shape_selection;
 
@@ -40,13 +42,17 @@ gs_immediate_draw_t  gsi = {0};
 gs_aabb_t       aabb     = {0};
 gs_sphere_t     sphere   = {0};
 gs_poly_t       pyramid  = {0};
-gs_poly_t       triangle = {0};
+gs_triangle_t   triangle = {0};
 gs_cylinder_t   cylinder = {0};
 gs_cone_t       cone     = {0};
+gs_capsule_t    capsule  = {0};
+gs_quad_t       quad     = {0};
 
 // Transforms
 gs_vqs transforms[2] = {0};
 bool transform_enabled = true;
+
+gs_vqs default_xform = {0};
 
 // Selected shapes
 shape_selection shapes[2] = {0};
@@ -69,16 +75,18 @@ gs_graphics_primitive_type rendering_type = GS_GRAPHICS_PRIMITIVE_LINES;
             case SHAPE_SELECTION_SPHERE:    gs_##T##_vs_sphere(&OBJ, t0, &sphere, t1, &info); break;\
             case SHAPE_SELECTION_AABB:      gs_##T##_vs_aabb(&OBJ, t0, &aabb, t1, &info); break;\
             case SHAPE_SELECTION_PYRAMID:   gs_##T##_vs_poly(&OBJ, t0, &pyramid, t1, &info); break;\
-            case SHAPE_SELECTION_TRIANGLE:  gs_##T##_vs_poly(&OBJ, t0, &triangle, t1, &info); break;\
+            case SHAPE_SELECTION_TRIANGLE:  gs_##T##_vs_triangle(&OBJ, t0, &triangle, t1, &info); break;\
             case SHAPE_SELECTION_CYLINDER:  gs_##T##_vs_cylinder(&OBJ, t0, &cylinder, t1, &info); break;\
             case SHAPE_SELECTION_CONE:      gs_##T##_vs_cone(&OBJ, t0, &cone, t1, &info); break;\
+            case SHAPE_SELECTION_CAPSULE:   gs_##T##_vs_capsule(&OBJ, t0, &capsule, t1, &info); break;\
+            case SHAPE_SELECTION_QUAD:      gs_##T##_vs_quad(&OBJ, t0, &quad, t1, &info); break;\
         }\
     }
 
 gs_gjk_contact_info_t app_do_collisions()
 {
     // Depending on whether or not transform 0 is enabled, we'll use the transform or a null pointer
-    gs_vqs* t0 = transform_enabled ? &transforms[0] : NULL;
+    gs_vqs* t0 = transform_enabled ? &transforms[0] : &default_xform;
     gs_vqs* t1 = &transforms[1];
 
     gs_gjk_contact_info_t info = {0};
@@ -87,9 +95,11 @@ gs_gjk_contact_info_t app_do_collisions()
         case SHAPE_SELECTION_SPHERE:    GS_CONTACT_FUNC(sphere, sphere); break;
         case SHAPE_SELECTION_AABB:      GS_CONTACT_FUNC(aabb, aabb);    break; 
         case SHAPE_SELECTION_PYRAMID:   GS_CONTACT_FUNC(poly, pyramid); break; 
-        case SHAPE_SELECTION_TRIANGLE:  GS_CONTACT_FUNC(poly, triangle); break;
+        case SHAPE_SELECTION_TRIANGLE:  GS_CONTACT_FUNC(triangle, triangle); break;
         case SHAPE_SELECTION_CYLINDER:  GS_CONTACT_FUNC(cylinder, cylinder); break; 
         case SHAPE_SELECTION_CONE:      GS_CONTACT_FUNC(cone, cone); break;
+        case SHAPE_SELECTION_CAPSULE:   GS_CONTACT_FUNC(capsule, capsule); break;
+        case SHAPE_SELECTION_QUAD:      GS_CONTACT_FUNC(quad, quad); break;
     }
 
     return info;
@@ -107,6 +117,8 @@ const char* shape_to_str(shape_selection sel)
         case SHAPE_SELECTION_TRIANGLE:  return "triangle"; break;
         case SHAPE_SELECTION_CYLINDER:  return "cylinder"; break;
         case SHAPE_SELECTION_CONE:      return "cone"; break;
+        case SHAPE_SELECTION_CAPSULE:   return "capsule"; break;
+        case SHAPE_SELECTION_QUAD:      return "quad"; break;
     }
     return "invalid";
 }
@@ -171,13 +183,18 @@ void app_init()
     cb = gs_command_buffer_new();
     gsi = gs_immediate_draw_new();
 
+    // There's a bug with cylinder vs. sphere if cylinder and sphere centers/bases are both at origin
     // Initialize all necessary collision shapes
     aabb = gs_aabb(.min = gs_v3s(-0.5f), .max = gs_v3s(0.5f));
     sphere = gs_sphere(.c = gs_v3s(0.f), .r = 1.f);
     pyramid = gs_pyramid_poly(gs_v3s(0.f), gs_v3(0.f, 2.f, 0.f), 1.f);
-    triangle = gs_triangle_poly(gs_v3(-0.5f, -0.5f, 0.f), gs_v3(0.5f, -0.5f, 0.f), gs_v3(0.f, 0.5f, 0.f));
-    cylinder = gs_cylinder(.r = 0.5f, .base = gs_v3(0.f, 0.f, 0.f), .height = 3.f);
+    triangle = gs_triangle(.a = gs_v3(-0.5f, -0.5f, 0.f), .b = gs_v3(0.5f, -0.5f, 0.f), .c = gs_v3(0.f, 0.5f, 0.f));
+    cylinder = gs_cylinder(.r = 0.5f, .base = gs_v3(1.f, 0.f, 0.f), .height = 3.f);
     cone = gs_cone(.r = 0.5f, .base = gs_v3(0.f, 0.f, 0.f), .height = 3.f);
+    capsule = gs_capsule(.r = 0.5f, .base = gs_v3s(0.f), .height = 2.f);
+    quad = gs_quad(.min = gs_v2s(-0.5f), .max = gs_v2s(0.5f));
+
+    default_xform = gs_vqs_default();
 }
 
 void app_update()
@@ -202,9 +219,11 @@ void app_update()
     // here to use for collisions.
     transforms[0] = (gs_vqs){
         .position = gs_v3(1.f, sin(t) * 2.1f, 0.f),
-        .rotation = gs_quat_mul_list(3, 
-            gs_quat_angle_axis(t * 2.f,  GS_XAXIS),
-            gs_quat_angle_axis(t * 0.5f, GS_YAXIS),
+        .rotation = gs_quat_mul_list(3,
+            gs_quat_default(),
+            gs_quat_default(),
+            // gs_quat_angle_axis(t * 2.f,  GS_XAXIS),
+            // gs_quat_angle_axis(t * 0.5f, GS_YAXIS),
             gs_quat_angle_axis(t * 3.f,  GS_ZAXIS)
         ),
         .scale = gs_v3s(1.f)
@@ -213,10 +232,10 @@ void app_update()
     transforms[1] = (gs_vqs){
         .position = gs_v3(1.f, sin(t * 0.5f) * -2.5f, 0.f),
         .rotation = gs_quat_mul_list(3, 
-            // gs_quat_default(),
-            // gs_quat_default(),
-            gs_quat_angle_axis(t * 5.f,  GS_XAXIS),
-            gs_quat_angle_axis(t * 1.5f, GS_YAXIS),
+            gs_quat_default(),
+            gs_quat_default(),
+            // gs_quat_angle_axis(t * 5.f,  GS_XAXIS),
+            // gs_quat_angle_axis(t * 1.5f, GS_YAXIS),
             gs_quat_angle_axis(t * 0.4f, GS_ZAXIS)
         ),
         .scale = gs_v3s(1.f)
@@ -233,7 +252,7 @@ void app_update()
 
     // Cache transform pointers for rendering
     gs_vqs* xforms[2] = {
-        transform_enabled ? &transforms[0] : NULL,
+        transform_enabled ? &transforms[0] : &default_xform,
         &transforms[1]
     };
 
@@ -251,70 +270,57 @@ void app_update()
                 {
                     gsi_sphere(&gsi, sphere.c.x, sphere.c.y, sphere.c.z, sphere.r, col.r, col.g, col.b, col.a, rendering_type);
                 } break;
+
                 case SHAPE_SELECTION_PYRAMID:  
                 {
                     gsi_pyramid(&gsi, &pyramid, col, rendering_type);
                 } break;
+
                 case SHAPE_SELECTION_AABB:  
                 {
                     gs_vec3 hd = gs_vec3_scale(gs_vec3_sub(aabb.max, aabb.min), 0.5f);
                     gs_vec3 c = gs_vec3_add(aabb.min, hd);
                     gsi_box(&gsi, c.x, c.y, c.z, hd.x, hd.y, hd.z, col.r, col.g, col.b, col.a, rendering_type);
                 } break;
+
                 case SHAPE_SELECTION_TRIANGLE: 
                 {
-                    gs_vec3* a = &triangle.verts[0];
-                    gs_vec3* b = &triangle.verts[1];
-                    gs_vec3* c = &triangle.verts[2];
+                    gs_vec3* a = &triangle.a;
+                    gs_vec3* b = &triangle.b;
+                    gs_vec3* c = &triangle.c;
                     gsi_trianglevx(&gsi, *a, *b, *c, gs_v2s(0.f), gs_v2s(1.f), gs_v2s(0.5f), col, rendering_type);
                 } break;
+
                 case SHAPE_SELECTION_CYLINDER: 
                 {
                     // Need to draw a cylinder with gsi
                     gsi_cylinder(&gsi, cylinder.base.x, cylinder.base.y, cylinder.base.z, 
-                        cylinder.r, cylinder.r, cylinder.height, 32, col.r, col.g, col.b, col.a, rendering_type); 
-
-                    // Disc and point for support functions, using base information
-                    gs_vec3 pts[6 + 6] = gs_default_val();
-                    const float step = 360.f / 6.f;
-                    for (uint32_t i = 0; i < 6; ++i) {
-                        float a = gs_deg2rad(step * (float)i);
-                        pts[i] = gs_v3(sinf(a) * cylinder.r, cylinder.base.y, cosf(a) * cylinder.r);
-                    }
-                    for (uint32_t i = 6; i < 12; ++i) {
-                        float a = gs_deg2rad(step * (float)i);
-                        pts[i] = gs_v3(sinf(a) * cylinder.r, cylinder.base.y + cylinder.height, cosf(a) * cylinder.r);
-                    }
-
-                    // Draw spheres?
-                    for (uint32_t i = 0; i < 12; ++i)
-                    {
-                        gsi_sphere(&gsi, pts[i].x, pts[i].y, pts[i].z, 0.1f, 255, 255, 255, 255, GS_GRAPHICS_PRIMITIVE_LINES);
-                    }
-
+                        cylinder.r, cylinder.r, cylinder.height, 32, col.r, col.g, col.b, col.a, rendering_type);
                 } break;
+
                 case SHAPE_SELECTION_CONE: 
                 {
                     // Need to draw a cylinder with gsi
                     gsi_cone(&gsi, cone.base.x, cone.base.y, cone.base.z, 
                         cone.r, cone.height, 32, col.r, col.g, col.b, col.a, rendering_type); 
+                } break;
 
+                case SHAPE_SELECTION_CAPSULE: 
+                {
+                    // Cylinder body
+                    gsi_cylinder(&gsi, capsule.base.x, capsule.base.y, capsule.base.z, 
+                        capsule.r, capsule.r, capsule.height, 32, col.r, col.g, col.b, col.a, rendering_type); 
 
-                    // Disc and point for support functions, using base information
-                    gs_vec3 pts[7] = gs_default_val();
-                    const float step = 360.f / 6.f;
-                    for (uint32_t i = 0; i < 6; ++i) {
-                        float a = gs_deg2rad(step * (float)i);
-                        pts[i] = gs_v3(sinf(a) * cone.r, cone.base.y, cosf(a) * cone.r);
-                    }
-                    pts[6] = gs_vec3_add(cone.base, gs_v3(0.f, cone.height, 0.f));
+                    // Two spheres at ends
+                    gs_vec3 sp0 = capsule.base;
+                    gs_vec3 sp1 = gs_vec3_add(capsule.base, gs_v3(0.f, capsule.height, 0.f));
+                    gsi_sphere(&gsi, sp0.x, sp0.y, sp0.z, capsule.r, col.r, col.g, col.b, col.a, rendering_type);
+                    gsi_sphere(&gsi, sp1.x, sp1.y, sp1.z, capsule.r, col.r, col.g, col.b, col.a, rendering_type);
+                } break;
 
-                    // Draw spheres?
-                    for (uint32_t i = 0; i < 7; ++i)
-                    {
-                        gsi_sphere(&gsi, pts[i].x, pts[i].y, pts[i].z, 0.1f, 255, 255, 255, 255, GS_GRAPHICS_PRIMITIVE_LINES);
-                    }
-
+                case SHAPE_SELECTION_QUAD: 
+                {
+                    gsi_rectvd(&gsi, quad.min, gs_vec2_sub(quad.max, quad.min), gs_v2s(0.f), gs_v2s(1.f), col, rendering_type);
                 } break;
             }
         }
