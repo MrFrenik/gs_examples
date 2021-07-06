@@ -17,6 +17,7 @@
 #include "data.c"
 
 #define MANIFOLD_CONTACT_POINTS 1
+#define MANIFOLD_MIN_DEPTH_REQUIRED 0.0f
 
 typedef struct manifold_t {
     uint32_t ct, idx;
@@ -27,13 +28,20 @@ typedef enum shape_selection {
     SHAPE_SELECTION_SPHERE = 0x00,
     SHAPE_SELECTION_AABB, 
     SHAPE_SELECTION_PYRAMID,
-    SHAPE_SELECTION_TRIANGLE,
     SHAPE_SELECTION_CYLINDER,
     SHAPE_SELECTION_CONE,
     SHAPE_SELECTION_CAPSULE,
     SHAPE_SELECTION_QUAD,
+    SHAPE_SELECTION_TRIANGLE,
+    SHAPE_SELECTION_CIRCLE,
+    SHAPE_SELECTION_PILL,
     SHAPE_SELECTION_COUNT
 } shape_selection;
+
+typedef enum selection_mode {
+    SELECTION_MODE_2D, 
+    SELECTION_MODE_3D
+} selection_mode;
 
 gs_command_buffer_t  cb  = {0};
 gs_immediate_draw_t  gsi = {0};
@@ -47,6 +55,8 @@ gs_cylinder_t   cylinder = {0};
 gs_cone_t       cone     = {0};
 gs_capsule_t    capsule  = {0};
 gs_quad_t       quad     = {0};
+gs_circle_t     circle   = {0};
+gs_pill_t       pill     = {0};
 
 // Transforms
 gs_vqs transforms[2] = {0};
@@ -59,6 +69,8 @@ shape_selection shapes[2] = {0};
 
 // Manifold
 manifold_t manifold = {0};
+
+selection_mode mode = SELECTION_MODE_3D;
 
 // Time controls
 float t = 0.f;
@@ -75,11 +87,29 @@ gs_graphics_primitive_type rendering_type = GS_GRAPHICS_PRIMITIVE_LINES;
             case SHAPE_SELECTION_SPHERE:    gs_##T##_vs_sphere(&OBJ, t0, &sphere, t1, &info); break;\
             case SHAPE_SELECTION_AABB:      gs_##T##_vs_aabb(&OBJ, t0, &aabb, t1, &info); break;\
             case SHAPE_SELECTION_PYRAMID:   gs_##T##_vs_poly(&OBJ, t0, &pyramid, t1, &info); break;\
-            case SHAPE_SELECTION_TRIANGLE:  gs_##T##_vs_triangle(&OBJ, t0, &triangle, t1, &info); break;\
             case SHAPE_SELECTION_CYLINDER:  gs_##T##_vs_cylinder(&OBJ, t0, &cylinder, t1, &info); break;\
             case SHAPE_SELECTION_CONE:      gs_##T##_vs_cone(&OBJ, t0, &cone, t1, &info); break;\
             case SHAPE_SELECTION_CAPSULE:   gs_##T##_vs_capsule(&OBJ, t0, &capsule, t1, &info); break;\
             case SHAPE_SELECTION_QUAD:      gs_##T##_vs_quad(&OBJ, t0, &quad, t1, &info); break;\
+            case SHAPE_SELECTION_TRIANGLE:  gs_##T##_vs_triangle(&OBJ, t0, &triangle, t1, &info); break;\
+            case SHAPE_SELECTION_CIRCLE:    gs_##T##_vs_circle(&OBJ, t0, &circle, t1, &info); break;\
+            case SHAPE_SELECTION_PILL:      gs_##T##_vs_pill(&OBJ, t0, &pill, t1, &info); break;\
+        }\
+    }
+
+#define GS_CONTACT_FUNC_2D(T, OBJ)\
+    {\
+        switch (shapes[1]) {\
+            case SHAPE_SELECTION_SPHERE:    gs_##T##_vs_sphere(&OBJ, t0, &sphere, t1, &info); break;\
+            case SHAPE_SELECTION_AABB:      gs_##T##_vs_aabb(&OBJ, t0, &aabb, t1, &info); break;\
+            case SHAPE_SELECTION_PYRAMID:   gs_##T##_vs_poly(&OBJ, t0, &pyramid, t1, &info); break;\
+            case SHAPE_SELECTION_CYLINDER:  gs_##T##_vs_cylinder(&OBJ, t0, &cylinder, t1, &info); break;\
+            case SHAPE_SELECTION_CONE:      gs_##T##_vs_cone(&OBJ, t0, &cone, t1, &info); break;\
+            case SHAPE_SELECTION_CAPSULE:   gs_##T##_vs_capsule(&OBJ, t0, &capsule, t1, &info); break;\
+            case SHAPE_SELECTION_QUAD:      gs_##T##_vs_quad(&OBJ, t0, &quad, t1, &info); break;\
+            case SHAPE_SELECTION_TRIANGLE:  gs_##T##_vs_triangle_2d(&OBJ, t0, &triangle, t1, &info); break;\
+            case SHAPE_SELECTION_CIRCLE:    gs_##T##_vs_circle_2d(&OBJ, t0, &circle, t1, &info); break;\
+            case SHAPE_SELECTION_PILL:      gs_##T##_vs_pill_2d(&OBJ, t0, &pill, t1, &info); break;\
         }\
     }
 
@@ -95,14 +125,34 @@ gs_gjk_contact_info_t app_do_collisions()
         case SHAPE_SELECTION_SPHERE:    GS_CONTACT_FUNC(sphere, sphere); break;
         case SHAPE_SELECTION_AABB:      GS_CONTACT_FUNC(aabb, aabb);    break; 
         case SHAPE_SELECTION_PYRAMID:   GS_CONTACT_FUNC(poly, pyramid); break; 
-        case SHAPE_SELECTION_TRIANGLE:  GS_CONTACT_FUNC(triangle, triangle); break;
         case SHAPE_SELECTION_CYLINDER:  GS_CONTACT_FUNC(cylinder, cylinder); break; 
         case SHAPE_SELECTION_CONE:      GS_CONTACT_FUNC(cone, cone); break;
         case SHAPE_SELECTION_CAPSULE:   GS_CONTACT_FUNC(capsule, capsule); break;
-        case SHAPE_SELECTION_QUAD:      GS_CONTACT_FUNC(quad, quad); break;
+
+        // 2D shapes
+        case SHAPE_SELECTION_QUAD:      GS_CONTACT_FUNC_2D(quad, quad); break;
+        case SHAPE_SELECTION_TRIANGLE:  GS_CONTACT_FUNC_2D(triangle, triangle); break;
+        case SHAPE_SELECTION_CIRCLE:    GS_CONTACT_FUNC_2D(circle, circle); break;
+        case SHAPE_SELECTION_PILL:      GS_CONTACT_FUNC_2D(pill, pill); break;
     }
 
     return info;
+}
+
+const char* get_collision_mode(shape_selection s0, shape_selection s1)
+{
+    if (
+        s0 == SHAPE_SELECTION_SPHERE || s1 == SHAPE_SELECTION_SPHERE || 
+        s0 == SHAPE_SELECTION_AABB || s1 == SHAPE_SELECTION_AABB || 
+        s0 == SHAPE_SELECTION_PYRAMID || s1 == SHAPE_SELECTION_PYRAMID || 
+        s0 == SHAPE_SELECTION_CYLINDER || s1 == SHAPE_SELECTION_CYLINDER || 
+        s0 == SHAPE_SELECTION_CONE || s1 == SHAPE_SELECTION_CONE || 
+        s0 == SHAPE_SELECTION_CAPSULE || s1 == SHAPE_SELECTION_CAPSULE 
+    )
+    {
+        return "3D";
+    }
+    return "2D";
 }
 
 const char* shape_to_str(shape_selection sel)
@@ -114,11 +164,13 @@ const char* shape_to_str(shape_selection sel)
         case SHAPE_SELECTION_SPHERE:    return "sphere"; break;
         case SHAPE_SELECTION_PYRAMID:   return "pyramid"; break;
         case SHAPE_SELECTION_AABB:      return "aabb"; break;
-        case SHAPE_SELECTION_TRIANGLE:  return "triangle"; break;
         case SHAPE_SELECTION_CYLINDER:  return "cylinder"; break;
         case SHAPE_SELECTION_CONE:      return "cone"; break;
         case SHAPE_SELECTION_CAPSULE:   return "capsule"; break;
         case SHAPE_SELECTION_QUAD:      return "quad"; break;
+        case SHAPE_SELECTION_TRIANGLE:  return "triangle"; break;
+        case SHAPE_SELECTION_CIRCLE:    return "circle"; break;
+        case SHAPE_SELECTION_PILL:      return "pill"; break;
     }
     return "invalid";
 }
@@ -132,7 +184,7 @@ void reset_manifold(manifold_t* manifold)
 void update_manifold(manifold_t* manifold, gs_gjk_contact_info_t* info)
 {
     // Add a new contact point, update point
-    if (info->hit) 
+    if (info->hit && info->depth >= MANIFOLD_MIN_DEPTH_REQUIRED) 
     {
         manifold->idx = (manifold->idx + 1) % MANIFOLD_CONTACT_POINTS;
         manifold->ct = gs_clamp(manifold->ct + 1, 0, MANIFOLD_CONTACT_POINTS);
@@ -183,18 +235,20 @@ void app_init()
     cb = gs_command_buffer_new();
     gsi = gs_immediate_draw_new();
 
-    // There's a bug with cylinder vs. sphere if cylinder and sphere centers/bases are both at origin
-    // Initialize all necessary collision shapes
     aabb = gs_aabb(.min = gs_v3s(-0.5f), .max = gs_v3s(0.5f));
-    sphere = gs_sphere(.c = gs_v3s(0.f), .r = 1.f);
-    pyramid = gs_pyramid_poly(gs_v3s(0.f), gs_v3(0.f, 2.f, 0.f), 1.f);
-    triangle = gs_triangle(.a = gs_v3(-0.5f, -0.5f, 0.f), .b = gs_v3(0.5f, -0.5f, 0.f), .c = gs_v3(0.f, 0.5f, 0.f));
-    cylinder = gs_cylinder(.r = 0.5f, .base = gs_v3(1.f, 0.f, 0.f), .height = 3.f);
-    cone = gs_cone(.r = 0.5f, .base = gs_v3(0.f, 0.f, 0.f), .height = 3.f);
-    capsule = gs_capsule(.r = 0.5f, .base = gs_v3s(0.f), .height = 2.f);
+    sphere = gs_sphere(.c = gs_v3s(0.f), .r = 0.5f);
+    pyramid = gs_pyramid_poly(gs_v3s(0.f), gs_v3(0.f, 0.5f, 0.f), 0.5f);
+    cylinder = gs_cylinder(.r = 0.5f, .base = gs_v3(0.f, -0.5f, 0.f), .height = 1.f);
+    cone = gs_cone(.r = 0.5f, .base = gs_v3(0.f, -0.5f, 0.f), .height = 1.f);
+    capsule = gs_capsule(.r = 0.5f, .base = gs_v3(0.f, -0.5f, 0.f), .height = 1.f);
     quad = gs_quad(.min = gs_v2s(-0.5f), .max = gs_v2s(0.5f));
+    triangle = gs_triangle(.a = gs_v2(-0.5f, -0.5f), .b = gs_v2(0.5f, -0.5f), .c = gs_v2(0.f, 0.5f));
+    circle = gs_circle(.c = gs_v2(0.f, 0.f), .r = 0.5f);
+    pill = gs_pill(.r = 0.5f, .base = gs_v2(0.f, -0.5f), .height = 1.f);
 
+    // This little bit of jitter helps
     default_xform = gs_vqs_default();
+    default_xform.position.x += 0.001f;
 }
 
 void app_update()
@@ -218,7 +272,7 @@ void app_update()
     // before performing collision detection/resolution code on them. We'll create two separate transforms
     // here to use for collisions.
     transforms[0] = (gs_vqs){
-        .position = gs_v3(1.f, sin(t) * 2.1f, 0.f),
+        .position = gs_v3(0.f, sin(t) * 2.1f, 0.f),
         .rotation = gs_quat_mul_list(3,
             gs_quat_default(),
             gs_quat_default(),
@@ -226,11 +280,12 @@ void app_update()
             // gs_quat_angle_axis(t * 0.5f, GS_YAXIS),
             gs_quat_angle_axis(t * 3.f,  GS_ZAXIS)
         ),
-        .scale = gs_v3s(1.f)
+        .scale = gs_v3s(0.5f)
     };
 
     transforms[1] = (gs_vqs){
-        .position = gs_v3(1.f, sin(t * 0.5f) * -2.5f, 0.f),
+        .position = gs_v3(0.01f, sin(t * 0.5f) * -2.5f, 0.f),
+        // .position = gs_v3(0.f, -.5f, 0.f),
         .rotation = gs_quat_mul_list(3, 
             gs_quat_default(),
             gs_quat_default(),
@@ -285,10 +340,10 @@ void app_update()
 
                 case SHAPE_SELECTION_TRIANGLE: 
                 {
-                    gs_vec3* a = &triangle.a;
-                    gs_vec3* b = &triangle.b;
-                    gs_vec3* c = &triangle.c;
-                    gsi_trianglevx(&gsi, *a, *b, *c, gs_v2s(0.f), gs_v2s(1.f), gs_v2s(0.5f), col, rendering_type);
+                    gs_vec2* a = &triangle.a;
+                    gs_vec2* b = &triangle.b;
+                    gs_vec2* c = &triangle.c;
+                    gsi_trianglev(&gsi, *a, *b, *c, col, rendering_type);
                 } break;
 
                 case SHAPE_SELECTION_CYLINDER: 
@@ -318,9 +373,19 @@ void app_update()
                     gsi_sphere(&gsi, sp1.x, sp1.y, sp1.z, capsule.r, col.r, col.g, col.b, col.a, rendering_type);
                 } break;
 
-                case SHAPE_SELECTION_QUAD: 
-                {
+                case SHAPE_SELECTION_QUAD: {
                     gsi_rectvd(&gsi, quad.min, gs_vec2_sub(quad.max, quad.min), gs_v2s(0.f), gs_v2s(1.f), col, rendering_type);
+                } break;
+
+                case SHAPE_SELECTION_CIRCLE: {
+                    gsi_circle(&gsi, circle.c.x, circle.c.y, circle.r, 32, col.r, col.g, col.b, col.a, rendering_type);
+                } break;
+
+                case SHAPE_SELECTION_PILL: {
+                    gs_vec2 xy = gs_vec2_sub(pill.base, gs_v2(pill.r, 0.f));
+                    gsi_rectvd(&gsi, xy, gs_v2(pill.r * 2, pill.height), gs_v2s(0.f), gs_v2s(1.f), col, rendering_type);
+                    gsi_circle(&gsi, pill.base.x, pill.base.y, pill.r, 32, col.r, col.g, col.b, col.a, rendering_type);
+                    gsi_circle(&gsi, pill.base.x, pill.base.y + pill.height, circle.r, 32, col.r, col.g, col.b, col.a, rendering_type);
                 } break;
             }
         }
@@ -409,6 +474,11 @@ void app_update()
 
         // Rendering style
         gsi_text(&gsi, 25.f, 295.f, "- R: Alternate rendering style", NULL, false, 255, 255, 255, 255);
+
+        // Collision mode
+        const char* mode = get_collision_mode(shapes[0], shapes[1]);
+        gs_snprintfc(cmt, 256, "- Collision Mode: %s", mode);
+        gsi_text(&gsi, 25.f, 310.f, cmt, NULL, false, 255, 255, 255, 255);
     }
 
     // Final submit to immediate draw

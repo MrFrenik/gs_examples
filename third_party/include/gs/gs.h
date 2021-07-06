@@ -2488,6 +2488,7 @@ GS_API_DECL void gs_paged_allocator_clear(gs_paged_allocator_t* pa);
 #define gs_v4s(__S)  gs_vec4_ctor((__S), (__S), (__S), (__S))
 
 #define gs_v4_xy_v(__X, __Y, __V) gs_vec4_ctor((__X), (__Y), (__V).x, (__V).y)
+#define gs_v4_xyz_s(__XYZ, __S) gs_vec4_ctor((__XYZ).x, (__XYZ).y, (__XYZ).z, (__S))
 
 #define GS_XAXIS    gs_v3(1.f, 0.f, 0.f)
 #define GS_YAXIS    gs_v3(0.f, 1.f, 0.f)
@@ -2775,6 +2776,12 @@ gs_vec3_len(gs_vec3 v)
     return (f32)sqrt(gs_vec3_dot(v, v));
 }
 
+gs_inline f32 
+gs_vec3_len2(gs_vec3 v)
+{
+    return (f32)(gs_vec3_dot(v, v));
+}
+
 gs_inline gs_vec3
 gs_vec3_project_onto(gs_vec3 v0, gs_vec3 v1)
 {
@@ -2941,6 +2948,12 @@ gs_inline
 gs_vec3 gs_v4_to_v3(gs_vec4 v) 
 {
     return gs_v3(v.x, v.y, v.z);
+}
+
+gs_inline
+gs_vec2 gs_v3_to_v2(gs_vec3 v) 
+{
+    return gs_v2(v.x, v.y);
 }
 
 /*================================================================================
