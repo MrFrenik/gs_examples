@@ -30,6 +30,7 @@ typedef enum shape_selection {
     SHAPE_SELECTION_CYLINDER,
     SHAPE_SELECTION_CONE,
     SHAPE_SELECTION_CAPSULE,
+    SHAPE_SELECTION_POLY,
     SHAPE_SELECTION_COUNT
 } shape_selection;
 
@@ -46,6 +47,7 @@ gs_sphere_t     sphere   = {0};
 gs_cylinder_t   cylinder = {0};
 gs_cone_t       cone     = {0};
 gs_capsule_t    capsule  = {0};
+gs_poly_t       poly     = {0};
 
 // Transforms
 gs_vqs transforms[2] = {0};
@@ -78,6 +80,7 @@ gs_graphics_primitive_type rendering_type = GS_GRAPHICS_PRIMITIVE_LINES;
             case SHAPE_SELECTION_CYLINDER:  gs_##T##_vs_cylinder(&OBJ, t0, &cylinder, t1, &info); break;\
             case SHAPE_SELECTION_CONE:      gs_##T##_vs_cone(&OBJ, t0, &cone, t1, &info); break;\
             case SHAPE_SELECTION_CAPSULE:   gs_##T##_vs_capsule(&OBJ, t0, &capsule, t1, &info); break;\
+            case SHAPE_SELECTION_POLY:      gs_##T##_vs_poly(&OBJ, t0, &poly, t1, &info); break;\
         }\
     }
 
@@ -95,6 +98,7 @@ gs_contact_info_t app_do_collisions()
         case SHAPE_SELECTION_CYLINDER:  GS_CONTACT_FUNC(cylinder, cylinder); break; 
         case SHAPE_SELECTION_CONE:      GS_CONTACT_FUNC(cone, cone); break;
         case SHAPE_SELECTION_CAPSULE:   GS_CONTACT_FUNC(capsule, capsule); break;
+        case SHAPE_SELECTION_POLY:      GS_CONTACT_FUNC(poly, poly); break;
     }
 
     return info;
@@ -107,7 +111,8 @@ const char* get_collision_mode(shape_selection s0, shape_selection s1)
         s0 == SHAPE_SELECTION_AABB || s1 == SHAPE_SELECTION_AABB || 
         s0 == SHAPE_SELECTION_CYLINDER || s1 == SHAPE_SELECTION_CYLINDER || 
         s0 == SHAPE_SELECTION_CONE || s1 == SHAPE_SELECTION_CONE || 
-        s0 == SHAPE_SELECTION_CAPSULE || s1 == SHAPE_SELECTION_CAPSULE 
+        s0 == SHAPE_SELECTION_CAPSULE || s1 == SHAPE_SELECTION_CAPSULE ||
+        s0 == SHAPE_SELECTION_POLY || s1 == SHAPE_SELECTION_POLY 
     )
     {
         return "3D";
@@ -126,6 +131,7 @@ const char* shape_to_str(shape_selection sel)
         case SHAPE_SELECTION_CYLINDER:  return "cylinder"; break;
         case SHAPE_SELECTION_CONE:      return "cone"; break;
         case SHAPE_SELECTION_CAPSULE:   return "capsule"; break;
+        case SHAPE_SELECTION_POLY:      return "poly"; break;
     }
     return "invalid";
 }
@@ -209,6 +215,7 @@ void app_init()
     cylinder = gs_cylinder(.r = 0.5f, .base = gs_v3(0.f, 0.f, 0.f), .height = 1.f);
     cone = gs_cone(.r = 0.5f, .base = gs_v3(0.f, 0.f, 0.f), .height = 1.f);
     capsule = gs_capsule(.r = 0.5f, .base = gs_v3(0.f, 0.f, 0.f), .height = 1.f);
+    poly = gs_pyramid_poly(gs_v3(-0.5f, -0.5f, -0.5f), gs_v3(0.5f, -0.5f, 0.5f), 1.f);
 
     // This little bit of jitter helps
     default_xform = gs_vqs_default();
@@ -363,6 +370,11 @@ void app_update()
                     const float hh = capsule.height * 0.5f;
                     gsi_sphere(&gsi, 0.f, hh, 0.f, capsule.r, col.r, col.g, col.b, col.a, rendering_type);
                     gsi_sphere(&gsi, 0.f, -hh, 0.f, capsule.r, col.r, col.g, col.b, col.a, rendering_type);
+                } break;
+
+                case SHAPE_SELECTION_POLY: 
+                {
+                    gsi_pyramid(&gsi, &poly, col, rendering_type);
                 } break;
             }
         }
