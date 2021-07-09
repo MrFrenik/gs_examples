@@ -661,6 +661,8 @@ typedef bool32_t          bool32;
 
 #define gs_clamp(V, MIN, MAX) ((V) > (MAX) ? (MAX) : (V) < (MIN) ? (MIN) : (V))
 
+#define gs_is_nan(V) ((V) != (V))
+
 // Helpful macro for casting one type to another
 #define gs_cast(A, B) ((A*)(B))
 
@@ -2170,7 +2172,7 @@ typedef uint32_t gs_slot_array_iter;
 #define gs_slot_array_iter_new(__SA) 0
 
 #define gs_slot_array_iter_valid(__SA, __IT)\
-    ((__IT) < (uint32_t)gs_slot_array_size((__SA)))
+    ((__IT) < (uint32_t)gs_dyn_array_size((__SA)->indices))
 
 gs_force_inline
 void __gs_slot_array_iter_advance_func(gs_dyn_array(uint32_t) indices, uint32_t* it)
@@ -2769,6 +2771,33 @@ gs_vec3_same_dir(gs_vec3 v0, gs_vec3 v1)
     return (gs_vec3_dot(v0, v1) > 0.f);
 }
 
+gs_inline gs_vec3 
+gs_vec3_sign(gs_vec3 v)
+{
+    return (gs_vec3_ctor(
+        v.x < 0.f ? -1.f : v.x > 0.f ? 1.f : 0.f,
+        v.y < 0.f ? -1.f : v.y > 0.f ? 1.f : 0.f,
+        v.z < 0.f ? -1.f : v.z > 0.f ? 1.f : 0.f
+    ));
+}
+
+gs_inline float 
+gs_vec3_signX(gs_vec3 v)
+{
+    return (v.x < 0.f ? -1.f : v.x > 0.f ? 1.f : 0.f);
+}
+
+gs_inline float 
+gs_vec3_signY(gs_vec3 v)
+{
+    return (v.y < 0.f ? -1.f : v.y > 0.f ? 1.f : 0.f);
+}
+
+gs_inline float 
+gs_vec3_signZ(gs_vec3 v)
+{
+    return (v.z < 0.f ? -1.f : v.z > 0.f ? 1.f : 0.f);
+}
 
 gs_inline f32 
 gs_vec3_len(gs_vec3 v)
@@ -3480,17 +3509,6 @@ gs_mat4_look_at(gs_vec3 position, gs_vec3 target, gs_vec3 up)
 }
 
 gs_inline
-gs_vec3 gs_mat4_mul_vec3(gs_mat4 m, gs_vec3 v)
-{
-    return gs_vec3_ctor
-    (
-        m.elements[0 + 4 * 0] * v.x + m.elements[0 + 4 * 1] * v.y + m.elements[0 + 4 * 2] * v.z,  
-        m.elements[1 + 4 * 0] * v.x + m.elements[1 + 4 * 1] * v.y + m.elements[1 + 4 * 2] * v.z,  
-        m.elements[2 + 4 * 0] * v.x + m.elements[2 + 4 * 1] * v.y + m.elements[2 + 4 * 2] * v.z
-    );
-}
-    
-gs_inline
 gs_vec4 gs_mat4_mul_vec4(gs_mat4 m, gs_vec4 v)
 {
     return gs_vec4_ctor
@@ -3501,6 +3519,20 @@ gs_vec4 gs_mat4_mul_vec4(gs_mat4 m, gs_vec4 v)
         m.elements[3 + 4 * 0] * v.x + m.elements[3 + 4 * 1] * v.y + m.elements[3 + 4 * 2] * v.z + m.elements[3 + 4 * 3] * v.w
     );
 }
+
+gs_inline
+gs_vec3 gs_mat4_mul_vec3(gs_mat4 m, gs_vec3 v)
+{
+    return gs_v4_to_v3(gs_mat4_mul_vec4(m, gs_v4_xyz_s(v, 1.f)));
+    // return gs_v4_to_v3(v4);
+    // return gs_vec3_ctor
+    // (
+    //     m.elements[0 + 4 * 0] * v.x + m.elements[0 + 4 * 1] * v.y + m.elements[0 + 4 * 2] * v.z,  
+    //     m.elements[1 + 4 * 0] * v.x + m.elements[1 + 4 * 1] * v.y + m.elements[1 + 4 * 2] * v.z,  
+    //     m.elements[2 + 4 * 0] * v.x + m.elements[2 + 4 * 1] * v.y + m.elements[2 + 4 * 2] * v.z
+    // );
+}
+    
 
 /*================================================================================
 // Quaternion
@@ -3828,6 +3860,10 @@ gs_vqs gs_vqs_default()
 // AbsTrans = ParentPos + [ParentRot * (ParentScale * LocalPos)]
 gs_inline gs_vqs gs_vqs_absolute_transform(const gs_vqs* local, const gs_vqs* parent)
 {
+    if (!local || !parent) {
+        return gs_vqs_default();
+    }
+
     // Normalized rotations
     gs_quat p_rot_norm = gs_quat_norm(parent->rotation);
     gs_quat l_rot_norm = gs_quat_norm(local->rotation);
@@ -3847,6 +3883,10 @@ gs_inline gs_vqs gs_vqs_absolute_transform(const gs_vqs* local, const gs_vqs* pa
 // RelTrans = [Inverse(ParentRot) * (AbsPos - ParentPosition)] / ParentScale;
 gs_inline gs_vqs gs_vqs_relative_transform(const gs_vqs* absolute, const gs_vqs* parent)
 {
+    if (!absolute || !parent) {
+        return gs_vqs_default();
+    }
+
     // Get inverse rotation normalized
     gs_quat p_rot_inv = gs_quat_norm(gs_quat_inverse(parent->rotation));
     // Normalized abs rotation

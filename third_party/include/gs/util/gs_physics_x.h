@@ -6,8 +6,8 @@
     All Rights Reserved
 =================================================================*/
 
-#ifndef __GS_PHYSICS_H__
-#define __GS_PHYSICS_H__
+#ifndef __GS_PHYSICS_X_H__
+#define __GS_PHYSICS_X_H__
 
 /*
     USAGE: (IMPORTANT)
@@ -402,7 +402,7 @@ GS_API_DECL gs_raycast_data_t  gs_physics_scene_raycast(gs_physics_scene_t* scen
 
 /*==== Implementation ====*/
 
-#ifdef GS_PHYSICS_IMPL
+#ifdef GS_PHYSICS_X_IMPL
 
 // Includes
 #ifndef GS_PHYSICS_NO_CCD
