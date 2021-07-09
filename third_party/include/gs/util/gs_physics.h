@@ -406,7 +406,7 @@ GS_API_DECL gs_raycast_data_t  gs_physics_scene_raycast(gs_physics_scene_t* scen
 
 // Includes
 #ifndef GS_PHYSICS_NO_CCD
-    #include "../external/libccd/libccd.c"
+    #include "../external/ccd/libccd.c"
 #endif
 
 /*==== Support Functions =====*/
