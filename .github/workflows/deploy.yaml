@@ -12,8 +12,6 @@ jobs:
       - name: Verify
         run: emcc -v
       - name: Build
-        run: bash proc/emcc.sh
-      - name: Upload
         run: |
             for d in */ ; do
               echo $d
@@ -21,6 +19,8 @@ jobs:
               bash proc/${PLATFORM[html5]}/*.sh
               cd ..
             done
+      - name: Upload
+        run: |
             git config --global user.name 'Sushil Ragoonath'
             git config --global user.email 'SushilRagoonath@users.noreply.github.com'
             git add -A
