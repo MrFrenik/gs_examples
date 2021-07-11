@@ -1,0 +1,28 @@
+name: "emsdk"
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - uses: mymindstorm/setup-emsdk@v9
+      - name: Verify
+        run: emcc -v
+      - name: Build
+        run: bash proc/emcc.sh
+      - name: Upload
+        run: |
+            for d in */ ; do
+              echo $d
+              cd $d
+              bash proc/${PLATFORM[html5]}/*.sh
+              cd ..
+            done
+            git config --global user.name 'Sushil Ragoonath'
+            git config --global user.email 'SushilRagoonath@users.noreply.github.com'
+            git add -A
+            git commit -a -m "page"
+            git push origin HEAD:page --force
