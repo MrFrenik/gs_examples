@@ -16,7 +16,7 @@ jobs:
             for d in */ ; do
               echo $d
               cd $d
-              bash proc/${PLATFORM[html5]}/*.sh
+              bash proc/html5/*.sh
               cd ..
             done
       - name: Upload
