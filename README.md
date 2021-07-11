@@ -4,4 +4,14 @@
 ![GitHub top language](https://img.shields.io/github/languages/top/mrfrenik/gs_examples)
 
 Library of working examples to demonstrate the [gunslinger](https://github.com/MrFrenik/gunslinger) game framework.
- 
+
+## Cloning instructions: 
+- Use the following command to clone the repo and init the gunslinger submodule
+```
+git clone --recursive https://github.com/MrFrenik/gs_project_template
+```
+
+## Updating GS instructions (updates gunslinger submodule and rebases to main branch): 
+```
+git submodule update --remote --rebase --recursive
+```
