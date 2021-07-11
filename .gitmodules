@@ -1,0 +1,3 @@
+[submodule "third_party/include/gs"]
+	path = third_party/include/gs
+	url = https://github.com/MrFrenik/gunslinger
