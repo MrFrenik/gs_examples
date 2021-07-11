@@ -8,7 +8,7 @@ Library of working examples to demonstrate the [gunslinger](https://github.com/M
 ## Cloning instructions: 
 - Use the following command to clone the repo and init the gunslinger submodule
 ```
-git clone --recursive https://github.com/MrFrenik/gs_project_template
+git clone --recursive https://github.com/MrFrenik/gs_examples
 ```
 
 ## Updating GS instructions (updates gunslinger submodule and rebases to main branch): 
