@@ -12,6 +12,7 @@ jobs:
       - name: Verify
         run: emcc -v
       - name: Build
+        continue-on-error: true
         run: |
             for d in */ ; do
               echo $d
