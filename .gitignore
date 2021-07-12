@@ -130,3 +130,9 @@ compute_shader/bin/main.obj
 24_test/bin/main.obj
 23_collision_detection/bin/App
 20_uniforms_advanced/bin/App
+22_first_person_camera/bin/App.html
+22_first_person_camera/bin/App.js
+22_first_person_camera/bin/App.wasm
+23_collision_detection/bin/App.html
+23_collision_detection/bin/App.js
+23_collision_detection/bin/App.wasm
