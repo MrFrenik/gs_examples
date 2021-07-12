@@ -69,7 +69,7 @@ void app_update()
 
     // Immediate rendering for offscreen buffer
     gsi_camera3D(&gsi);
-    gsi_transf(&gsi, 0.f, 0.f, 0.f);
+    gsi_transf(&gsi, 0.f, 0.f, -2.f);
     gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0001f, GS_YAXIS);
     gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0002f, GS_XAXIS);
     gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0005f, GS_ZAXIS);
@@ -86,6 +86,7 @@ void app_update()
     gsi_camera3D(&gsi);
     gsi_depth_enabled(&gsi, true);
     gsi_face_cull_enabled(&gsi, true);
+    gsi_transf(&gsi, 0.f, 0.f, -1.f);
     gsi_texture(&gsi, rt);
     gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0001f, GS_YAXIS);
     gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0002f, GS_XAXIS);
