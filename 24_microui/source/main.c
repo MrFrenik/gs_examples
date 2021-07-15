@@ -15,7 +15,7 @@
 #include "gs_microui.h"
 
 gs_command_buffer_t gcb = {0};
-gs_mu_ctx        mu_ctx = {0};    
+gs_mu_ctx        mu_ctx = {0};
 
 //For console window
 static   int logbuf_updated = 0;
@@ -42,8 +42,10 @@ void update()
     gs_vec2 fbs = gs_platform_framebuffer_sizev(gs_platform_main_window());
     gs_graphics_clear_desc_t clear = {.actions = &(gs_graphics_clear_action_t){.color = {bg[0]/255, bg[1]/255,bg[2]/255, 1.f}}};
     gs_graphics_clear(&gcb, &clear);
+    gs_graphics_set_viewport(&gcb,0,0,(int)fbs.x,(int)fbs.y);
     //Handles Input
     gs_mu_new_frame(&mu_ctx);
+    
     mu_begin(&mu_ctx.mu);
     test_window(&mu_ctx.mu);
     log_window(&mu_ctx.mu);
