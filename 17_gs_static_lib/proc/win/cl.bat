@@ -46,7 +46,7 @@ set lib_d=/LIBPATH:"..\lib\"
 
 rem OS Libraries
 set os_libs= opengl32.lib kernel32.lib user32.lib ^
-shell32.lib vcruntime.lib msvcrt.lib gdi32.lib Advapi32.lib
+shell32.lib vcruntime.lib msvcrt.lib gdi32.lib Winmm.lib Advapi32.lib
 
 rem User Libraries
 set libs=gs.lib

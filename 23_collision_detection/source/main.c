@@ -53,6 +53,12 @@ gs_poly_t       poly     = {0};
 gs_vqs transforms[2] = {0};
 bool transform_enabled = true;
 
+// Positions and forces
+gs_vec3 p0 = {0};
+gs_vec3 p1 = {0};
+gs_vec3 f0 = {0};
+gs_vec3 f1 = {0};
+
 gs_vqs default_xform = {0};
 
 // Selected shapes
@@ -238,20 +244,13 @@ void app_update()
     // Transform scene camera
     gsi_transf(&gsi, 0.f, 0.f, -5.f);
 
-    static gs_vec3 p0 = (gs_vec3){0.f, 0.f, 0.f};
-    static gs_vec3 p1 = (gs_vec3){0.01f, 0.f, 0.f};
-
     // All physics collision detection calls can accept optional transform information.
     // These transforms will allow you to rotate/translate/scale (uniformly, if spheres) your objects
     // before performing collision detection/resolution code on them. We'll create two separate transforms
     // here to use for collisions.
-
-    static gs_vec3 f0 = (gs_vec3){0.f, 0.f, 0.f};
-    static gs_vec3 f1 = (gs_vec3){0.f, 0.f, 0.f};
     static float xf = 1.f;
     static float scl = 1.f;
     static float scl0 = 1.f;
-
     static float angle = 0.f;
 
     if (gs_platform_key_pressed(GS_KEYCODE_UP))   scl += 0.1f;

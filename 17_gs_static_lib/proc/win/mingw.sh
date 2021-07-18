@@ -64,6 +64,7 @@ libs=(
 	-luser32 
 	-lshell32 
 	-lgdi32 
+    -lWinmm
 	-lAdvapi32
 )
 

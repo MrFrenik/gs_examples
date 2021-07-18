@@ -140,3 +140,4 @@ compute_shader/bin/main.obj
 24_microui/bin/App.js
 24_microui/bin/App.wasm
 24_microui/bin/App
+23_collision_detection/bin/main.obj
