@@ -84,7 +84,8 @@ void print_object(void* obj, const gs_meta_class_t* cls, gs_vec2* pos)
                 gs_snprintf(buf, TMPSTRSZ, "%s (%s): %zu", prop->type.name, prop->name, gs_meta_getv(obj, uint16_t, prop));
             } break;
 
-            case GS_META_PROPERTY_TYPE_S16: {
+            case GS_META_PROPERTY_TYPE_S16: 
+            {
                 gs_snprintf(buf, TMPSTRSZ, "%s (%s): %d", prop->type.name, prop->name, gs_meta_getv(obj, int16_t, prop));
             } break;
 
@@ -157,7 +158,8 @@ void print_object(void* obj, const gs_meta_class_t* cls, gs_vec2* pos)
                 );
             } break;
 
-            case GS_META_PROPERTY_TYPE_VQS: {
+            case GS_META_PROPERTY_TYPE_VQS: 
+            {
                 gs_vqs* v = gs_meta_getvp(obj, gs_vqs, prop);
                 gs_snprintf(buf, TMPSTRSZ, "%s (%s): pos: <%.2f, %.2f, %.2f>, rot: <%.2f, %.2f, %.2f, %.2f>, scale: <%.2f, %.2f, %.2f>", 
                     prop->type.name, prop->name, 
@@ -220,7 +222,7 @@ void app_init()
             gs_meta_property(thing_t, sval, GS_META_PROPERTY_TYPE_INFO_S32),
             gs_meta_property(thing_t, v3val, GS_META_PROPERTY_TYPE_INFO_VEC3),
             gs_meta_property(thing_t, qval, GS_META_PROPERTY_TYPE_INFO_QUAT),
-            gs_meta_property(thing_t, csval, GS_META_PROPERTY_TYPE_INFO_CUSTOM)          // Custom property type info declared above
+            gs_meta_property(thing_t, csval, GS_META_PROPERTY_TYPE_INFO_CUSTOM)     // Custom property type info declared above
         },
         .size = 6 * sizeof(gs_meta_property_t)
     }));
@@ -242,10 +244,10 @@ void app_update()
     gsi_camera2D(&gsi);
 
     // Present property information (debug text)
-    gs_vec2 pos = gs_v2(100.f, 100.f);
     gs_meta_class_t* cls = gs_meta_get_class(&gmr, thing_t);
 
     // Do print
+    gs_vec2 pos = gs_v2(100.f, 100.f);
     print_object(&thing, cls, &pos);
 
     // Submit immediate draw render pass
@@ -257,6 +259,8 @@ void app_update()
 
 void app_shutdown()
 {
+    // Free meta registry data
+    gs_meta_registry_free(&gmr);
 }
 
 gs_app_desc_t gs_main(int32_t argc, char** argv)
