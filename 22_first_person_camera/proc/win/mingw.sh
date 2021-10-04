@@ -27,7 +27,7 @@ libs=(
 	-luser32 
 	-lshell32 
 	-lgdi32 
-    -Winmm
+	-lWinmm
 	-lAdvapi32
 )
 
