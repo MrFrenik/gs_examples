@@ -148,22 +148,22 @@ void log_window(gs_gui_context_t* ctx)
 void test_window(gs_gui_context_t *ctx) 
 {
     /* do window */
-    if (gs_gui_begin_window(ctx, "WTF", gs_gui_rect(40, 40, 300, 450)))
+    if (gs_gui_begin_window(ctx, "Demo", gs_gui_rect(40, 40, 300, 450)))
     {
         if (gs_gui_header(ctx, "Window Info")) 
         {
             gs_gui_container_t* win = gs_gui_get_current_container(ctx);
             char buf[64];
-            gs_gui_layout_row(ctx, 2, (int[]) { 54, -1 }, 0);
+            gs_gui_layout_row(ctx, 2, (int[]) { 65, -1 }, 0);
             gs_gui_label(ctx,"Position:");
-            gs_snprintf(buf, 64, "%d, %d", win->rect.x, win->rect.y); gs_gui_label(ctx, buf);
+            gs_snprintf(buf, 64, "%.2f, %.2f", win->rect.x, win->rect.y); gs_gui_label(ctx, buf);
             gs_gui_label(ctx, "Size:");
-            gs_snprintf(buf, 64, "%d, %d", win->rect.w, win->rect.h); gs_gui_label(ctx, buf);
+            gs_snprintf(buf, 64, "%.2f, %.2f", win->rect.w, win->rect.h); gs_gui_label(ctx, buf);
         }
 
         if (gs_gui_header_ex(ctx, "Test Buttons", 0x00)) 
         {
-            gs_gui_layout_row(ctx, 3, (int[]) { 86, -110, -1 }, 0);
+            gs_gui_layout_row(ctx, 3, (int[]) { 120, 100, 100 }, 0);
             gs_gui_label(ctx, "Test buttons 1:");
             if (gs_gui_button(ctx, "Button 1")) { write_log("Pressed button 1"); }
             if (gs_gui_button(ctx, "Button 2")) { write_log("Pressed button 2"); }
@@ -183,7 +183,7 @@ void test_window(gs_gui_context_t *ctx)
 
         if (gs_gui_header_ex(ctx, "Tree and Text", 0x00)) 
         {
-            gs_gui_layout_row(ctx, 2, (int[]) { 140, -1 }, 0);
+            gs_gui_layout_row(ctx, 2, (int[]) { 250, -1 }, 0);
             gs_gui_layout_begin_column(ctx);
             if (gs_gui_begin_treenode(ctx, "Test 1")) {
                 if (gs_gui_begin_treenode(ctx, "Test 1a")) {
@@ -201,7 +201,7 @@ void test_window(gs_gui_context_t *ctx)
 
             if (gs_gui_begin_treenode(ctx, "Test 2")) 
             {
-                gs_gui_layout_row(ctx, 2, (int[]) { 54, 54 }, 0);
+                gs_gui_layout_row(ctx, 3, (int[]) { 65, 65, 65 }, 0);
                 if (gs_gui_button(ctx, "Button 3")) { write_log("Pressed button 3"); }
                 if (gs_gui_button(ctx, "Button 4")) { write_log("Pressed button 4"); }
                 if (gs_gui_button(ctx, "Button 5")) { write_log("Pressed button 5"); }
@@ -241,6 +241,15 @@ void test_window(gs_gui_context_t *ctx)
             char buf[32];
             gs_snprintf(buf, 32, "#%02X%02X%02X", (int) bg[0], (int) bg[1], (int) bg[2]);
             gs_gui_draw_control_text(ctx, buf, r, GS_GUI_COLOR_TEXT, GS_GUI_OPT_ALIGNCENTER);
+        }
+
+        if (gs_gui_header_ex(ctx, "Test", 0x00)) 
+        {
+            gs_snprintfc(buf, 32, "buffer");
+            gs_gui_layout_row(ctx, 3, (int[]) { 30, -150, -1 }, 0);
+            gs_gui_button(ctx, "X");
+            gs_gui_textbox(ctx, buf, sizeof(buf));
+            gs_gui_button(ctx, "Submit");
         }
 
         gs_gui_end_window(ctx);
