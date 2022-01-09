@@ -40,7 +40,10 @@ typedef struct
     gs_asset_font_t fonts[GUI_FONT_COUNT];
     gs_asset_texture_t logo;
     gs_asset_texture_t bg;
+    gs_gui_style_sheet_t menu_style_sheet;
 } app_t; 
+
+void style_window(gs_gui_context_t *ctx, gs_gui_style_sheet_t* style_sheet, bool* open);
 
 void app_init()
 {
@@ -61,6 +64,7 @@ void app_init()
         .wrap_t = GS_GRAPHICS_TEXTURE_WRAP_REPEAT,
     }, false, false);
     gs_asset_texture_load_from_file("./assets/mcbg.png", &app->bg, NULL, false, false); 
+
 
     // Set up styles for elements 
     gs_gui_style_element_t panel_style[] = {
@@ -110,13 +114,23 @@ void app_init()
         {GS_GUI_STYLE_JUSTIFY_CONTENT, GS_GUI_JUSTIFY_START}
     }; 
 
-    // Bind styles (NOTE(john): this will be set up as stylesheets in the future)
-    gs_gui_set_element_style(&app->gui, GS_GUI_ELEMENT_PANEL, -1, panel_style, sizeof(panel_style)); 
-    gs_gui_set_element_style(&app->gui, GS_GUI_ELEMENT_LABEL, -1, label_style, sizeof(label_style));
-    gs_gui_set_element_style(&app->gui, GS_GUI_ELEMENT_TEXT, -1, text_style, sizeof(text_style));
-    gs_gui_set_element_style(&app->gui, GS_GUI_ELEMENT_BUTTON, -1, button_style, sizeof(button_style));
-    gs_gui_set_element_style(&app->gui, GS_GUI_ELEMENT_BUTTON, GS_GUI_ELEMENT_STATE_HOVER, button_hover_style, sizeof(button_hover_style));
-    gs_gui_set_element_style(&app->gui, GS_GUI_ELEMENT_BUTTON, GS_GUI_ELEMENT_STATE_FOCUS, button_focus_style, sizeof(button_focus_style));
+    // Generate new style sheet to use for menu
+    app->menu_style_sheet = gs_gui_style_sheet_new(&app->gui, &(gs_gui_style_sheet_desc_t){
+        .button = {
+            .all = {button_style, sizeof(button_style)},
+            .hover = {button_hover_style, sizeof(button_hover_style)},
+            .focus = {button_focus_style, sizeof(button_focus_style)}
+        },
+        .panel = {
+            .all = {panel_style, sizeof(panel_style)}
+        },
+        .label = {
+            .all = {label_style, sizeof(label_style)}
+        },
+        .text = {
+            .all = {text_style, sizeof(text_style)}
+        }
+    }); 
 } 
 
 // Simple custom button command that allows us to render some inner highlights and shadows
@@ -174,8 +188,11 @@ void app_update()
     // Begin new frame for gui
     gs_gui_begin(gui); 
     { 
+        // Set menu style sheet
+        gs_gui_set_style_sheet(&app->gui, &app->menu_style_sheet);
+
         if (gs_gui_begin_window_ex(
-                gui, "#root", gs_gui_rect(0, 0, 0, 0), 
+                gui, "#root", gs_gui_rect(0, 0, 0, 0), NULL,
                     GS_GUI_OPT_NOFRAME | 
                     GS_GUI_OPT_NOTITLE | 
                     GS_GUI_OPT_NOMOVE | 
@@ -209,7 +226,7 @@ void app_update()
                 gui_custom_button(gui, "Multiplayer");
                 gui_custom_button(gui, "Minecraft Realms");
 
-                const float spacing = (float)gui->styles[GS_GUI_ELEMENT_BUTTON][0x00].margin[GS_GUI_MARGIN_RIGHT] * 0.5f;
+                const float spacing = (float)gui->style_sheet->styles[GS_GUI_ELEMENT_BUTTON][0x00].margin[GS_GUI_MARGIN_RIGHT] * 0.5f;
                 const float w = l->body.w * 0.5f - spacing;
                 gs_gui_layout_row(gui, 2, (int[]){w, w}, 0); 
                 gui_custom_button(gui, "Settings");
@@ -244,23 +261,24 @@ void app_update()
             }
 
             gs_gui_end_window(gui);
-        }
-    } 
+        } 
 
-    static bool enabled = false;
-    if (gs_platform_key_pressed(GS_KEYCODE_F1)) enabled = !enabled; 
+        static bool enabled = false;
+        if (gs_platform_key_pressed(GS_KEYCODE_F1)) enabled = !enabled; 
 
-    // This is an issue...I want all of the default styles for an in-game debug window...
-    if (enabled)
-    {
-        // Need to do something like this for that to work...
-        // gs_gui_set_style_sheet(gui, &sheet);
-
-        gs_gui_begin_window_ex(gui, "#debug", gs_gui_rect(0, 0, 300, 200), 0x00);
+        // Set style sheet to default sheet
+        gs_gui_set_style_sheet(gui, NULL); 
+        if (gs_gui_begin_window_ex(gui, "Debug", gs_gui_rect(0, 0, 300, 200), &enabled, 0x00))
         {
-            gs_gui_label(gui, "Blah");
+            gs_gui_end_window(gui);
         }
-        gs_gui_end_window(gui);
+
+        style_window(gui, &app->menu_style_sheet, &enabled);
+
+        if (gs_gui_begin_window_ex(gui, "Tools", gs_gui_rect(0, 0, 300, 200), &enabled, 0x00))
+        {
+            gs_gui_end_window(gui);
+        }
     } 
 
     // End gui frame
@@ -286,6 +304,167 @@ void app_update()
     
     //Submits to cb
     gs_graphics_submit_command_buffer(cb);
+}
+
+static int uint8_slider(gs_gui_context_t *ctx, unsigned char *value, int low, int high) 
+{
+    static float tmp;
+    gs_gui_push_id(ctx, &value, sizeof(value));
+    tmp = *value;
+    int res = gs_gui_slider_ex(ctx, &tmp, low, high, 0, "%.0f", GS_GUI_OPT_ALIGNCENTER);
+    *value = tmp;
+    gs_gui_pop_id(ctx);
+    return res;
+}
+
+static int int32_slider(gs_gui_context_t *ctx, int32_t* value, int32_t low, int32_t high) 
+{
+    static float tmp;
+    gs_gui_push_id(ctx, &value, sizeof(value));
+    tmp = *value;
+    int res = gs_gui_slider_ex(ctx, &tmp, low, high, 0, "%.0f", GS_GUI_OPT_ALIGNCENTER);
+    *value = tmp;
+    gs_gui_pop_id(ctx);
+    return res;
+}
+
+void style_window(gs_gui_context_t *ctx, gs_gui_style_sheet_t* style_sheet, bool* open) 
+{
+  static struct {const char* label; int32_t idx;} elements[] = {
+    {"container",  GS_GUI_ELEMENT_CONTAINER},
+    {"button",  GS_GUI_ELEMENT_BUTTON} ,
+    {"panel",  GS_GUI_ELEMENT_PANEL},
+    {"label",  GS_GUI_ELEMENT_LABEL},
+    {"text",  GS_GUI_ELEMENT_TEXT},
+    {"scroll",  GS_GUI_ELEMENT_SCROLL},
+    {"base",  GS_GUI_ELEMENT_BASE},
+    {NULL}
+  }; 
+
+  static char* states[] = {
+      "default", 
+      "hover", 
+      "focus"
+  };
+
+  static struct {const char* label; int32_t idx;} colors[] = {
+    {"background",  GS_GUI_COLOR_BACKGROUND},
+    {"content",  GS_GUI_COLOR_CONTENT} ,
+    {"border",  GS_GUI_COLOR_BORDER},
+    {"shadow",  GS_GUI_COLOR_SHADOW},
+    {NULL}
+  }; 
+
+  if (gs_gui_begin_window_ex(ctx, "Style Editor", gs_gui_rect(350, 250, 300, 240), open, 0x00)) 
+  {
+    for (uint32_t i = 0; elements[i].label; ++i)
+    {
+        int32_t idx = elements[i].idx;
+
+        if (gs_gui_begin_treenode_ex(ctx, elements[i].label, 0x00))
+        {
+            for (uint32_t j = 0; j < GS_GUI_ELEMENT_STATE_COUNT; ++j)
+            {
+                gs_gui_push_id(ctx, &j, sizeof(j));
+                gs_gui_style_t* s = &style_sheet->styles[idx][j];
+                if (gs_gui_begin_treenode_ex(ctx, states[j], 0x00))
+                {
+                    gs_gui_style_t* save = gs_gui_push_style(ctx, &ctx->style_sheet->styles[GS_GUI_ELEMENT_PANEL][0x00]);
+                    gs_gui_layout_row(ctx, 1, (int[]){-1}, 300);
+                    gs_gui_begin_panel(ctx, states[j]);
+                    {
+                        gs_gui_layout_t* l = gs_gui_get_layout(ctx);
+                        gs_gui_rect_t* r = &l->body; 
+
+                        const float ls = 80;
+
+                        // size
+                        float w = (l->body.w - ls) * 0.35f;
+                        gs_gui_layout_row(ctx, 3, (int[]) {ls, w, w}, 0); 
+                        gs_gui_label(ctx, "size:");
+                        gs_gui_slider(ctx, &s->size.x, 0.f, 100.f);
+                        gs_gui_slider(ctx, &s->size.y, 0.f, 100.f); 
+
+                        // spacing
+                        w = (l->body.w - ls) * 0.7f;
+                        gs_gui_layout_row(ctx, 2, (int[]) {ls, w}, 0); 
+                        gs_gui_label(ctx, "spacing:");
+                        gs_gui_slider(ctx, &s->spacing, 0.f, 100.f);
+
+                        gs_gui_label(ctx, "indent:");
+                        int32_slider(ctx, &s->indent, 0.f, 100.f);
+
+                        gs_gui_label(ctx, "scrollbar_size:");
+                        int32_slider(ctx, &s->scrollbar_size, 0.f, 100.f);
+
+                        gs_gui_label(ctx, "title_height:");
+                        int32_slider(ctx, &s->title_height, 0.f, 100.f);
+
+                        gs_gui_label(ctx, "thumb_size:");
+                        int32_slider(ctx, &s->thumb_size, 0.f, 100.f); 
+
+                        gs_gui_label(ctx, "border_width:");
+                        int32_slider(ctx, &s->border_width, 0.f, 100.f); 
+
+                        gs_gui_label(ctx, "border_radius:");
+                        int32_slider(ctx, &s->border_radius, 0.f, 100.f); 
+
+                        // padding/margin
+                        w = (l->body.w - ls) * 0.2f;
+                        gs_gui_layout_row(ctx, 5, (int[]) {ls, w, w, w, w}, 0); 
+                        gs_gui_label(ctx, "padding:");
+                        int32_slider(ctx, &s->padding[0], 0.f, 100.f); 
+                        int32_slider(ctx, &s->padding[1], 0.f, 100.f); 
+                        int32_slider(ctx, &s->padding[2], 0.f, 100.f); 
+                        int32_slider(ctx, &s->padding[3], 0.f, 100.f); 
+
+                        gs_gui_label(ctx, "margin:");
+                        int32_slider(ctx, &s->margin[0], 0.f, 100.f); 
+                        int32_slider(ctx, &s->margin[1], 0.f, 100.f); 
+                        int32_slider(ctx, &s->margin[2], 0.f, 100.f); 
+                        int32_slider(ctx, &s->margin[3], 0.f, 100.f); 
+
+                        // Colors
+                        int sw = (int32_t)(l->body.w * 0.14);
+                        gs_gui_layout_row(ctx, 6, (int[]) {80, sw, sw, sw, sw, -1}, 0);
+                        for (uint32_t c = 0; c < GS_GUI_COLOR_MAX; ++c)
+                        {
+                            gs_gui_label(ctx, colors[c].label);
+                            uint8_slider(ctx, &s->colors[c].r, 0, 255);
+                            uint8_slider(ctx, &s->colors[c].g, 0, 255);
+                            uint8_slider(ctx, &s->colors[c].b, 0, 255);
+                            uint8_slider(ctx, &s->colors[c].a, 0, 255);
+                            gs_gui_draw_rect(ctx, gs_gui_layout_next(ctx), s->colors[c]);
+                        }
+                    }
+                    gs_gui_end_panel(ctx); 
+                    gs_gui_pop_style(ctx, save);
+
+                    gs_gui_end_treenode(ctx);
+                }
+                gs_gui_pop_id(ctx);
+            }
+            gs_gui_end_treenode(ctx);
+        }
+    }
+
+    // int sw = gs_gui_get_current_container(ctx)->body.w * 0.14;
+    // gs_gui_layout_row(ctx, 6, (int[]) { 80, sw, sw, sw, sw, -1 }, 0);
+
+    /*
+    for (int i = 0; colors[i].label; i++) 
+    {
+      gs_gui_label(ctx, colors[i].label);
+      uint8_slider(ctx, &ctx->style->colors[i].r, 0, 255);
+      uint8_slider(ctx, &ctx->style->colors[i].g, 0, 255);
+      uint8_slider(ctx, &ctx->style->colors[i].b, 0, 255);
+      uint8_slider(ctx, &ctx->style->colors[i].a, 0, 255);
+      gs_gui_draw_rect(ctx, gs_gui_layout_next(ctx), ctx->style->colors[i]);
+    } 
+    */
+
+    gs_gui_end_window(ctx);
+  }
 }
 
 void app_shutdown()
