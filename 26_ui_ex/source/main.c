@@ -157,6 +157,7 @@ void app_update()
     gs_gui_context_t* gui = &app->gui;
     gs_command_buffer_t* cb = &app->cb;
     gs_immediate_draw_t* gsi = &app->gsi;
+    gs_immediate_draw_t* odl = &gui->overlay_draw_list;
     gs_vec2 fbs = gs_platform_framebuffer_sizev(gs_platform_main_window());
     const float _t = gs_platform_elapsed_time() * 0.0001f;
 
@@ -170,6 +171,12 @@ void app_update()
     // Background size
     gs_graphics_texture_desc_query(app->bg.hndl, &desc); 
     const gs_vec2 bg_sz = gs_v2(desc.width, desc.height);
+
+    // Overall menu size
+    const gs_vec2 menu_sz = gs_v2(logo_sz.x, 500.f); 
+    
+    // Button panel size
+    const gs_vec2 btn_panel_sz = gs_v2(menu_sz.x - 150.f, 300.f); 
 
     if (gs_platform_key_pressed(GS_KEYCODE_ESC)) 
     {
@@ -203,35 +210,38 @@ void app_update()
         ))
         {
             gs_gui_container_t* cnt = gs_gui_get_current_container(gui);
-            gs_gui_layout_t* l = NULL; 
+            gs_gui_layout_t* l = gs_gui_get_layout(gui); 
 
-            // Logo
+            gs_gui_layout_set_next(gui, gs_gui_layout_anchor(&l->body, menu_sz.x, menu_sz.y, 0, 0, GS_GUI_LAYOUT_ANCHOR_CENTER), 0);
+            gs_gui_begin_panel_ex(gui, "#menu", GS_GUI_OPT_NOSCROLL);
             {
-                // Capture current layout
-                l = gs_gui_get_layout(gui); 
-                gs_gui_layout_set_next(gui, gs_gui_layout_anchor(&l->body, logo_sz.x, logo_sz.y, 0, -200, GS_GUI_LAYOUT_ANCHOR_CENTER), 0);
-                gs_gui_draw_image(gui, app->logo.hndl, gs_gui_layout_next(gui), gs_v2s(0.f), gs_v2s(1.f), GS_COLOR_WHITE);
-            }
+                // Logo
+                {
+                    // Capture current layout
+                    l = gs_gui_get_layout(gui); 
+                    gs_gui_layout_set_next(gui, gs_gui_layout_anchor(&l->body, logo_sz.x, logo_sz.y, 0, 0, GS_GUI_LAYOUT_ANCHOR_TOPCENTER), 0);
+                    gs_gui_draw_image(gui, app->logo.hndl, gs_gui_layout_next(gui), gs_v2s(0.f), gs_v2s(1.f), GS_COLOR_WHITE);
+                }
 
-            // buttons panel
-            const gs_vec2 menu_sz = gs_v2(logo_sz.x - 150.f, fbs.y); 
-            gs_gui_layout_set_next(gui, gs_gui_layout_anchor(&gui->last_rect, menu_sz.x, menu_sz.y, 0, 140, GS_GUI_LAYOUT_ANCHOR_TOPCENTER), 0); 
-            gs_gui_begin_panel_ex(gui, "#buttons", GS_GUI_OPT_NOSCROLL);
-            { 
-                l = gs_gui_get_layout(gui); 
+                // buttons panel
+                gs_gui_layout_set_next(gui, gs_gui_layout_anchor(&l->body, btn_panel_sz.x, btn_panel_sz.y, 0, 0, GS_GUI_LAYOUT_ANCHOR_BOTTOMCENTER), 0); 
+                gs_gui_begin_panel_ex(gui, "#buttons", GS_GUI_OPT_NOSCROLL);
+                { 
+                    l = gs_gui_get_layout(gui); 
 
-                // single player | multiplayer | realms
-                gs_gui_layout_row(gui, 1, (int[]){-1}, 0); 
-                gui_custom_button(gui, "Singleplayer");
-                gui_custom_button(gui, "Multiplayer");
-                gui_custom_button(gui, "Minecraft Realms");
+                    // single player | multiplayer | realms
+                    gs_gui_layout_row(gui, 1, (int[]){-1}, 0); 
+                    gui_custom_button(gui, "Singleplayer");
+                    gui_custom_button(gui, "Multiplayer");
+                    gui_custom_button(gui, "Minecraft Realms");
 
-                const float spacing = (float)gui->style_sheet->styles[GS_GUI_ELEMENT_BUTTON][0x00].margin[GS_GUI_MARGIN_RIGHT] * 0.5f;
-                const float w = l->body.w * 0.5f - spacing;
-                gs_gui_layout_row(gui, 2, (int[]){w, w}, 0); 
-                gui_custom_button(gui, "Settings");
-                gui_custom_button(gui, "Exit Game");
-
+                    const float spacing = (float)gui->style_sheet->styles[GS_GUI_ELEMENT_BUTTON][0x00].margin[GS_GUI_MARGIN_RIGHT] * 0.5f;
+                    const float w = l->body.w * 0.5f - spacing;
+                    gs_gui_layout_row(gui, 2, (int[]){w, w}, 0); 
+                    gui_custom_button(gui, "Settings");
+                    gui_custom_button(gui, "Exit Game");
+                }
+                gs_gui_end_panel(gui); 
             }
             gs_gui_end_panel(gui); 
 

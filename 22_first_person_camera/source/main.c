@@ -40,7 +40,7 @@ void app_init()
 {
     // Construct new command buffer
     cb = gs_command_buffer_new();
-    gsi = gs_immediate_draw_new();
+    gsi = gs_immediate_draw_new(gs_platform_main_window());
 
     // Construct camera
     fps.cam = gs_camera_perspective();

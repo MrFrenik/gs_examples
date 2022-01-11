@@ -66,7 +66,7 @@ gs_asset_t dtex_hndl  = {0};
 void init()
 {
     gcb = gs_command_buffer_new();
-    gsi = gs_immediate_draw_new();
+    gsi = gs_immediate_draw_new(gs_platform_main_window());
     gsa = gs_asset_manager_new();
 
     // Registering custom asset importer

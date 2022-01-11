@@ -28,27 +28,35 @@ gs_handle(gs_graphics_uniform_t)  u_roll  = {0};
 gs_handle(gs_graphics_texture_t)  cmptex  = {0};
 gs_handle(gs_graphics_pipeline_t) cmdpip  = {0};
 gs_handle(gs_graphics_shader_t)   cmpshd  = {0};
+gs_handle(gs_graphics_storage_buffer_t)  u_voxels    = {0};
 
 #define TEX_WIDTH  512
 #define TEX_HEIGHT 512
 
+#define CHUNK_BYTES (sizeof(uint32_t) * 32)
+
 const char* comp_src =
-    "#version 430\n"
+    "#version 430 core\n"
     "uniform float u_roll;\n"
     "layout(rgba32f, binding = 0) uniform image2D destTex;\n"
+    "layout (std430, binding = 1) readonly buffer u_voxels {\n"
+    "   vec4 data;\n"
+    "};\n"
     "layout (local_size_x = 16, local_size_y = 16) in;\n"
     "void main() {\n"
         "ivec2 storePos = ivec2(gl_GlobalInvocationID.xy);\n"
         "float localCoef = length(vec2(ivec2(gl_LocalInvocationID.xy) - 8 ) / 8.0);\n"
         "float globalCoef = sin(float(gl_WorkGroupID.x + gl_WorkGroupID.y) * 0.1 + u_roll) * 0.5;\n"
-        "imageStore(destTex, storePos, vec4(1.0 - globalCoef * localCoef, globalCoef * localCoef, 0.0, 1.0));\n"
+        "// imageStore(destTex, storePos, vec4(1.0 - globalCoef * localCoef, globalCoef * localCoef, 0.0, 1.0));\n"
+        "// imageStore(destTex, storePos, vec4(1.0, 0.0, 0.0, 1.0));\n"
+        "imageStore(destTex, storePos, vec4(data.x, data.y, data.z, data.w));\n"
     "}";
 
 void app_init()
 {
     // Construct new command buffer
     cb = gs_command_buffer_new(); 
-    gsi = gs_immediate_draw_new();
+    gsi = gs_immediate_draw_new(gs_platform_main_window());
 
     gs_graphics_info_t* info = gs_graphics_info();
     if (!info->compute.available) {
@@ -99,6 +107,16 @@ void app_init()
             }
         }
     );
+
+    gs_vec4 data = gs_v4(1.f, 0.f, 0.f, 0.f);
+
+    u_voxels = gs_graphics_storage_buffer_create(
+        &(gs_graphics_storage_buffer_desc_t){
+            .data = &data,
+            .size = sizeof(gs_vec4),
+            .name = "u_voxels"
+        }
+    ); 
 }
 
 void app_update()
@@ -111,6 +129,14 @@ void app_update()
         return;
     }
 
+    gs_vec4 data = gs_v4(1.f, 0.f, 0.f, 0.f); 
+
+    gs_graphics_storage_buffer_update(u_voxels, &(gs_graphics_storage_buffer_desc_t){
+        .update.type = GS_GRAPHICS_BUFFER_UPDATE_SUBDATA, 
+        .data = &data,  
+        .size = sizeof(data)
+    });
+
     // Compute pass
     {
         float roll = gs_platform_elapsed_time() * .001f;
@@ -118,6 +144,7 @@ void app_update()
         // Bindings for compute shader
         gs_graphics_bind_desc_t binds = {
             .uniforms = {.desc = &(gs_graphics_bind_uniform_desc_t){.uniform = u_roll, .data = &roll}},
+            .storage_buffers = {&(gs_graphics_bind_storage_buffer_desc_t){.buffer = u_voxels, .binding = 1}},
             .image_buffers = {.desc = &(gs_graphics_bind_image_buffer_desc_t){.tex = cmptex, .access = GS_GRAPHICS_ACCESS_WRITE_ONLY, .binding = 0}}
         };
 

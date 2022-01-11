@@ -16,6 +16,9 @@ gs_handle(gs_graphics_pipeline_t)        pips[4]     = {0};
 gs_handle(gs_graphics_shader_t)          shaders[4]  = {0};
 gs_handle(gs_graphics_uniform_t)         u_model     = {0};
 gs_handle(gs_graphics_uniform_buffer_t)  u_vp        = {0};
+gs_handle(gs_graphics_uniform_buffer_t)  u_voxels    = {0};
+
+#define CHUNK_BYTES (sizeof(uint32_t) * 32)
 
 typedef struct vparams_t {
     gs_mat4 projection;
@@ -45,6 +48,14 @@ void app_init()
             .data = NULL,
             .size = sizeof(vparams_t),
             .name = "u_vp"
+        }
+    );
+
+    u_voxels = gs_graphics_uniform_buffer_create(
+        &(gs_graphics_uniform_buffer_desc_t){
+            .data = NULL,
+            .size = CHUNK_BYTES * CHUNK_BYTES * CHUNK_BYTES,
+            .name = "u_voxels"
         }
     );
 

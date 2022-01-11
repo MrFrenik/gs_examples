@@ -3,7 +3,7 @@
 #ifdef GS_PLATFORM_WEB
     #define GS_GL_VERSION_STR "#version 300 es\n"
 #else
-    #define GS_GL_VERSION_STR "#version 330 core\n"
+    #define GS_GL_VERSION_STR "#version 430 core\n"
 #endif
 
 const char* v_src =
@@ -13,8 +13,12 @@ const char* v_src =
     "   mat4 projection;\n"
     "   mat4 view;\n"
     "};\n"
+    "layout (std430, binding = 2) buffer u_voxels_buffer {\n"
+    "   int data;\n"
+    "};\n"
     "uniform mat4 u_model;\n"
     "void main() {\n"
+    "   uint v = data[0];\n"
     "   gl_Position = projection * view * u_model * vec4(a_pos, 1.0);\n"
     "}\n";
 

@@ -84,7 +84,7 @@ void app_init()
 
     // Create command buffer and immediate mode graphics instance
     app->gcb = gs_command_buffer_new();
-    app->gsi = gs_immediate_draw_new();
+    app->gsi = gs_immediate_draw_new(gs_platform_main_window());
 
     // Create world
     app->world = ecs_init_w_args(0, NULL);

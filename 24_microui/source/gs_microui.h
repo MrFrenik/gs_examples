@@ -31,7 +31,7 @@ static int __text_height(mu_Font font) {
 gs_mu_init(gs_mu_ctx * ctx)
 {
 
-    ctx->gsi = gs_immediate_draw_new();
+    ctx->gsi = gs_immediate_draw_new(gs_platform_main_window());
     mu_init(&ctx->mu);
     ctx->mu.text_width = __text_width;
     ctx->mu.text_height = __text_height;

@@ -140,7 +140,7 @@ void print_object(void* obj, const gs_meta_class_t* cls, gs_vec2* pos)
             case GS_META_PROPERTY_TYPE_QUAT: 
             {
                 gs_quat* v = gs_meta_getvp(obj, gs_quat, prop);
-                gs_snprintf(buf, TMPSTRSZ, "%s (%s): <%.2f, %.2f, %.2f>", prop->type.name, prop->name, v->x, v->y, v->z, v->w);
+                gs_snprintf(buf, TMPSTRSZ, "%s (%s): <%.2f, %.2f, %.2f, %.2f>", prop->type.name, prop->name, v->x, v->y, v->z, v->w);
             } break;
 
             case GS_META_PROPERTY_TYPE_MAT4:
@@ -172,7 +172,7 @@ void print_object(void* obj, const gs_meta_class_t* cls, gs_vec2* pos)
             case GS_META_PROPERTY_TYPE_CUSTOM:
             {
                 // Get other class for this type, then pass in to this function recursively to display
-                gs_meta_class_t* clz = gs_meta_get_class(&gmr, custom_struct_t);
+                gs_meta_class_t* clz = gs_meta_class_get(&gmr, custom_struct_t);
                 if (clz)
                 {
                     // Get value at this property to pass into print function
@@ -198,13 +198,13 @@ void print_object(void* obj, const gs_meta_class_t* cls, gs_vec2* pos)
 void app_init()
 {
     gcb = gs_command_buffer_new();
-    gsi = gs_immediate_draw_new();
+    gsi = gs_immediate_draw_new(gs_platform_main_window());
     gmr = gs_meta_registry_new();
 
     // Construct instance of thing struct
     thing = (thing_t) {
         .fval = 3.145f,
-        .uval = 64,
+        .uval = 128,
         .sval = -20,
         .v3val = gs_v3(1, 2, 3),
         .qval = gs_quat_default(),
@@ -215,23 +215,25 @@ void app_init()
     };
 
     // Register meta class information for thing (returns id, if needed)
-    uint64_t thing_cls_id = gs_meta_register_class(&gmr, thing_t, (&(gs_meta_class_decl_t){
+    uint64_t thing_cls_id = gs_meta_class_register(&gmr, (&(gs_meta_class_decl_t){
+        .name = gs_to_str(thing_t),
         .properties = (gs_meta_property_t[]) {
-            gs_meta_property(thing_t, fval, GS_META_PROPERTY_TYPE_INFO_F32),        // Default provided types
-            gs_meta_property(thing_t, uval, GS_META_PROPERTY_TYPE_INFO_U32),
-            gs_meta_property(thing_t, sval, GS_META_PROPERTY_TYPE_INFO_S32),
-            gs_meta_property(thing_t, v3val, GS_META_PROPERTY_TYPE_INFO_VEC3),
-            gs_meta_property(thing_t, qval, GS_META_PROPERTY_TYPE_INFO_QUAT),
-            gs_meta_property(thing_t, csval, GS_META_PROPERTY_TYPE_INFO_CUSTOM)     // Custom property type info declared above
+            gs_meta_property(thing_t, float, fval, GS_META_PROPERTY_TYPE_INFO_F32),        // Default provided types
+            gs_meta_property(thing_t, uint32_t, uval, GS_META_PROPERTY_TYPE_INFO_U32),
+            gs_meta_property(thing_t, int32_t, sval, GS_META_PROPERTY_TYPE_INFO_S32),
+            gs_meta_property(thing_t, gs_vec3, v3val, GS_META_PROPERTY_TYPE_INFO_VEC3),
+            gs_meta_property(thing_t, gs_quat, qval, GS_META_PROPERTY_TYPE_INFO_QUAT),
+            gs_meta_property(thing_t, custom_struct_t, csval, GS_META_PROPERTY_TYPE_INFO_CUSTOM)     // Custom property type info declared above
         },
         .size = 6 * sizeof(gs_meta_property_t)
     }));
 
     // Register meta class information for custom struct (returns id, if needed)
-    uint64_t cs_cls_id = gs_meta_register_class(&gmr, custom_struct_t, (&(gs_meta_class_decl_t){
+    uint64_t cs_cls_id = gs_meta_class_register(&gmr, (&(gs_meta_class_decl_t){
+        .name = gs_to_str(custom_struct_t),
         .properties = (gs_meta_property_t[]) {
-            gs_meta_property(custom_struct_t, v2val, GS_META_PROPERTY_TYPE_INFO_VEC2),
-            gs_meta_property(custom_struct_t, u64val, GS_META_PROPERTY_TYPE_INFO_U64)
+            gs_meta_property(custom_struct_t, gs_vec2, v2val, GS_META_PROPERTY_TYPE_INFO_VEC2),
+            gs_meta_property(custom_struct_t, uint64_t, u64val, GS_META_PROPERTY_TYPE_INFO_U64)
         },
         .size = 2 * sizeof(gs_meta_property_t)
     }));
@@ -244,7 +246,7 @@ void app_update()
     gsi_camera2D(&gsi);
 
     // Present property information (debug text)
-    gs_meta_class_t* cls = gs_meta_get_class(&gmr, thing_t);
+    gs_meta_class_t* cls = gs_meta_class_get(&gmr, thing_t);
 
     // Do print
     gs_vec2 pos = gs_v2(100.f, 100.f);

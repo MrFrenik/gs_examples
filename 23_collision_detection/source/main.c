@@ -214,7 +214,7 @@ void app_init()
 {
     // Construct new command buffer
     cb = gs_command_buffer_new();
-    gsi = gs_immediate_draw_new();
+    gsi = gs_immediate_draw_new(gs_platform_main_window());
 
     aabb = gs_aabb(.min = gs_v3s(-0.5f), .max = gs_v3s(0.5f));
     sphere = gs_sphere(.c = gs_v3s(0.f), .r = 0.5f);

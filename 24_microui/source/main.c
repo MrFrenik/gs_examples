@@ -31,10 +31,8 @@ static void test_window(mu_Context *ctx);
 void init()
 {
     gcb = gs_command_buffer_new();
-    gs_mu_init(&mu_ctx);
-
-}
-
+    gs_mu_init(&mu_ctx); 
+} 
 
 void update()
 {
