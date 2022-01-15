@@ -46,10 +46,10 @@ const char* comp_src =
     "void main() {\n"
         "ivec2 storePos = ivec2(gl_GlobalInvocationID.xy);\n"
         "float localCoef = length(vec2(ivec2(gl_LocalInvocationID.xy) - 8 ) / 8.0);\n"
-        "float globalCoef = sin(float(gl_WorkGroupID.x + gl_WorkGroupID.y) * 0.1 + u_roll) * 0.5;\n"
-        "// imageStore(destTex, storePos, vec4(1.0 - globalCoef * localCoef, globalCoef * localCoef, 0.0, 1.0));\n"
-        "// imageStore(destTex, storePos, vec4(1.0, 0.0, 0.0, 1.0));\n"
-        "imageStore(destTex, storePos, vec4(data.x, data.y, data.z, data.w));\n"
+        "float globalCoef = sin(float(gl_WorkGroupID.x + gl_WorkGroupID.y) * 0.1 + u_roll) * 0.5;\n" 
+        "vec4 rc = vec4(1.0 - globalCoef * localCoef, globalCoef * localCoef, 0.0, 1.0);\n"
+        "vec4 color = mix(rc, data, 0.5f);\n" 
+        "imageStore(destTex, storePos, color);\n"
     "}";
 
 void app_init()
@@ -108,16 +108,17 @@ void app_init()
         }
     );
 
-    gs_vec4 data = gs_v4(1.f, 0.f, 0.f, 0.f);
+    gs_vec4 data = gs_v4(0.f, 1.f, 1.f, 1.f);
 
     u_voxels = gs_graphics_storage_buffer_create(
         &(gs_graphics_storage_buffer_desc_t){
             .data = &data,
             .size = sizeof(gs_vec4),
-            .name = "u_voxels"
+            .name = "u_voxels",
+            .usage = GS_GRAPHICS_BUFFER_USAGE_DYNAMIC
         }
     ); 
-}
+} 
 
 void app_update()
 {
@@ -127,15 +128,7 @@ void app_update()
     gs_graphics_info_t* info = gs_graphics_info();
     if (!info->compute.available) {
         return;
-    }
-
-    gs_vec4 data = gs_v4(1.f, 0.f, 0.f, 0.f); 
-
-    gs_graphics_storage_buffer_update(u_voxels, &(gs_graphics_storage_buffer_desc_t){
-        .update.type = GS_GRAPHICS_BUFFER_UPDATE_SUBDATA, 
-        .data = &data,  
-        .size = sizeof(data)
-    });
+    } 
 
     // Compute pass
     {

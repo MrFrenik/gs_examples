@@ -36,14 +36,13 @@ typedef struct
     gs_command_buffer_t cb;
     gs_gui_context_t    gui;
     gs_immediate_draw_t gsi;
-    gs_gui_style_t styles[GUI_STYLE_COUNT][GS_GUI_ELEMENT_STATE_COUNT];
     gs_asset_font_t fonts[GUI_FONT_COUNT];
     gs_asset_texture_t logo;
     gs_asset_texture_t bg;
     gs_gui_style_sheet_t menu_style_sheet;
 } app_t; 
 
-void style_window(gs_gui_context_t *ctx, gs_gui_style_sheet_t* style_sheet, bool* open);
+void style_window(gs_gui_context_t *ctx, gs_gui_style_sheet_t* style_sheet, bool* open); 
 
 void app_init()
 {
@@ -68,87 +67,86 @@ void app_init()
 
     // Set up styles for elements 
     gs_gui_style_element_t panel_style[] = {
-        {GS_GUI_STYLE_PADDING_TOP, 20},
+        {GS_GUI_STYLE_PADDING_TOP, .value = 20},
         {GS_GUI_STYLE_BORDER_COLOR, .color = gs_color(0, 0, 0, 0)},
         {GS_GUI_STYLE_BACKGROUND_COLOR, .color = gs_color(0, 0, 0, 0)}
     };
 
     gs_gui_style_element_t button_style[] = {
-        {GS_GUI_STYLE_ALIGN_CONTENT, GS_GUI_ALIGN_CENTER},
-        {GS_GUI_STYLE_JUSTIFY_CONTENT, GS_GUI_JUSTIFY_CENTER},
-        {GS_GUI_STYLE_WIDTH, 200},
-        {GS_GUI_STYLE_HEIGHT, 50},
-        {GS_GUI_STYLE_FONT, &app->fonts[GUI_FONT_BUTTON]},
-        {GS_GUI_STYLE_MARGIN_LEFT, 0},
-        {GS_GUI_STYLE_MARGIN_TOP, 10}, 
-        {GS_GUI_STYLE_MARGIN_BOTTOM, 0},
-        {GS_GUI_STYLE_MARGIN_RIGHT, 20},
-        {GS_GUI_STYLE_SHADOW_X, 1},
-        {GS_GUI_STYLE_SHADOW_Y, 1}, 
+        // type, value
+        {GS_GUI_STYLE_ALIGN_CONTENT, .value = GS_GUI_ALIGN_CENTER},
+        {GS_GUI_STYLE_JUSTIFY_CONTENT, .value = GS_GUI_JUSTIFY_CENTER},
+        {GS_GUI_STYLE_WIDTH, .value = 200},
+        {GS_GUI_STYLE_HEIGHT, .value = 45},
+        {GS_GUI_STYLE_FONT, .font = &app->fonts[GUI_FONT_BUTTON]},
+        {GS_GUI_STYLE_MARGIN_LEFT, .value = 0},
+        {GS_GUI_STYLE_MARGIN_TOP, .value = 10}, 
+        {GS_GUI_STYLE_MARGIN_BOTTOM, .value = 0},
+        {GS_GUI_STYLE_MARGIN_RIGHT, .value = 20},
+        {GS_GUI_STYLE_SHADOW_X, .value = 1},
+        {GS_GUI_STYLE_SHADOW_Y, .value = 1}, 
         {GS_GUI_STYLE_SHADOW_COLOR, .color = gs_color(146, 146, 146, 200)},
         {GS_GUI_STYLE_BORDER_COLOR, .color = GS_COLOR_BLACK},
-        {GS_GUI_STYLE_BORDER_WIDTH, 2},
+        {GS_GUI_STYLE_BORDER_WIDTH, .value = 2},
         {GS_GUI_STYLE_CONTENT_COLOR, .color = gs_color(67, 67, 67, 255)},
         {GS_GUI_STYLE_BACKGROUND_COLOR, .color = gs_color(198, 198, 198, 255)}
     };
 
+    gs_gui_animation_property_t button_animation[] = {
+        // type, time, delay
+        {GS_GUI_STYLE_HEIGHT, 100, 0},
+        {GS_GUI_STYLE_BACKGROUND_COLOR, 200, 20},
+        {GS_GUI_STYLE_MARGIN_TOP, 150, 0},
+        {GS_GUI_STYLE_CONTENT_COLOR, 200, 0}
+    };
+
     gs_gui_style_element_t button_hover_style[] = {
-        {GS_GUI_STYLE_BACKGROUND_COLOR, .color = gs_color(168, 168, 168, 255)}
+        {GS_GUI_STYLE_BACKGROUND_COLOR, .color = gs_color(168, 168, 168, 255)},
+        {GS_GUI_STYLE_HEIGHT, .value = 47}
     };
 
     gs_gui_style_element_t button_focus_style[] = {
-        {GS_GUI_STYLE_FONT, &app->fonts[GUI_FONT_BUTTONFOCUS]},
+        {GS_GUI_STYLE_FONT, .font = &app->fonts[GUI_FONT_BUTTONFOCUS]},
         {GS_GUI_STYLE_CONTENT_COLOR, .color = gs_color(255, 255, 255, 255)},
-        {GS_GUI_STYLE_BACKGROUND_COLOR, .color = gs_color(49, 174, 31, 255)}
+        {GS_GUI_STYLE_BACKGROUND_COLOR, .color = gs_color(49, 174, 31, 255)},
+        {GS_GUI_STYLE_HEIGHT, .value = 50},
+        {GS_GUI_STYLE_PADDING_BOTTOM, .value = 12}
     }; 
 
     gs_gui_style_element_t label_style[] = {
-        {GS_GUI_STYLE_FONT, &app->fonts[GUI_FONT_LABEL]},
-        {GS_GUI_STYLE_ALIGN_CONTENT, GS_GUI_ALIGN_CENTER},
-        {GS_GUI_STYLE_JUSTIFY_CONTENT, GS_GUI_JUSTIFY_END}
+        {GS_GUI_STYLE_FONT, .font = &app->fonts[GUI_FONT_LABEL]},
+        {GS_GUI_STYLE_ALIGN_CONTENT, .value = GS_GUI_ALIGN_CENTER},
+        {GS_GUI_STYLE_JUSTIFY_CONTENT, .value = GS_GUI_JUSTIFY_END}
     }; 
 
+    // Transitions get applied to 
     gs_gui_style_element_t text_style[] = {
-        {GS_GUI_STYLE_FONT, &app->fonts[GUI_FONT_LABEL]},
-        {GS_GUI_STYLE_ALIGN_CONTENT, GS_GUI_ALIGN_CENTER},
-        {GS_GUI_STYLE_JUSTIFY_CONTENT, GS_GUI_JUSTIFY_START}
+        {GS_GUI_STYLE_FONT, .font = &app->fonts[GUI_FONT_LABEL]},
+        {GS_GUI_STYLE_ALIGN_CONTENT, .value = GS_GUI_ALIGN_CENTER},
+        {GS_GUI_STYLE_JUSTIFY_CONTENT, .value = GS_GUI_JUSTIFY_START}
     }; 
 
     // Generate new style sheet to use for menu
     app->menu_style_sheet = gs_gui_style_sheet_new(&app->gui, &(gs_gui_style_sheet_desc_t){
         .button = {
-            .all = {button_style, sizeof(button_style)},
-            .hover = {button_hover_style, sizeof(button_hover_style)},
-            .focus = {button_focus_style, sizeof(button_focus_style)}
+            .all = {
+                .style = {button_style, sizeof(button_style)},
+                .animation = {button_animation, sizeof(button_animation)}
+            },
+            .hover = {.style = {button_hover_style, sizeof(button_hover_style)}},
+            .focus = {.style = {button_focus_style, sizeof(button_focus_style)}}
         },
         .panel = {
-            .all = {panel_style, sizeof(panel_style)}
+            .all = {.style = {panel_style, sizeof(panel_style)}}
         },
         .label = {
-            .all = {label_style, sizeof(label_style)}
+            .all = {.style = {label_style, sizeof(label_style)}}
         },
         .text = {
-            .all = {text_style, sizeof(text_style)}
+            .all = {.style = {text_style, sizeof(text_style)}}
         }
     }); 
 } 
-
-// Simple custom button command that allows us to render some inner highlights and shadows
-bool gui_custom_button(gs_gui_context_t* ctx, const char* str)
-{
-    bool ret = gs_gui_button(ctx, str);
-    gs_gui_rect_t rect = ctx->last_rect; 
-
-    // Draw inner shadows/highlights over button
-    gs_color_t hc = GS_COLOR_WHITE, sc = gs_color(85, 85, 85, 255);
-    int32_t w = 2;
-	gs_gui_draw_rect(ctx, gs_gui_rect(rect.x + w, rect.y, rect.w - 2 * w, w), hc);
-	gs_gui_draw_rect(ctx, gs_gui_rect(rect.x + w, rect.y + rect.h - w, rect.w - 2 * w, w), sc);
-	gs_gui_draw_rect(ctx, gs_gui_rect(rect.x, rect.y, w, rect.h), hc);
-	gs_gui_draw_rect(ctx, gs_gui_rect(rect.x + rect.w - w, rect.y, w, rect.h), sc);
-
-    return ret;
-}
 
 void app_update()
 {
@@ -160,6 +158,8 @@ void app_update()
     gs_immediate_draw_t* odl = &gui->overlay_draw_list;
     gs_vec2 fbs = gs_platform_framebuffer_sizev(gs_platform_main_window());
     const float _t = gs_platform_elapsed_time() * 0.0001f;
+    const float dt = gs_platform_delta_time(); 
+    static bool debug_enabled = false;
 
     // Query information about our textures for resolutions
     gs_graphics_texture_desc_t desc = {0};
@@ -176,7 +176,7 @@ void app_update()
     const gs_vec2 menu_sz = gs_v2(logo_sz.x, 500.f); 
     
     // Button panel size
-    const gs_vec2 btn_panel_sz = gs_v2(menu_sz.x - 150.f, 300.f); 
+    const gs_vec2 btn_panel_sz = gs_v2(menu_sz.x - 150.f, 320.f); 
 
     if (gs_platform_key_pressed(GS_KEYCODE_ESC)) 
     {
@@ -230,16 +230,17 @@ void app_update()
                     l = gs_gui_get_layout(gui); 
 
                     // single player | multiplayer | realms
-                    gs_gui_layout_row(gui, 1, (int[]){-1}, 0); 
-                    gui_custom_button(gui, "Singleplayer");
-                    gui_custom_button(gui, "Multiplayer");
-                    gui_custom_button(gui, "Minecraft Realms");
+                    gs_gui_layout_row(gui, 1, (int[]){-1}, 0);  // one item per row, set width to -1 to fill entire region, height to 0 to reference style sheet
+                    button_custom(gui, "Singleplayer");
+                    button_custom(gui, "Multiplayer");
+                    if (button_custom(gui, "Options")) {debug_enabled = !debug_enabled;}
+                    button_custom(gui, "Minecraft Realms");
 
                     const float spacing = (float)gui->style_sheet->styles[GS_GUI_ELEMENT_BUTTON][0x00].margin[GS_GUI_MARGIN_RIGHT] * 0.5f;
                     const float w = l->body.w * 0.5f - spacing;
-                    gs_gui_layout_row(gui, 2, (int[]){w, w}, 0); 
-                    gui_custom_button(gui, "Settings");
-                    gui_custom_button(gui, "Exit Game");
+                    gs_gui_layout_row(gui, 2, (int[]){w, w}, 0);
+                    button_custom(gui, "Settings");
+                    button_custom(gui, "Exit Game");
                 }
                 gs_gui_end_panel(gui); 
             }
@@ -247,45 +248,46 @@ void app_update()
 
             // Version
             {
+                const char* str = "Version 0.69";
                 gs_gui_layout_set_next(gui, gs_gui_layout_anchor(&cnt->body, 500, 50, 0, 0, GS_GUI_LAYOUT_ANCHOR_BOTTOMLEFT), 0); 
                 gs_gui_rect_t next = gs_gui_layout_next(gui);
                 gs_gui_draw_rect(gui, next, gs_color(0, 0, 0, 20));
-                gs_gui_draw_control_text(gui, "Version 0.69", next, GS_GUI_ELEMENT_TEXT, 0x00, 0x00); 
+                gs_gui_draw_control_text(gui, str, next, &gui->style_sheet->styles[GS_GUI_ELEMENT_TEXT][0], 0x00); 
             }
 
             // Copyright
             {
+                const char* str = "Copyright Gunslinger. Please, do distrubute.";
                 gs_gui_layout_set_next(gui, gs_gui_layout_anchor(&cnt->body, 500, 50, 0, 0, GS_GUI_LAYOUT_ANCHOR_BOTTOMRIGHT), 0); 
                 gs_gui_rect_t next = gs_gui_layout_next(gui);
                 gs_gui_draw_rect(gui, next, gs_color(0, 0, 0, 20));
-                gs_gui_draw_control_text(gui, "Copyright Gunslinger. Please, do distrubute.", next, GS_GUI_ELEMENT_LABEL, 0x00, 0x00); 
+                gs_gui_draw_control_text(gui, str, next, &gui->style_sheet->styles[GS_GUI_ELEMENT_LABEL][0], 0x00); 
             }
 
             // Frames
             {
+                gs_snprintfc(TMP, 256, "frame: %.2f", gs_engine_subsystem(platform)->time.frame);
                 gs_gui_layout_set_next(gui, gs_gui_layout_anchor(&cnt->body, 150, 50, 0, 0, GS_GUI_LAYOUT_ANCHOR_TOPRIGHT), 0); 
                 gs_gui_rect_t next = gs_gui_layout_next(gui);
                 gs_gui_draw_rect(gui, next, gs_color(0, 0, 0, 20));
-                gs_snprintfc(TMP, 256, "frame: %.2f", gs_engine_subsystem(platform)->time.frame);
-                gs_gui_draw_control_text(gui, TMP, next, GS_GUI_ELEMENT_LABEL, 0x00, 0x00); 
-            }
+                gs_gui_draw_control_text(gui, TMP, next, &gui->style_sheet->styles[GS_GUI_ELEMENT_LABEL][0], 0x00); 
+            } 
 
             gs_gui_end_window(gui);
         } 
 
-        static bool enabled = false;
-        if (gs_platform_key_pressed(GS_KEYCODE_F1)) enabled = !enabled; 
+        if (gs_platform_key_pressed(GS_KEYCODE_F1)) debug_enabled = !debug_enabled; 
 
         // Set style sheet to default sheet
         gs_gui_set_style_sheet(gui, NULL); 
-        if (gs_gui_begin_window_ex(gui, "Debug", gs_gui_rect(0, 0, 300, 200), &enabled, 0x00))
+        if (gs_gui_begin_window_ex(gui, "Debug", gs_gui_rect(0, 0, 300, 200), &debug_enabled, 0x00))
         {
             gs_gui_end_window(gui);
         }
 
-        style_window(gui, &app->menu_style_sheet, &enabled);
+        style_window(gui, &app->menu_style_sheet, &debug_enabled);
 
-        if (gs_gui_begin_window_ex(gui, "Tools", gs_gui_rect(0, 0, 300, 200), &enabled, 0x00))
+        if (gs_gui_begin_window_ex(gui, "Tools", gs_gui_rect(0, 0, 300, 200), &debug_enabled, 0x00))
         {
             gs_gui_end_window(gui);
         }
@@ -316,7 +318,24 @@ void app_update()
     gs_graphics_submit_command_buffer(cb);
 }
 
-static int uint8_slider(gs_gui_context_t *ctx, unsigned char *value, int low, int high) 
+int32_t button_custom(gs_gui_context_t* ctx, const char* label)
+{ 
+    // Do original button call
+    int32_t res = gs_gui_button(ctx, label);
+    
+    // Draw inner shadows/highlights over button
+    gs_color_t hc = GS_COLOR_WHITE, sc = gs_color(85, 85, 85, 255);
+    gs_gui_rect_t r = ctx->last_rect;
+    int32_t w = 2;
+	gs_gui_draw_rect(ctx, gs_gui_rect(r.x + w, r.y, r.w - 2 * w, w), hc);
+	gs_gui_draw_rect(ctx, gs_gui_rect(r.x + w, r.y + r.h - w, r.w - 2 * w, w), sc);
+	gs_gui_draw_rect(ctx, gs_gui_rect(r.x, r.y, w, r.h), hc);
+	gs_gui_draw_rect(ctx, gs_gui_rect(r.x + r.w - w, r.y, w, r.h), sc);
+
+    return res;
+} 
+
+static uint8_t uint8_slider(gs_gui_context_t *ctx, unsigned char *value, int low, int high) 
 {
     static float tmp;
     gs_gui_push_id(ctx, &value, sizeof(value));
@@ -327,7 +346,18 @@ static int uint8_slider(gs_gui_context_t *ctx, unsigned char *value, int low, in
     return res;
 }
 
-static int int32_slider(gs_gui_context_t *ctx, int32_t* value, int32_t low, int32_t high) 
+static int32_t int32_slider(gs_gui_context_t *ctx, int32_t* value, int32_t low, int32_t high) 
+{
+    static float tmp;
+    gs_gui_push_id(ctx, &value, sizeof(value));
+    tmp = *value;
+    int res = gs_gui_slider_ex(ctx, &tmp, low, high, 0, "%.0f", GS_GUI_OPT_ALIGNCENTER);
+    *value = tmp;
+    gs_gui_pop_id(ctx);
+    return res;
+}
+
+static int16_t int16_slider(gs_gui_context_t *ctx, int16_t* value, int32_t low, int32_t high) 
 {
     static float tmp;
     gs_gui_push_id(ctx, &value, sizeof(value));
@@ -366,10 +396,10 @@ void style_window(gs_gui_context_t *ctx, gs_gui_style_sheet_t* style_sheet, bool
   }; 
 
   if (gs_gui_begin_window_ex(ctx, "Style Editor", gs_gui_rect(350, 250, 300, 240), open, 0x00)) 
-  {
+  { 
     for (uint32_t i = 0; elements[i].label; ++i)
     {
-        int32_t idx = elements[i].idx;
+        int32_t idx = elements[i].idx; 
 
         if (gs_gui_begin_treenode_ex(ctx, elements[i].label, 0x00))
         {
@@ -392,8 +422,8 @@ void style_window(gs_gui_context_t *ctx, gs_gui_style_sheet_t* style_sheet, bool
                         float w = (l->body.w - ls) * 0.35f;
                         gs_gui_layout_row(ctx, 3, (int[]) {ls, w, w}, 0); 
                         gs_gui_label(ctx, "size:");
-                        gs_gui_slider(ctx, &s->size.x, 0.f, 100.f);
-                        gs_gui_slider(ctx, &s->size.y, 0.f, 100.f); 
+                        gs_gui_slider(ctx, &s->size[0], 0.f, 100.f);
+                        gs_gui_slider(ctx, &s->size[1], 0.f, 100.f); 
 
                         // spacing
                         w = (l->body.w - ls) * 0.7f;
@@ -402,22 +432,22 @@ void style_window(gs_gui_context_t *ctx, gs_gui_style_sheet_t* style_sheet, bool
                         gs_gui_slider(ctx, &s->spacing, 0.f, 100.f);
 
                         gs_gui_label(ctx, "indent:");
-                        int32_slider(ctx, &s->indent, 0.f, 100.f);
+                        int16_slider(ctx, &s->indent, 0.f, 100.f);
 
                         gs_gui_label(ctx, "scrollbar_size:");
-                        int32_slider(ctx, &s->scrollbar_size, 0.f, 100.f);
+                        int16_slider(ctx, &s->scrollbar_size, 0.f, 100.f);
 
                         gs_gui_label(ctx, "title_height:");
-                        int32_slider(ctx, &s->title_height, 0.f, 100.f);
+                        int16_slider(ctx, &s->title_height, 0.f, 100.f);
 
                         gs_gui_label(ctx, "thumb_size:");
-                        int32_slider(ctx, &s->thumb_size, 0.f, 100.f); 
+                        int16_slider(ctx, &s->thumb_size, 0.f, 100.f); 
 
                         gs_gui_label(ctx, "border_width:");
-                        int32_slider(ctx, &s->border_width, 0.f, 100.f); 
+                        int16_slider(ctx, &s->border_width, 0.f, 100.f); 
 
                         gs_gui_label(ctx, "border_radius:");
-                        int32_slider(ctx, &s->border_radius, 0.f, 100.f); 
+                        int16_slider(ctx, &s->border_radius, 0.f, 100.f); 
 
                         // padding/margin
                         w = (l->body.w - ls) * 0.2f;
@@ -429,10 +459,10 @@ void style_window(gs_gui_context_t *ctx, gs_gui_style_sheet_t* style_sheet, bool
                         int32_slider(ctx, &s->padding[3], 0.f, 100.f); 
 
                         gs_gui_label(ctx, "margin:");
-                        int32_slider(ctx, &s->margin[0], 0.f, 100.f); 
-                        int32_slider(ctx, &s->margin[1], 0.f, 100.f); 
-                        int32_slider(ctx, &s->margin[2], 0.f, 100.f); 
-                        int32_slider(ctx, &s->margin[3], 0.f, 100.f); 
+                        int16_slider(ctx, &s->margin[0], 0.f, 100.f); 
+                        int16_slider(ctx, &s->margin[1], 0.f, 100.f); 
+                        int16_slider(ctx, &s->margin[2], 0.f, 100.f); 
+                        int16_slider(ctx, &s->margin[3], 0.f, 100.f); 
 
                         // Colors
                         int sw = (int32_t)(l->body.w * 0.14);
@@ -456,29 +486,16 @@ void style_window(gs_gui_context_t *ctx, gs_gui_style_sheet_t* style_sheet, bool
             }
             gs_gui_end_treenode(ctx);
         }
-    }
-
-    // int sw = gs_gui_get_current_container(ctx)->body.w * 0.14;
-    // gs_gui_layout_row(ctx, 6, (int[]) { 80, sw, sw, sw, sw, -1 }, 0);
-
-    /*
-    for (int i = 0; colors[i].label; i++) 
-    {
-      gs_gui_label(ctx, colors[i].label);
-      uint8_slider(ctx, &ctx->style->colors[i].r, 0, 255);
-      uint8_slider(ctx, &ctx->style->colors[i].g, 0, 255);
-      uint8_slider(ctx, &ctx->style->colors[i].b, 0, 255);
-      uint8_slider(ctx, &ctx->style->colors[i].a, 0, 255);
-      gs_gui_draw_rect(ctx, gs_gui_layout_next(ctx), ctx->style->colors[i]);
     } 
-    */
-
     gs_gui_end_window(ctx);
   }
 }
 
 void app_shutdown()
 {
+    // free gui
+    app_t* app = gs_engine_user_data(app_t);
+    gs_gui_free(&app->gui);
 }
 
 gs_app_desc_t gs_main(int32_t argc, char** argv)
@@ -488,8 +505,8 @@ gs_app_desc_t gs_main(int32_t argc, char** argv)
         .init = app_init,
         .update = app_update,
         .shutdown = app_shutdown,
-        .window_width = 1024,
-        .window_height = 760,
+        .window_width = 900,
+        .window_height = 580,
         .frame_rate = 60
     };
 }
