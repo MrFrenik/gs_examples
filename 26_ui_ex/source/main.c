@@ -42,8 +42,6 @@ typedef struct
     gs_gui_style_sheet_t menu_style_sheet;
 } app_t; 
 
-void style_window(gs_gui_context_t *ctx, gs_gui_style_sheet_t* style_sheet, bool* open); 
-
 void app_init()
 {
     app_t* app = gs_engine_user_data(app_t);
@@ -208,7 +206,7 @@ void app_update()
                     GS_GUI_OPT_NODOCK | 
                     GS_GUI_OPT_NOBRINGTOFRONT
         ))
-        {
+        { 
             gs_gui_container_t* cnt = gs_gui_get_current_container(gui);
             gs_gui_layout_t* l = gs_gui_get_layout(gui); 
 
@@ -282,10 +280,11 @@ void app_update()
         gs_gui_set_style_sheet(gui, NULL); 
         if (gs_gui_begin_window_ex(gui, "Debug", gs_gui_rect(0, 0, 300, 200), &debug_enabled, 0x00))
         {
+            gs_gui_button(gui, "uh huh");
             gs_gui_end_window(gui);
         }
 
-        style_window(gui, &app->menu_style_sheet, &debug_enabled);
+        gs_gui_style_window(gui, &app->menu_style_sheet, &debug_enabled);
 
         if (gs_gui_begin_window_ex(gui, "Tools", gs_gui_rect(0, 0, 300, 200), &debug_enabled, 0x00))
         {
@@ -334,162 +333,6 @@ int32_t button_custom(gs_gui_context_t* ctx, const char* label)
 
     return res;
 } 
-
-static uint8_t uint8_slider(gs_gui_context_t *ctx, unsigned char *value, int low, int high) 
-{
-    static float tmp;
-    gs_gui_push_id(ctx, &value, sizeof(value));
-    tmp = *value;
-    int res = gs_gui_slider_ex(ctx, &tmp, low, high, 0, "%.0f", GS_GUI_OPT_ALIGNCENTER);
-    *value = tmp;
-    gs_gui_pop_id(ctx);
-    return res;
-}
-
-static int32_t int32_slider(gs_gui_context_t *ctx, int32_t* value, int32_t low, int32_t high) 
-{
-    static float tmp;
-    gs_gui_push_id(ctx, &value, sizeof(value));
-    tmp = *value;
-    int res = gs_gui_slider_ex(ctx, &tmp, low, high, 0, "%.0f", GS_GUI_OPT_ALIGNCENTER);
-    *value = tmp;
-    gs_gui_pop_id(ctx);
-    return res;
-}
-
-static int16_t int16_slider(gs_gui_context_t *ctx, int16_t* value, int32_t low, int32_t high) 
-{
-    static float tmp;
-    gs_gui_push_id(ctx, &value, sizeof(value));
-    tmp = *value;
-    int res = gs_gui_slider_ex(ctx, &tmp, low, high, 0, "%.0f", GS_GUI_OPT_ALIGNCENTER);
-    *value = tmp;
-    gs_gui_pop_id(ctx);
-    return res;
-}
-
-void style_window(gs_gui_context_t *ctx, gs_gui_style_sheet_t* style_sheet, bool* open) 
-{
-  static struct {const char* label; int32_t idx;} elements[] = {
-    {"container",  GS_GUI_ELEMENT_CONTAINER},
-    {"button",  GS_GUI_ELEMENT_BUTTON} ,
-    {"panel",  GS_GUI_ELEMENT_PANEL},
-    {"label",  GS_GUI_ELEMENT_LABEL},
-    {"text",  GS_GUI_ELEMENT_TEXT},
-    {"scroll",  GS_GUI_ELEMENT_SCROLL},
-    {"base",  GS_GUI_ELEMENT_BASE},
-    {NULL}
-  }; 
-
-  static char* states[] = {
-      "default", 
-      "hover", 
-      "focus"
-  };
-
-  static struct {const char* label; int32_t idx;} colors[] = {
-    {"background",  GS_GUI_COLOR_BACKGROUND},
-    {"content",  GS_GUI_COLOR_CONTENT} ,
-    {"border",  GS_GUI_COLOR_BORDER},
-    {"shadow",  GS_GUI_COLOR_SHADOW},
-    {NULL}
-  }; 
-
-  if (gs_gui_begin_window_ex(ctx, "Style Editor", gs_gui_rect(350, 250, 300, 240), open, 0x00)) 
-  { 
-    for (uint32_t i = 0; elements[i].label; ++i)
-    {
-        int32_t idx = elements[i].idx; 
-
-        if (gs_gui_begin_treenode_ex(ctx, elements[i].label, 0x00))
-        {
-            for (uint32_t j = 0; j < GS_GUI_ELEMENT_STATE_COUNT; ++j)
-            {
-                gs_gui_push_id(ctx, &j, sizeof(j));
-                gs_gui_style_t* s = &style_sheet->styles[idx][j];
-                if (gs_gui_begin_treenode_ex(ctx, states[j], 0x00))
-                {
-                    gs_gui_style_t* save = gs_gui_push_style(ctx, &ctx->style_sheet->styles[GS_GUI_ELEMENT_PANEL][0x00]);
-                    gs_gui_layout_row(ctx, 1, (int[]){-1}, 300);
-                    gs_gui_begin_panel(ctx, states[j]);
-                    {
-                        gs_gui_layout_t* l = gs_gui_get_layout(ctx);
-                        gs_gui_rect_t* r = &l->body; 
-
-                        const float ls = 80;
-
-                        // size
-                        float w = (l->body.w - ls) * 0.35f;
-                        gs_gui_layout_row(ctx, 3, (int[]) {ls, w, w}, 0); 
-                        gs_gui_label(ctx, "size:");
-                        gs_gui_slider(ctx, &s->size[0], 0.f, 100.f);
-                        gs_gui_slider(ctx, &s->size[1], 0.f, 100.f); 
-
-                        // spacing
-                        w = (l->body.w - ls) * 0.7f;
-                        gs_gui_layout_row(ctx, 2, (int[]) {ls, w}, 0); 
-                        gs_gui_label(ctx, "spacing:");
-                        gs_gui_slider(ctx, &s->spacing, 0.f, 100.f);
-
-                        gs_gui_label(ctx, "indent:");
-                        int16_slider(ctx, &s->indent, 0.f, 100.f);
-
-                        gs_gui_label(ctx, "scrollbar_size:");
-                        int16_slider(ctx, &s->scrollbar_size, 0.f, 100.f);
-
-                        gs_gui_label(ctx, "title_height:");
-                        int16_slider(ctx, &s->title_height, 0.f, 100.f);
-
-                        gs_gui_label(ctx, "thumb_size:");
-                        int16_slider(ctx, &s->thumb_size, 0.f, 100.f); 
-
-                        gs_gui_label(ctx, "border_width:");
-                        int16_slider(ctx, &s->border_width, 0.f, 100.f); 
-
-                        gs_gui_label(ctx, "border_radius:");
-                        int16_slider(ctx, &s->border_radius, 0.f, 100.f); 
-
-                        // padding/margin
-                        w = (l->body.w - ls) * 0.2f;
-                        gs_gui_layout_row(ctx, 5, (int[]) {ls, w, w, w, w}, 0); 
-                        gs_gui_label(ctx, "padding:");
-                        int32_slider(ctx, &s->padding[0], 0.f, 100.f); 
-                        int32_slider(ctx, &s->padding[1], 0.f, 100.f); 
-                        int32_slider(ctx, &s->padding[2], 0.f, 100.f); 
-                        int32_slider(ctx, &s->padding[3], 0.f, 100.f); 
-
-                        gs_gui_label(ctx, "margin:");
-                        int16_slider(ctx, &s->margin[0], 0.f, 100.f); 
-                        int16_slider(ctx, &s->margin[1], 0.f, 100.f); 
-                        int16_slider(ctx, &s->margin[2], 0.f, 100.f); 
-                        int16_slider(ctx, &s->margin[3], 0.f, 100.f); 
-
-                        // Colors
-                        int sw = (int32_t)(l->body.w * 0.14);
-                        gs_gui_layout_row(ctx, 6, (int[]) {80, sw, sw, sw, sw, -1}, 0);
-                        for (uint32_t c = 0; c < GS_GUI_COLOR_MAX; ++c)
-                        {
-                            gs_gui_label(ctx, colors[c].label);
-                            uint8_slider(ctx, &s->colors[c].r, 0, 255);
-                            uint8_slider(ctx, &s->colors[c].g, 0, 255);
-                            uint8_slider(ctx, &s->colors[c].b, 0, 255);
-                            uint8_slider(ctx, &s->colors[c].a, 0, 255);
-                            gs_gui_draw_rect(ctx, gs_gui_layout_next(ctx), s->colors[c]);
-                        }
-                    }
-                    gs_gui_end_panel(ctx); 
-                    gs_gui_pop_style(ctx, save);
-
-                    gs_gui_end_treenode(ctx);
-                }
-                gs_gui_pop_id(ctx);
-            }
-            gs_gui_end_treenode(ctx);
-        }
-    } 
-    gs_gui_end_window(ctx);
-  }
-}
 
 void app_shutdown()
 {
