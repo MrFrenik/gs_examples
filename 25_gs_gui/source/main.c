@@ -89,7 +89,7 @@ gs_app_desc_t gs_main(int32_t argc, char** argv)
 void dockspace(gs_gui_context_t* ctx) 
 {
     int32_t opt = GS_GUI_OPT_NOCLIP | GS_GUI_OPT_NOFRAME | GS_GUI_OPT_FORCESETRECT | GS_GUI_OPT_NOTITLE | GS_GUI_OPT_DOCKSPACE | GS_GUI_OPT_FULLSCREEN | GS_GUI_OPT_NOMOVE | GS_GUI_OPT_NOBRINGTOFRONT | GS_GUI_OPT_NOFOCUS | GS_GUI_OPT_NORESIZE;
-    gs_gui_begin_window_ex(ctx, "Dockspace", gs_gui_rect(350, 40, 600, 500), opt);
+    gs_gui_begin_window_ex(ctx, "Dockspace", gs_gui_rect(350, 40, 600, 500), NULL, opt);
     {
         // Empty dockspace...
     }
@@ -112,7 +112,7 @@ void log_window(gs_gui_context_t* ctx)
     if (gs_gui_begin_window(ctx, "Log Window", gs_gui_rect(350, 40, 300, 200))) 
     {
         /* output text panel */
-        gs_gui_layout_row(ctx, 1, (int[]) { -1 }, -25);
+        gs_gui_layout_row(ctx, 1, (int[]) { -1 }, -50);
         gs_gui_begin_panel(ctx, "Log Output");
         gs_gui_container_t* panel = gs_gui_get_current_container(ctx);
         gs_gui_layout_row(ctx, 1, (int[]) { -1 }, -1);
@@ -173,7 +173,7 @@ void test_window(gs_gui_context_t *ctx)
 			{ 
 				gs_gui_open_popup(ctx, "Test Popup"); 
 			}
-			if (gs_gui_begin_popup( ctx, "Test Popup", 0x00)) 
+			if (gs_gui_begin_popup( ctx, "Test Popup", gs_gui_rect(ctx->mouse_pos.x, ctx->mouse_pos.y, 100, 100))) 
 			{
                 gs_gui_button(ctx, "Hello");
                 gs_gui_button(ctx, "World");
@@ -240,7 +240,7 @@ void test_window(gs_gui_context_t *ctx)
             gs_gui_draw_rect(ctx, r, gs_color(bg[0], bg[1], bg[2], 255));
             char buf[32];
             gs_snprintf(buf, 32, "#%02X%02X%02X", (int) bg[0], (int) bg[1], (int) bg[2]);
-            gs_gui_draw_control_text(ctx, buf, r, GS_GUI_COLOR_TEXT, GS_GUI_OPT_ALIGNCENTER);
+            gs_gui_draw_control_text(ctx, buf, r, &ctx->style_sheet->styles[GS_GUI_ELEMENT_LABEL][0x00], GS_GUI_OPT_ALIGNCENTER);
         }
 
         if (gs_gui_header_ex(ctx, "Test", 0x00)) 

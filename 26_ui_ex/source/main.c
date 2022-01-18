@@ -17,30 +17,7 @@
 #define GS_GUI_IMPL
 #include <gs/util/gs_gui.h>
 
-enum {
-    GUI_STYLE_ROOT = 0x00,
-    GUI_STYLE_TITLE,
-    GUI_STYLE_BUTTON,
-    GUI_STYLE_COUNT
-};
-
-enum {
-    GUI_FONT_LABEL = 0x00,
-    GUI_FONT_BUTTON, 
-    GUI_FONT_BUTTONFOCUS,
-    GUI_FONT_COUNT
-};
-
-typedef struct
-{
-    gs_command_buffer_t cb;
-    gs_gui_context_t    gui;
-    gs_immediate_draw_t gsi;
-    gs_asset_font_t fonts[GUI_FONT_COUNT];
-    gs_asset_texture_t logo;
-    gs_asset_texture_t bg;
-    gs_gui_style_sheet_t menu_style_sheet;
-} app_t; 
+#include "data.c"
 
 void app_init()
 {
@@ -62,88 +39,8 @@ void app_init()
     }, false, false);
     gs_asset_texture_load_from_file("./assets/mcbg.png", &app->bg, NULL, false, false); 
 
-
-    // Set up styles for elements 
-    gs_gui_style_element_t panel_style[] = {
-        {GS_GUI_STYLE_PADDING_TOP, .value = 20},
-        {GS_GUI_STYLE_BORDER_COLOR, .color = gs_color(0, 0, 0, 0)},
-        {GS_GUI_STYLE_BACKGROUND_COLOR, .color = gs_color(0, 0, 0, 0)}
-    };
-
-    gs_gui_style_element_t button_style[] = {
-        // type, value
-        {GS_GUI_STYLE_ALIGN_CONTENT, .value = GS_GUI_ALIGN_CENTER},
-        {GS_GUI_STYLE_JUSTIFY_CONTENT, .value = GS_GUI_JUSTIFY_CENTER},
-        {GS_GUI_STYLE_WIDTH, .value = 200},
-        {GS_GUI_STYLE_HEIGHT, .value = 45},
-        {GS_GUI_STYLE_FONT, .font = &app->fonts[GUI_FONT_BUTTON]},
-        {GS_GUI_STYLE_MARGIN_LEFT, .value = 0},
-        {GS_GUI_STYLE_MARGIN_TOP, .value = 10}, 
-        {GS_GUI_STYLE_MARGIN_BOTTOM, .value = 0},
-        {GS_GUI_STYLE_MARGIN_RIGHT, .value = 20},
-        {GS_GUI_STYLE_SHADOW_X, .value = 1},
-        {GS_GUI_STYLE_SHADOW_Y, .value = 1}, 
-        {GS_GUI_STYLE_SHADOW_COLOR, .color = gs_color(146, 146, 146, 200)},
-        {GS_GUI_STYLE_BORDER_COLOR, .color = GS_COLOR_BLACK},
-        {GS_GUI_STYLE_BORDER_WIDTH, .value = 2},
-        {GS_GUI_STYLE_CONTENT_COLOR, .color = gs_color(67, 67, 67, 255)},
-        {GS_GUI_STYLE_BACKGROUND_COLOR, .color = gs_color(198, 198, 198, 255)}
-    };
-
-    gs_gui_animation_property_t button_animation[] = {
-        // type, time, delay
-        {GS_GUI_STYLE_HEIGHT, 100, 0},
-        {GS_GUI_STYLE_BACKGROUND_COLOR, 200, 20},
-        {GS_GUI_STYLE_MARGIN_TOP, 150, 0},
-        {GS_GUI_STYLE_CONTENT_COLOR, 200, 0}
-    };
-
-    gs_gui_style_element_t button_hover_style[] = {
-        {GS_GUI_STYLE_BACKGROUND_COLOR, .color = gs_color(168, 168, 168, 255)},
-        {GS_GUI_STYLE_HEIGHT, .value = 47}
-    };
-
-    gs_gui_style_element_t button_focus_style[] = {
-        {GS_GUI_STYLE_FONT, .font = &app->fonts[GUI_FONT_BUTTONFOCUS]},
-        {GS_GUI_STYLE_CONTENT_COLOR, .color = gs_color(255, 255, 255, 255)},
-        {GS_GUI_STYLE_BACKGROUND_COLOR, .color = gs_color(49, 174, 31, 255)},
-        {GS_GUI_STYLE_HEIGHT, .value = 50},
-        {GS_GUI_STYLE_PADDING_BOTTOM, .value = 12}
-    }; 
-
-    gs_gui_style_element_t label_style[] = {
-        {GS_GUI_STYLE_FONT, .font = &app->fonts[GUI_FONT_LABEL]},
-        {GS_GUI_STYLE_ALIGN_CONTENT, .value = GS_GUI_ALIGN_CENTER},
-        {GS_GUI_STYLE_JUSTIFY_CONTENT, .value = GS_GUI_JUSTIFY_END}
-    }; 
-
-    // Transitions get applied to 
-    gs_gui_style_element_t text_style[] = {
-        {GS_GUI_STYLE_FONT, .font = &app->fonts[GUI_FONT_LABEL]},
-        {GS_GUI_STYLE_ALIGN_CONTENT, .value = GS_GUI_ALIGN_CENTER},
-        {GS_GUI_STYLE_JUSTIFY_CONTENT, .value = GS_GUI_JUSTIFY_START}
-    }; 
-
     // Generate new style sheet to use for menu
-    app->menu_style_sheet = gs_gui_style_sheet_new(&app->gui, &(gs_gui_style_sheet_desc_t){
-        .button = {
-            .all = {
-                .style = {button_style, sizeof(button_style)},
-                .animation = {button_animation, sizeof(button_animation)}
-            },
-            .hover = {.style = {button_hover_style, sizeof(button_hover_style)}},
-            .focus = {.style = {button_focus_style, sizeof(button_focus_style)}}
-        },
-        .panel = {
-            .all = {.style = {panel_style, sizeof(panel_style)}}
-        },
-        .label = {
-            .all = {.style = {label_style, sizeof(label_style)}}
-        },
-        .text = {
-            .all = {.style = {text_style, sizeof(text_style)}}
-        }
-    }); 
+    app->menu_style_sheet = gs_gui_style_sheet_new(&app->gui, &menu_style_sheet_desc);
 } 
 
 void app_update()
@@ -210,6 +107,11 @@ void app_update()
             gs_gui_container_t* cnt = gs_gui_get_current_container(gui);
             gs_gui_layout_t* l = gs_gui_get_layout(gui); 
 
+            // Inline style for button 
+			gs_gui_push_inline_style(gui, GS_GUI_ELEMENT_BUTTON, &btn_inline_style);
+            gs_gui_button(gui, "Inline style"); 
+            gs_gui_pop_inline_style(gui, GS_GUI_ELEMENT_BUTTON);
+
             gs_gui_layout_set_next(gui, gs_gui_layout_anchor(&l->body, menu_sz.x, menu_sz.y, 0, 0, GS_GUI_LAYOUT_ANCHOR_CENTER), 0);
             gs_gui_begin_panel_ex(gui, "#menu", GS_GUI_OPT_NOSCROLL);
             {
@@ -247,10 +149,10 @@ void app_update()
             // Version
             {
                 const char* str = "Version 0.69";
-                gs_gui_layout_set_next(gui, gs_gui_layout_anchor(&cnt->body, 500, 50, 0, 0, GS_GUI_LAYOUT_ANCHOR_BOTTOMLEFT), 0); 
+                gs_gui_layout_set_next(gui, gs_gui_layout_anchor(&cnt->body, 150, 50, 10, 0, GS_GUI_LAYOUT_ANCHOR_BOTTOMLEFT), 0); 
                 gs_gui_rect_t next = gs_gui_layout_next(gui);
-                gs_gui_draw_rect(gui, next, gs_color(0, 0, 0, 20));
-                gs_gui_draw_control_text(gui, str, next, &gui->style_sheet->styles[GS_GUI_ELEMENT_TEXT][0], 0x00); 
+                gs_gui_draw_rect(gui, next, gs_color(0, 0, 0, 20)); gs_gui_layout_set_next(gui, next, 0);
+                gs_gui_label(gui, str); 
             }
 
             // Copyright
@@ -258,8 +160,8 @@ void app_update()
                 const char* str = "Copyright Gunslinger. Please, do distrubute.";
                 gs_gui_layout_set_next(gui, gs_gui_layout_anchor(&cnt->body, 500, 50, 0, 0, GS_GUI_LAYOUT_ANCHOR_BOTTOMRIGHT), 0); 
                 gs_gui_rect_t next = gs_gui_layout_next(gui);
-                gs_gui_draw_rect(gui, next, gs_color(0, 0, 0, 20));
-                gs_gui_draw_control_text(gui, str, next, &gui->style_sheet->styles[GS_GUI_ELEMENT_LABEL][0], 0x00); 
+                gs_gui_draw_rect(gui, next, gs_color(0, 0, 0, 20)); gs_gui_layout_set_next(gui, next, 0);
+                gs_gui_label(gui, str); 
             }
 
             // Frames
@@ -267,8 +169,8 @@ void app_update()
                 gs_snprintfc(TMP, 256, "frame: %.2f", gs_engine_subsystem(platform)->time.frame);
                 gs_gui_layout_set_next(gui, gs_gui_layout_anchor(&cnt->body, 150, 50, 0, 0, GS_GUI_LAYOUT_ANCHOR_TOPRIGHT), 0); 
                 gs_gui_rect_t next = gs_gui_layout_next(gui);
-                gs_gui_draw_rect(gui, next, gs_color(0, 0, 0, 20));
-                gs_gui_draw_control_text(gui, TMP, next, &gui->style_sheet->styles[GS_GUI_ELEMENT_LABEL][0], 0x00); 
+                gs_gui_draw_rect(gui, next, gs_color(0, 0, 0, 20)); gs_gui_layout_set_next(gui, next, 0);
+                gs_gui_label(gui, TMP); 
             } 
 
             gs_gui_end_window(gui);
@@ -344,13 +246,12 @@ void app_shutdown()
 gs_app_desc_t gs_main(int32_t argc, char** argv)
 {
     return (gs_app_desc_t) {
-        .user_data = gs_malloc_init(app_t),
+        .user_data = &g_app,
         .init = app_init,
         .update = app_update,
         .shutdown = app_shutdown,
         .window_width = 900,
-        .window_height = 580,
-        .frame_rate = 60
+        .window_height = 580
     };
 }
 

@@ -18,7 +18,7 @@ inc=(
 
 # Source files
 src=(
-	../source/*.c
+	../source/main.c
 )
 
 fworks=(
