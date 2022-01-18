@@ -108,7 +108,7 @@ void app_update()
             gs_gui_layout_t* l = gs_gui_get_layout(gui); 
 
             // Inline style for button 
-			gs_gui_push_inline_style(gui, GS_GUI_ELEMENT_BUTTON, &btn_inline_style);
+            gs_gui_push_inline_style(gui, GS_GUI_ELEMENT_BUTTON, &btn_inline_style);
             gs_gui_button(gui, "Inline style"); 
             gs_gui_pop_inline_style(gui, GS_GUI_ELEMENT_BUTTON);
 
@@ -228,10 +228,10 @@ int32_t button_custom(gs_gui_context_t* ctx, const char* label)
     gs_color_t hc = GS_COLOR_WHITE, sc = gs_color(85, 85, 85, 255);
     gs_gui_rect_t r = ctx->last_rect;
     int32_t w = 2;
-	gs_gui_draw_rect(ctx, gs_gui_rect(r.x + w, r.y, r.w - 2 * w, w), hc);
-	gs_gui_draw_rect(ctx, gs_gui_rect(r.x + w, r.y + r.h - w, r.w - 2 * w, w), sc);
-	gs_gui_draw_rect(ctx, gs_gui_rect(r.x, r.y, w, r.h), hc);
-	gs_gui_draw_rect(ctx, gs_gui_rect(r.x + r.w - w, r.y, w, r.h), sc);
+    gs_gui_draw_rect(ctx, gs_gui_rect(r.x + w, r.y, r.w - 2 * w, w), hc);
+    gs_gui_draw_rect(ctx, gs_gui_rect(r.x + w, r.y + r.h - w, r.w - 2 * w, w), sc);
+    gs_gui_draw_rect(ctx, gs_gui_rect(r.x, r.y, w, r.h), hc);
+    gs_gui_draw_rect(ctx, gs_gui_rect(r.x + r.w - w, r.y, w, r.h), sc);
 
     return res;
 } 
