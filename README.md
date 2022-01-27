@@ -3,7 +3,7 @@
 [![Discord](https://img.shields.io/discord/485178488203116567?label=discord&logo=discord)](https://discord.gg/QXwpETB)
 ![GitHub top language](https://img.shields.io/github/languages/top/mrfrenik/gs_examples)
 
-Library of working examples to demonstrate the [gunslinger](https://github.com/MrFrenik/gunslinger) game framework.
+Library of working examples to demonstrate the [gunslinger](https://github.com/MrFrenik/gunslinger) multimedia framework.
 
 ## Cloning instructions: 
 - Use the following command to clone the repo and init the gunslinger submodule
