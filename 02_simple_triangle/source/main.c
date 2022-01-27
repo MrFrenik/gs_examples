@@ -24,6 +24,7 @@ gs_command_buffer_t                      cb      = {0};
 gs_handle(gs_graphics_vertex_buffer_t)   vbo     = {0};
 gs_handle(gs_graphics_pipeline_t)        pip     = {0};
 gs_handle(gs_graphics_shader_t)          shader  = {0};
+gs_handle(gs_graphics_storage_buffer_t)  u_voxels    = {0};
 
 void init()
 {
@@ -35,6 +36,16 @@ void init()
         &(gs_graphics_vertex_buffer_desc_t) {
             .data = v_data,
             .size = sizeof(v_data)
+        }
+    );
+
+    gs_vec4 data = gs_v4(0.f, 1.f, 0.f, 0.f);
+
+    u_voxels = gs_graphics_storage_buffer_create(
+        &(gs_graphics_storage_buffer_desc_t){
+            .data = &data,
+            .size = sizeof(gs_vec4),
+            .name = "u_voxels"
         }
     );
 
@@ -67,7 +78,7 @@ void init()
 
 void update()
 {
-    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_engine_quit();
+    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_quit();
 
     // Render pass action for clearing the screen
     gs_graphics_clear_desc_t clear = (gs_graphics_clear_desc_t){
@@ -76,7 +87,8 @@ void update()
 
     // Binding descriptor for vertex buffer
     gs_graphics_bind_desc_t binds = {
-        .vertex_buffers = {&(gs_graphics_bind_vertex_buffer_desc_t){.buffer = vbo}}
+        .vertex_buffers = {&(gs_graphics_bind_vertex_buffer_desc_t){.buffer = vbo}},
+        .storage_buffers = {&(gs_graphics_bind_storage_buffer_desc_t){.buffer = u_voxels, .binding = 0}},
     };
 
     gs_graphics_begin_render_pass(&cb, GS_GRAPHICS_RENDER_PASS_DEFAULT);           // Begin render pass (default render pass draws to back buffer)

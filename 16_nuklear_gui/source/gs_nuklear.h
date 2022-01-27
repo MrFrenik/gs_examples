@@ -260,7 +260,7 @@ gs_nk_new_frame(gs_nk_ctx_t* gs)
     struct nk_context* ctx = &gs->nk_ctx;
 
     // Cache platform pointer
-    gs_platform_t* platform = gs_engine_subsystem(platform);
+    gs_platform_t* platform = gs_subsystem(platform);
 
     // Get window size
     gs_platform_window_size(gs->window_hndl, &gs->width, &gs->height);

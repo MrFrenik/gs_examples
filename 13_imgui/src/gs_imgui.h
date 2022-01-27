@@ -81,7 +81,7 @@ gs_imgui_device_create(gs_imgui_t* gs)
     gs_graphics_shader_desc_t sdesc = {};
     sdesc.sources = sources;
     sdesc.size = sizeof(sources);
-    sdesc.name = "imgui";
+    memcpy(sdesc.name, "imgui", 64);
 
     // Create shader
     gs->shader = gs_graphics_shader_create (&sdesc);
@@ -90,7 +90,7 @@ gs_imgui_device_create(gs_imgui_t* gs)
     gs_graphics_uniform_layout_desc_t slayout = gs_default_val();
     slayout.type = GS_GRAPHICS_UNIFORM_SAMPLER2D;
     gs_graphics_uniform_desc_t utexdesc = {};
-    utexdesc.name = "Texture";
+    memcpy(utexdesc.name, "Texture", 64);
     utexdesc.layout = &slayout;
     gs->u_tex = gs_graphics_uniform_create(&utexdesc);
 
@@ -98,7 +98,7 @@ gs_imgui_device_create(gs_imgui_t* gs)
     gs_graphics_uniform_layout_desc_t ulayout = gs_default_val();
     ulayout.type = GS_GRAPHICS_UNIFORM_MAT4;
     gs_graphics_uniform_desc_t udesc = {};
-    udesc.name = "ProjMtx";
+    memcpy(udesc.name, "ProjMtx", 64);
     udesc.layout = &ulayout;
 
     // Construct project matrix uniform
@@ -366,7 +366,7 @@ gs_imgui_new_frame(gs_imgui_t* gs)
 
     // Setup time step
     // double current_time = (double)gs_platform_elapsed_time();
-    io.DeltaTime = gs_engine_subsystem(platform)->time.delta;
+    io.DeltaTime = gs_subsystem(platform)->time.delta;
     // io.DeltaTime = gs->time > 0.0 ? (float)(current_time - gs->time) : (float)(1.0f / 60.0f);
     // gs->time = current_time;
 

@@ -152,7 +152,7 @@ void app_init()
 void app_update()
 {
     if (gs_platform_key_pressed(GS_KEYCODE_ESC)) 
-        gs_engine_quit();
+        gs_quit();
 
     // Render pass action for clearing the screen
     gs_graphics_clear_desc_t clear = {.actions = &(gs_graphics_clear_action_t){.color = 0.1f, 0.1f, 0.1f, 1.f}};
@@ -193,7 +193,7 @@ void app_update()
 
 void fps_camera_update(gs_camera_t* cam)
 {
-    gs_platform_t* platform = gs_engine_subsystem(platform);
+    gs_platform_t* platform = gs_subsystem(platform);
 
     gs_platform_lock_mouse(gs_platform_main_window(), gs_platform_mouse_down(GS_MOUSE_LBUTTON));
     if (!gs_platform_mouse_locked()) {

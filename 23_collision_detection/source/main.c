@@ -184,8 +184,8 @@ gs_vec3 manifold_get_mtv(manifold_t* manifold)
 
 void app_do_input()
 {
-    // Quit engine/app
-    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_engine_quit();
+    // Quit gs/app
+    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_quit();
 
     // Alternate shape selections
     if (gs_platform_key_pressed(GS_KEYCODE_M)) {shapes[0] = (shapes[0] + 1) % SHAPE_SELECTION_COUNT; reset_manifold(&manifold);}
@@ -459,7 +459,7 @@ void app_update()
         gs_snprintfc(cmt, 256, "- Collision Mode: %s", mode);
         gsi_text(&gsi, 25.f, 310.f, cmt, NULL, false, 255, 255, 255, 255);
 
-        gs_snprintfc(tstr, 256, "- Frame: %.2f", gs_engine_subsystem(platform)->time.frame);
+        gs_snprintfc(tstr, 256, "- Frame: %.2f", gs_subsystem(platform)->time.frame);
         gsi_text(&gsi, 25.f, 325.f, tstr, NULL, false, 255, 255, 255, 255);
 
         gs_vec3* xp = &xforms[1]->position;

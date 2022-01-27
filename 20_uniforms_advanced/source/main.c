@@ -204,7 +204,7 @@ void app_init()
 
 void app_update()
 {
-    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_engine_quit();
+    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_quit();
 
     gs_vec2 fs = gs_platform_framebuffer_sizev(gs_platform_main_window());
     gs_vec2 ws = gs_platform_window_sizev(gs_platform_main_window());

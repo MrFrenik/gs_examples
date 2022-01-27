@@ -88,7 +88,7 @@ void init()
 
 void update()
 {
-    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_engine_quit();
+    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_quit();
 
     // Render pass action for clearing the screen
     gs_graphics_clear_desc_t clear = (gs_graphics_clear_desc_t){

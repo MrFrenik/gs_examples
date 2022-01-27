@@ -36,9 +36,9 @@ void init()
 
 void update()
 {
-    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_engine_quit();
+    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_quit();
     gs_vec2 fbs = gs_platform_framebuffer_sizev(gs_platform_main_window());
-    gs_graphics_clear_desc_t clear = {.actions = &(gs_graphics_clear_action_t){.color = {bg[0]/255, bg[1]/255,bg[2]/255, 1.f}}};
+    gs_graphics_clear_desc_t clear = {.actions = &(gs_graphics_clear_action_t){.color = {(float)bg[0]/255.f, (float)bg[1]/255.f, (float)bg[2]/255.f, 1.f}}};
     gs_graphics_clear(&gcb, &clear);
     gs_graphics_set_viewport(&gcb,0,0,(int)fbs.x,(int)fbs.y);
     //Handles Input
@@ -192,7 +192,7 @@ static void test_window(mu_Context *ctx) {
             mu_layout_end_column(ctx);
             /* color preview */
             mu_Rect r = mu_layout_next(ctx);
-            mu_draw_rect(ctx, r, mu_color(bg[0], bg[1], bg[2], 255));
+            mu_draw_rect(ctx, r, mu_color((int)bg[0], (int)bg[1], (int)bg[2], 255));
             char buf[32];
             sprintf(buf, "#%02X%02X%02X", (int) bg[0], (int) bg[1], (int) bg[2]);
             mu_draw_control_text(ctx, buf, r, MU_COLOR_TEXT, MU_OPT_ALIGNCENTER);

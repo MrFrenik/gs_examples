@@ -37,7 +37,7 @@ void init()
 void update()
 {
 
-    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_engine_quit();
+    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_quit();
 
     // If press button, play transient, non-persistent audio sample from source
     // with 0.5f volume (volume is clamped 0-1)

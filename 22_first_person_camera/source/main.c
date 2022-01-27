@@ -59,7 +59,7 @@ void app_init()
 
 void app_update()
 {
-    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_engine_quit();
+    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_quit();
 
     // If click, then lock again (in case lost)
     if (gs_platform_mouse_pressed(GS_MOUSE_LBUTTON) && !gs_platform_mouse_locked()) {
@@ -118,7 +118,7 @@ void app_update()
 
 void fps_camera_update(fps_camera_t* fps)
 {
-    gs_platform_t* platform = gs_engine_subsystem(platform);
+    gs_platform_t* platform = gs_subsystem(platform);
 
     gs_vec2 dp = gs_vec2_scale(gs_platform_mouse_deltav(), SENSITIVITY);
     const float mod = gs_platform_key_down(GS_KEYCODE_LEFT_SHIFT) ? 2.f : 1.f; 

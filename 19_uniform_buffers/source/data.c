@@ -13,12 +13,8 @@ const char* v_src =
     "   mat4 projection;\n"
     "   mat4 view;\n"
     "};\n"
-    "layout (std430, binding = 2) buffer u_voxels_buffer {\n"
-    "   int data;\n"
-    "};\n"
     "uniform mat4 u_model;\n"
     "void main() {\n"
-    "   uint v = data[0];\n"
     "   gl_Position = projection * view * u_model * vec4(a_pos, 1.0);\n"
     "}\n";
 

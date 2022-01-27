@@ -5,6 +5,7 @@
 #ifndef GS_EXAMPLES_GS_MICROUI_H
 #define GS_EXAMPLES_GS_MICROUI_H
 #include <microui/atlas.inl>
+
 /*== micrui renderer =========================================================*/
 typedef struct gs_mu_ctx{
     mu_Context mu;
@@ -20,7 +21,7 @@ static int __text_width(mu_Font font, const char *text, int len) {
     return res;
 }
 static gs_mu_ctx * MU;
-void mu_char_callback(uint32_t handle, char codepoint)
+void mu_char_callback(void* handle, uint32_t codepoint)
 {
     uint8_t txt[2] ={codepoint ,0};
     mu_input_text(&MU->mu, txt);
@@ -58,7 +59,7 @@ gs_mu_init(gs_mu_ctx * ctx)
 
     MU = ctx;
     #ifndef __EMSCRIPTEN__
-        gs_platform_set_character_callback( gs_platform_main_window() , mu_char_callback);
+        gs_platform_set_character_callback(gs_platform_main_window() , mu_char_callback);
     #endif
 }
 

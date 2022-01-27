@@ -21,7 +21,7 @@
 
 void app_init()
 {
-    app_t* app = gs_engine_user_data(app_t);
+    app_t* app = gs_user_data(app_t);
     app->cb = gs_command_buffer_new();
     app->gsi = gs_immediate_draw_new(gs_platform_main_window());
     gs_gui_init(&app->gui, gs_platform_main_window());
@@ -40,13 +40,16 @@ void app_init()
     gs_asset_texture_load_from_file("./assets/mcbg.png", &app->bg, NULL, false, false); 
 
     // Generate new style sheet to use for menu
-    app->menu_style_sheet = gs_gui_style_sheet_new(&app->gui, &menu_style_sheet_desc);
+    app->menu_style_sheet = gs_gui_style_sheet_new(&app->gui, &menu_style_sheet_desc); 
+
+    // Dock debug windows
+    gs_gui_dock(&app->gui, "Demo_Window", "Style_Editor", GS_GUI_SPLIT_TAB, 0.5f);
 } 
 
 void app_update()
 {
     // Cache data for frame
-    app_t* app = gs_engine_user_data(app_t);
+    app_t* app = gs_user_data(app_t);
     gs_gui_context_t* gui = &app->gui;
     gs_command_buffer_t* cb = &app->cb;
     gs_immediate_draw_t* gsi = &app->gsi;
@@ -75,7 +78,7 @@ void app_update()
 
     if (gs_platform_key_pressed(GS_KEYCODE_ESC)) 
     {
-        gs_engine_quit();
+        gs_quit();
     } 
 
     // "Game" Scene (simple sin scrolling image to simulate a camera moving over a 3d scene)
@@ -108,8 +111,10 @@ void app_update()
             gs_gui_layout_t* l = gs_gui_get_layout(gui); 
 
             // Inline style for button 
+            gs_gui_layout_row(gui, 2, (int[]){0, 0}, 0);
             gs_gui_push_inline_style(gui, GS_GUI_ELEMENT_BUTTON, &btn_inline_style);
             gs_gui_button(gui, "Inline style"); 
+            gs_gui_button(gui, "Inline style 2"); 
             gs_gui_pop_inline_style(gui, GS_GUI_ELEMENT_BUTTON);
 
             gs_gui_layout_set_next(gui, gs_gui_layout_anchor(&l->body, menu_sz.x, menu_sz.y, 0, 0, GS_GUI_LAYOUT_ANCHOR_CENTER), 0);
@@ -166,7 +171,7 @@ void app_update()
 
             // Frames
             {
-                gs_snprintfc(TMP, 256, "frame: %.2f", gs_engine_subsystem(platform)->time.frame);
+                gs_snprintfc(TMP, 256, "frame: %.2f", gs_subsystem(platform)->time.frame);
                 gs_gui_layout_set_next(gui, gs_gui_layout_anchor(&cnt->body, 150, 50, 0, 0, GS_GUI_LAYOUT_ANCHOR_TOPRIGHT), 0); 
                 gs_gui_rect_t next = gs_gui_layout_next(gui);
                 gs_gui_draw_rect(gui, next, gs_color(0, 0, 0, 20)); gs_gui_layout_set_next(gui, next, 0);
@@ -180,18 +185,8 @@ void app_update()
 
         // Set style sheet to default sheet
         gs_gui_set_style_sheet(gui, NULL); 
-        if (gs_gui_begin_window_ex(gui, "Debug", gs_gui_rect(0, 0, 300, 200), &debug_enabled, 0x00))
-        {
-            gs_gui_button(gui, "uh huh");
-            gs_gui_end_window(gui);
-        }
-
-        gs_gui_style_window(gui, &app->menu_style_sheet, &debug_enabled);
-
-        if (gs_gui_begin_window_ex(gui, "Tools", gs_gui_rect(0, 0, 300, 200), &debug_enabled, 0x00))
-        {
-            gs_gui_end_window(gui);
-        }
+        gs_gui_demo_window(gui, gs_gui_rect(200, 100, 500, 250), &debug_enabled);
+        gs_gui_style_window(gui, &app->menu_style_sheet, gs_gui_rect(100, 100, 100, 100), &debug_enabled);
     } 
 
     // End gui frame
@@ -239,7 +234,7 @@ int32_t button_custom(gs_gui_context_t* ctx, const char* label)
 void app_shutdown()
 {
     // free gui
-    app_t* app = gs_engine_user_data(app_t);
+    app_t* app = gs_user_data(app_t);
     gs_gui_free(&app->gui);
 }
 

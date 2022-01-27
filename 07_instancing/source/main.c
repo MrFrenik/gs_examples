@@ -101,7 +101,7 @@ void init()
 
 void update()
 {
-    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_engine_quit();
+    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_quit();
 
     const gs_vec2 fbs = gs_platform_framebuffer_sizev(gs_platform_main_window());
 

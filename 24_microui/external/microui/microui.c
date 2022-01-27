@@ -882,7 +882,7 @@ int mu_slider_ex(mu_Context *ctx, mu_Real *value, mu_Real low, mu_Real high,
   mu_draw_control_frame(ctx, id, base, MU_COLOR_BASE, opt);
   /* draw thumb */
   w = ctx->style->thumb_size;
-  x = (v - low) * (base.w - w) / (high - low);
+  x = (int)((v - low) * (base.w - w) / (high - low));
   thumb = mu_rect(base.x + x, base.y, w, base.h);
   mu_draw_control_frame(ctx, id, thumb, MU_COLOR_BUTTON, opt);
   /* draw text  */

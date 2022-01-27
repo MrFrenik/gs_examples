@@ -103,7 +103,7 @@ void init()
         &(gs_graphics_pipeline_desc_t) {
             .raster = {
                 .shader = shader,
-                .index_buffer_element_size = sizeof(uint32_t) 
+                .index_buffer_element_size = sizeof(uint32_t)
             },
             .layout = {
                 .attrs = (gs_graphics_vertex_attribute_desc_t[]){
@@ -118,7 +118,7 @@ void init()
 
 void update()
 {
-    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_engine_quit();
+    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_quit();
 
     // Render pass action for clearing the screen
     gs_graphics_clear_desc_t clear = (gs_graphics_clear_desc_t){.actions = &(gs_graphics_clear_action_t){.color = 0.1f, 0.1f, 0.1f, 1.f}};

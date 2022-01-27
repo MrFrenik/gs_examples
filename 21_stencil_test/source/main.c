@@ -212,7 +212,7 @@ void app_init()
 
 void app_update()
 {
-    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_engine_quit();
+    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_quit();
 
     fps_camera_update(&fps);
 
@@ -310,7 +310,7 @@ void fps_camera_update(fps_camera_t* fps)
 {
     const gs_vec2 ws = gs_platform_window_sizev(gs_platform_main_window());
     const gs_vec2 mp = gs_platform_mouse_positionv();
-    float dt = gs_engine_subsystem(platform)->time.delta;
+    float dt = gs_subsystem(platform)->time.delta;
 
     // First pressed
     if (gs_platform_mouse_pressed(GS_MOUSE_LBUTTON)) {

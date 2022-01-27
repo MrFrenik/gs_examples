@@ -27,7 +27,7 @@ void app_init()
 {
     // Construct new command buffer
     gcb = gs_command_buffer_new();
-    gsi = gs_immediate_draw_new();
+    gsi = gs_immediate_draw_new(gs_platform_main_window());
 
     // Construct frame buffer
     fbo = gs_graphics_framebuffer_create(NULL);
@@ -58,7 +58,7 @@ void app_init()
 
 void app_update()
 {
-    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_engine_quit();
+    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_quit();
 
     const gs_vec2 fbs = gs_platform_framebuffer_sizev(gs_platform_main_window());
     const gs_vec2 ws = gs_platform_window_sizev(gs_platform_main_window());

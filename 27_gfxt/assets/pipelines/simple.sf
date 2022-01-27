@@ -1,0 +1,137 @@
+// simple.sf
+
+/*
+    NOTE: ALL states (raster, depth, blend, stencil) are optional, however a shader is required
+*/
+pipeline { 
+
+    /* 
+        Raster State (fields)
+
+            index_buffer_element_size: [UINT32, uint32_t, u32, UINT16, uint16_t, u16]
+            face_culling: [FRONT, BACK, FRONT_AND_BACK]
+            winding_order: [CW, CCW]
+            primitive: [TRIANGLES, LINES, QUADS]
+    */
+
+    raster 
+    { 
+        primitive: TRIANGLES
+        index_buffer_element_size: UINT32
+    },
+
+    /*
+        Depth State (fields)
+
+            func: [LESS, EQUAL, LEQUAL, GEQUAL, NOTEQUAL, ALWAYS, NEVER]
+
+    */ 
+
+    depth 
+    {
+        func: LESS 
+    },
+
+
+    /*
+        Blend State (fields)
+
+           func: [ADD, SUBTRACT, REVERSE_SUBTRACT, MIN, MAX] 
+           src: [ZERO, ONE, SRC_COLOR, ONE_MINUS_SRC_COLOR, DST_COLOR, ONE_MINUS_DST_COLOR, SRC_ALPHA,
+                    ONE_MINUS_SRC_ALPHA, DST_ALPHA, ONE_MINUS_DST_ALPHA, CONSTANT_COLOR, 
+                    ONE_MINUS_CONSTANT_COLOR, CONSTANT_ALPHA, ONE_MINUS_CONSTANT_ALPHA]
+           dst: [ZERO, ONE, SRC_COLOR, ONE_MINUS_SRC_COLOR, DST_COLOR, ONE_MINUS_DST_COLOR, SRC_ALPHA,
+                    ONE_MINUS_SRC_ALPHA, DST_ALPHA, ONE_MINUS_DST_ALPHA, CONSTANT_COLOR, 
+                    ONE_MINUS_CONSTANT_COLOR, CONSTANT_ALPHA, ONE_MINUS_CONSTANT_ALPHA]
+    */
+
+    blend 
+    {
+        // empty
+    },
+
+    /*
+        Stencil State (fields) 
+
+            func:[LESS, EQUAL, LEQUAL, GREATER, NOTEQUAL, GEQUAL, ALWAYS, NEVER] 
+            ref: [0 - 255] 
+            comp_mask: [0 - 255]
+            write_mask: [0 - 255]
+    */
+
+    stencil 
+    {
+        // empty
+    },
+    
+    /*
+        Shader Decl
+
+            stages: [vertex, fragment, compute]
+    */
+
+    shader { 
+    
+        vertex { 
+
+            attributes { 
+
+                /*
+                    Vertex layout required for this pipeline (for input assembler)
+
+                    fields: 
+
+                    POSITION: vec3
+                    TEXCOORD: vec2
+                    COLOR:    uint8[4]
+                    NORMAL:   vec3
+                    TANGENT:  vec3
+                    JOINT:    vec4
+                    WEIGHT:   float
+
+                */
+
+                mesh 
+                {
+                    POSITION : a_position   
+                    TEXCOORD : a_uv         
+                    COLOR    : a_color      
+                } 
+            }, 
+
+            uniforms {
+                mat4 u_mvp;
+            },
+
+            out {
+                vec2 uv;
+                vec3 position;
+            },
+
+            code { 
+                void main() {
+                    gl_Position = u_mvp * vec4(a_position, 1.0);
+                    uv = a_uv;
+                    position = a_position;
+                }
+            }
+        },
+
+        fragment { 
+
+            uniforms {
+                sampler2D u_tex;
+            }, 
+            
+            out {
+                vec4 frag_color;            
+            },
+
+            code {
+                void main() {
+                    frag_color = texture(u_tex, uv);
+                }
+            }
+        } 
+    } 
+}

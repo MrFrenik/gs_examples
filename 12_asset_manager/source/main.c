@@ -128,7 +128,7 @@ void init()
 
 void update()
 {
-    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_engine_quit();
+    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_quit();
 
     const gs_vec2 fb = gs_platform_framebuffer_sizev(gs_platform_main_window());
     const gs_vec2 ws = gs_platform_window_sizev(gs_platform_main_window());
@@ -212,8 +212,8 @@ void update()
                 .index_buffers = {.desc = &(gs_graphics_bind_index_buffer_desc_t){.buffer = prim->ibo}},
                 .uniforms = {
                     .desc = (gs_graphics_bind_uniform_desc_t[]){
-                        {.uniform = gsi.uniform, .data = &mvp},
-                        {.uniform = gsi.sampler, .data = &dtp->hndl, .binding = 0}
+                        {.uniform = GSI()->uniform, .data = &mvp},
+                        {.uniform = GSI()->sampler, .data = &dtp->hndl, .binding = 0}
                     },
                     .size = 2 * sizeof(gs_graphics_bind_uniform_desc_t)
                 }

@@ -21,7 +21,7 @@ gs_command_buffer_t gcb = {0};
 gs_gui_context_t gsgui = {0};
 
 //For console window
-static   int logbuf_updated = 0;
+static  int logbuf_updated = 0;
 static  char logbuf[64000];
 
 //Color picker
@@ -37,21 +37,25 @@ void app_init()
 {
     gcb = gs_command_buffer_new();
     gs_gui_init(&gsgui, gs_platform_main_window());
+
+    // Dock windows before hand
+    gs_gui_dock(&gsgui, "Style_Editor", "Demo_Window", GS_GUI_SPLIT_TAB, 0.5f);
 } 
 
 void app_update()
 {
-    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) 
-    {
-        gs_engine_quit();
+    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) {
+        gs_quit();
     }
 
     // Begin new frame for gui
     gs_gui_begin(&gsgui);
 
     dockspace(&gsgui);
-    log_window(&gsgui);
-    test_window(&gsgui);
+    gs_gui_demo_window(&gsgui, gs_gui_rect(100, 100, 500, 500), NULL);
+    gs_gui_style_window(&gsgui, NULL, gs_gui_rect(350, 250, 300, 240), NULL);
+    // log_window(&gsgui);
+    // test_window(&gsgui);
 
     // End gui frame
     gs_gui_end(&gsgui);
@@ -116,12 +120,12 @@ void log_window(gs_gui_context_t* ctx)
         gs_gui_begin_panel(ctx, "Log Output");
         gs_gui_container_t* panel = gs_gui_get_current_container(ctx);
         gs_gui_layout_row(ctx, 1, (int[]) { -1 }, -1);
-        gs_gui_text(ctx, logbuf, 0);
+        gs_gui_text_ex(ctx, logbuf, 0);
         gs_gui_end_panel(ctx);
 
         if (logbuf_updated) 
         {
-            panel->scroll.y = panel->content_size.y;
+            // panel->scroll.y = panel->content_size.y;
             logbuf_updated = 0;
         }
 
@@ -223,7 +227,7 @@ void test_window(gs_gui_context_t *ctx)
             gs_gui_layout_row(ctx, 1, (int[]) { -1 }, 0);
             gs_gui_text(ctx, "Lorem ipsum dolor sit amet, consectetur adipiscing "
                          "elit. Maecenas lacinia, sem eu lacinia molestie, mi risus faucibus "
-                         "ipsum, eu varius magna felis a nulla.", 1);
+                         "ipsum, eu varius magna felis a nulla.");
             gs_gui_layout_end_column(ctx);
         }
 
