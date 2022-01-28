@@ -4,14 +4,14 @@
 #ifdef GS_PLATFORM_WEB
     #define GS_VERSION_STR "#version 300 es\n"
 #else
-    #define GS_VERSION_STR "#version 330 core\n"
+    #define GS_VERSION_STR "#version 430\n"
 #endif
 
 // Shaders
 const char* v_src =
 GS_VERSION_STR
 "precision mediump float;\n"
-"layout(location = 0) in vec2 a_pos;\n"
+"layout(location = 0) in vec2 a_pos;\n" 
 "void main()\n"
 "{\n"
 "   gl_Position = vec4(a_pos, 0.0, 1.0);\n"
