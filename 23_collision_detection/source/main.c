@@ -242,7 +242,7 @@ void app_update()
     gsi_face_cull_enabled(&gsi, true);
 
     // Transform scene camera
-    gsi_transf(&gsi, 0.f, 0.f, -5.f);
+    gsi_translatef(&gsi, 0.f, 0.f, -5.f);
 
     // All physics collision detection calls can accept optional transform information.
     // These transforms will allow you to rotate/translate/scale (uniformly, if spheres) your objects

@@ -38,7 +38,7 @@ void app_init()
     app->mesh = gs_gfxt_mesh_load_from_file("./assets/meshes/slave.gltf", &(gs_gfxt_mesh_import_options_t){
         .layout = app->pip.mesh_layout,
         .size = gs_dyn_array_size(app->pip.mesh_layout) * sizeof(gs_gfxt_mesh_layout_t),
-        .index_buffer_element_size = app->pip.index_buffer_element_size
+        .index_buffer_element_size = app->pip.desc.raster.index_buffer_element_size
     }); 
 
     app->texture = gs_gfxt_texture_load_from_file("./assets/textures/slave_albedo.png", NULL, false, false);

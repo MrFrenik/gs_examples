@@ -18,6 +18,7 @@ gs_command_buffer_t  cb   = {0};
 gs_immediate_draw_t  gsi  = {0};
 gs_asset_font_t      font = {0};
 gs_asset_texture_t   tex  = {0};
+gs_texture           sdf_tex = {0};
 
 void init()
 {
@@ -62,7 +63,7 @@ void update()
     gsi_camera3D(&gsi);
     gsi_push_matrix(&gsi, GSI_MATRIX_MODELVIEW);
     {
-        gsi_transf(&gsi, -2.f, -1.f, -5.f);
+        gsi_translatef(&gsi, -2.f, -1.f, -5.f);
         gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.001f, GS_YAXIS);
         gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0005f, GS_ZAXIS);
         gsi_texture(&gsi, tex.hndl);
@@ -75,7 +76,7 @@ void update()
     // Box (lines, no texture)
     gsi_push_matrix(&gsi, GSI_MATRIX_MODELVIEW);
     {
-        gsi_transf(&gsi, 2.f, -1.f, -5.f);
+        gsi_translatef(&gsi, 2.f, -1.f, -5.f);
         gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.001f, GS_YAXIS);
         gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0008f, GS_ZAXIS);
         gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0009f, GS_XAXIS);
@@ -88,7 +89,7 @@ void update()
     gsi_camera3D(&gsi);
     gsi_push_matrix(&gsi, GSI_MATRIX_MODELVIEW);
     {
-        gsi_transf(&gsi, -2.f, -1.f, -5.f);
+        gsi_translatef(&gsi, -2.f, -1.f, -5.f);
         gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.001f, GS_YAXIS);
         gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0005f, GS_ZAXIS);
         gsi_scalef(&gsi, 1.5f, 1.5f, 1.5f);
@@ -99,7 +100,7 @@ void update()
     // Sphere (lines)
     gsi_push_matrix(&gsi, GSI_MATRIX_MODELVIEW);
     {
-        gsi_transf(&gsi, 2.f, -1.f, -5.f);
+        gsi_translatef(&gsi, 2.f, -1.f, -5.f);
         gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.001f, GS_YAXIS);
         gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0008f, GS_ZAXIS);
         gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0009f, GS_XAXIS);
@@ -113,6 +114,11 @@ void update()
     gsi_defaults(&gsi);
     gsi_text(&gsi, 410.f, 150.f, "Custom Font", &font, false, 200, 100, 50, 255);
     gsi_text(&gsi, 450.f, 200.f, "Default Font", NULL, false, 50, 100, 255, 255);
+
+    gs_graphics_texture_desc_t q = {0};
+    gs_graphics_texture_desc_query(sdf_tex, &q);
+    gsi_texture(&gsi, sdf_tex);
+    gsi_rectvd(&gsi, gs_v2s(100.f), gs_vec2_scale(gs_v2((float)q.width, (float)q.height), 3.f), gs_v2s(0.f), gs_v2s(1.f), GS_COLOR_WHITE, GS_GRAPHICS_PRIMITIVE_TRIANGLES); 
 
     gsi_render_pass_submit(&gsi, &cb, gs_color(10, 10, 10, 255));
 

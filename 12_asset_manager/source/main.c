@@ -151,7 +151,7 @@ void update()
 
     gsi_camera3D(&gsi);
     gsi_face_cull_enabled(&gsi, true);
-    gsi_transf(&gsi, -2.f, 0.f, -5.f);
+    gsi_translatef(&gsi, -2.f, 0.f, -5.f);
     gsi_rotatefv(&gsi, -gs_platform_elapsed_time() * 0.001f, GS_YAXIS);
     gsi_sphere(&gsi, 0.f, 0.f, 0.f, 1.5f, 20, 50, 150, 100, GS_GRAPHICS_PRIMITIVE_LINES);
     gsi_texture(&gsi, tp->hndl);

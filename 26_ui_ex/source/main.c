@@ -43,7 +43,7 @@ void app_init()
     app->menu_style_sheet = gs_gui_style_sheet_new(&app->gui, &menu_style_sheet_desc); 
 
     // Dock debug windows
-    gs_gui_dock(&app->gui, "Demo_Window", "Style_Editor", GS_GUI_SPLIT_TAB, 0.5f);
+    gs_gui_dock_ex(&app->gui, "Demo_Window", "Style_Editor", GS_GUI_SPLIT_TAB, 0.5f);
 } 
 
 void app_update()
@@ -186,7 +186,7 @@ void app_update()
         // Set style sheet to default sheet
         gs_gui_set_style_sheet(gui, NULL); 
         gs_gui_demo_window(gui, gs_gui_rect(200, 100, 500, 250), &debug_enabled);
-        gs_gui_style_window(gui, &app->menu_style_sheet, gs_gui_rect(100, 100, 100, 100), &debug_enabled);
+        gs_gui_style_editor(gui, &app->menu_style_sheet, gs_gui_rect(100, 100, 100, 100), &debug_enabled);
     } 
 
     // End gui frame

@@ -39,7 +39,7 @@ void app_init()
     gs_gui_init(&gsgui, gs_platform_main_window());
 
     // Dock windows before hand
-    gs_gui_dock(&gsgui, "Style_Editor", "Demo_Window", GS_GUI_SPLIT_TAB, 0.5f);
+    gs_gui_dock_ex(&gsgui, "Style_Editor", "Demo_Window", GS_GUI_SPLIT_TAB, 0.5f);
 } 
 
 void app_update()
@@ -53,7 +53,7 @@ void app_update()
 
     dockspace(&gsgui);
     gs_gui_demo_window(&gsgui, gs_gui_rect(100, 100, 500, 500), NULL);
-    gs_gui_style_window(&gsgui, NULL, gs_gui_rect(350, 250, 300, 240), NULL);
+    gs_gui_style_editor(&gsgui, NULL, gs_gui_rect(350, 250, 300, 240), NULL);
     // log_window(&gsgui);
     // test_window(&gsgui);
 

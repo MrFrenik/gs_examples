@@ -30,6 +30,10 @@ typedef struct
 
 app_t g_app = {0}; 
 
+static void app_init_stylesheets(app_t* app)
+{
+}
+
 // Set up styles for elements 
 gs_gui_style_element_t panel_style[] = {
     {GS_GUI_STYLE_PADDING_TOP, .value = 20},
@@ -160,8 +164,7 @@ gs_gui_style_element_t inline_btn_style[] = {
     {GS_GUI_STYLE_COLOR_BACKGROUND, .color = {255, 50, 0, 255}},
     {GS_GUI_STYLE_COLOR_CONTENT, .color = {255, 255, 255, 255}},
     {GS_GUI_STYLE_HEIGHT, .value = BTN_HEIGHT},
-    {GS_GUI_STYLE_MARGIN_TOP, .value = BTN_MARGIN_TOP},
-    {GS_GUI_STYLE_FONT, .value = &g_app.fonts[GUI_FONT_BUTTON]}
+    {GS_GUI_STYLE_MARGIN_TOP, .value = BTN_MARGIN_TOP}
 };
 gs_gui_style_element_t inline_btn_foc_style[] = { 
     {GS_GUI_STYLE_HEIGHT, .value = BTN_HEIGHT - BTN_MARGIN_TOP},
