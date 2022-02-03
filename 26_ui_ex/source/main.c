@@ -40,7 +40,7 @@ void app_init()
     gs_asset_texture_load_from_file("./assets/mcbg.png", &app->bg, NULL, false, false); 
 
     // Generate new style sheet to use for menu
-    app->menu_style_sheet = gs_gui_style_sheet_new(&app->gui, &menu_style_sheet_desc); 
+    app->menu_style_sheet = gs_gui_style_sheet_create(&app->gui, &menu_style_sheet_desc); 
 
     // Dock debug windows
     gs_gui_dock_ex(&app->gui, "Demo_Window", "Style_Editor", GS_GUI_SPLIT_TAB, 0.5f);
