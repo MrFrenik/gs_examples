@@ -9,5 +9,6 @@ typedef struct {
     gs_gfxt_material_t mat;
     gs_gfxt_mesh_t mesh;
     gs_gfxt_texture_t texture; 
+    const char* asset_dir;
 } app_t;
 

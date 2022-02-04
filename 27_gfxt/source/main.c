@@ -25,9 +25,12 @@ void app_init()
     app_t* app = gs_user_data(app_t);
     app->cb = gs_command_buffer_new();
     app->gsi = gs_immediate_draw_new(gs_platform_main_window());
+    app->asset_dir = gs_platform_dir_exists("./assets") ? "./assets" : "../assets";
+    char TMP[256] = {0};
 
     // Load pipeline from resource file
-    app->pip = gs_gfxt_pipeline_load_from_file("./assets/pipelines/simple.sf");
+    gs_snprintf(TMP, sizeof(TMP), "%s/%s", app->asset_dir, "pipelines/simple.sf");
+    app->pip = gs_gfxt_pipeline_load_from_file(TMP);
 
     // Create material using this pipeline
     app->mat = gs_gfxt_material_create(&(gs_gfxt_material_desc_t){
@@ -35,13 +38,15 @@ void app_init()
     });
 
     // Create mesh that uses the layout from the pipeline's requested mesh layout 
-    app->mesh = gs_gfxt_mesh_load_from_file("./assets/meshes/slave.gltf", &(gs_gfxt_mesh_import_options_t){
+    gs_snprintf(TMP, sizeof(TMP), "%s/%s", app->asset_dir, "meshes/slave.gltf");
+    app->mesh = gs_gfxt_mesh_load_from_file(TMP, &(gs_gfxt_mesh_import_options_t){
         .layout = app->pip.mesh_layout,
         .size = gs_dyn_array_size(app->pip.mesh_layout) * sizeof(gs_gfxt_mesh_layout_t),
         .index_buffer_element_size = app->pip.desc.raster.index_buffer_element_size
     }); 
 
-    app->texture = gs_gfxt_texture_load_from_file("./assets/textures/slave_albedo.png", NULL, false, false);
+    gs_snprintf(TMP, sizeof(TMP), "%s/%s", app->asset_dir, "textures/slave_albedo.png");
+    app->texture = gs_gfxt_texture_load_from_file(TMP, NULL, false, false);
 } 
 
 void app_update()
