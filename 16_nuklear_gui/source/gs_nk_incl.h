@@ -17,4 +17,4 @@
 #include "node_editor.h"
 #include "style.h"
 
-#endif __GS_NK_INCL_H__
+#endif // __GS_NK_INCL_H__

@@ -19,6 +19,8 @@
 
 #include "data.c"
 
+int32_t button_custom(gs_gui_context_t* ctx, const char* label);
+
 void app_init()
 {
     app_t* app = gs_user_data(app_t);

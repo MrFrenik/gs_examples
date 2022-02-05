@@ -29,7 +29,7 @@ void mu_char_callback(void* handle, uint32_t codepoint)
 static int __text_height(mu_Font font) {
     return 18;
 }
-gs_mu_init(gs_mu_ctx * ctx)
+static void gs_mu_init(gs_mu_ctx * ctx)
 {
 
     ctx->gsi = gs_immediate_draw_new(gs_platform_main_window());

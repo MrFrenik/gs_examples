@@ -8,7 +8,7 @@ proj_name=gs
 proj_root_dir=$(pwd)/../
 
 flags=(
-    -std=c99 -O0 -w 
+	-std=gnu99 -Wl,--no-as-needed -ldl -lGL -lX11 -pthread -lXi -D_POSIX_C_SOURCE=199309L
 )
 
 # Include directories
@@ -40,7 +40,7 @@ cd bin
 proj_root_dir=$(pwd)/../
 
 flags=(
-    -std=c99
+	-std=gnu99 -Wl,--no-as-needed -ldl -lGL -lX11 -pthread -lXi -D_POSIX_C_SOURCE=199309L
 )
 
 # Include directories
@@ -59,15 +59,9 @@ lib_dirs=(
 
 libs=(
     -lgs
-    -lopengl32
-    -lkernel32 
-    -luser32 
-    -lshell32 
-    -lgdi32 
-    -lAdvapi32
 )
 
 # Build
-gcc -O3 ${lib_dirs[*]} ${libs[*]} ${inc[*]} ${src[*]} ${flags[*]} -o App
+gcc -O3 ${lib_dirs[*]} ${libs[*]} ${inc[*]} ${src[*]} ${flags[*]} -lm -o App
 
 cd ..

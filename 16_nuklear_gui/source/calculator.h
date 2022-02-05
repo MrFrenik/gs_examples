@@ -2,7 +2,7 @@
 #define __CALCULATOR_H__
 
 /* nuklear - v1.00 - public domain */
-gs_force_inline
+gs_force_inline void
 calculator(struct nk_context *ctx)
 {
     if (nk_begin(ctx, "Calculator", nk_rect(10, 10, 180, 250),

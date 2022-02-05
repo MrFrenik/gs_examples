@@ -11,7 +11,7 @@
 ================================================================*/
 
 // Nuklear will define these, so we will not implement them ourselves
-#include "gs_nk_incl.h"
+#include "impl.c"
 
 gs_command_buffer_t gcb = {0};
 

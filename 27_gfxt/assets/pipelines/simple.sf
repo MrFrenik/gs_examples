@@ -81,22 +81,23 @@ pipeline {
 
                     fields: 
 
-                    POSITION: vec3
-                    TEXCOORD: vec2
-                    COLOR:    uint8[4]
-                    NORMAL:   vec3
-                    TANGENT:  vec3
-                    JOINT:    vec4
-                    WEIGHT:   float
-
+                    POSITION: 	      	float3
+                    TEXCOORD: 	      	float2
+                    TEXCOORD[0 - 12]: 	float2
+                    COLOR:    		uint8[4]
+                    NORMAL:   		float3
+                    TANGENT:  		float4
+                    JOINT:    		float4
+                    WEIGHT:   		float 
+		    FLOAT: 		float
+		    FLOAT2: 		float2
+		    FLOAT3: 		float3
+		    FLOAT4: 		float4
                 */
 
-                mesh 
-                {
-                    POSITION : a_position   
-                    TEXCOORD : a_uv         
-                    COLOR    : a_color      
-                } 
+		POSITION : a_position   
+		TEXCOORD : a_uv         
+		COLOR    : a_color      
             }, 
 
             uniforms {

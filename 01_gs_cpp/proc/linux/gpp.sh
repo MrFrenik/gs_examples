@@ -13,7 +13,7 @@ flags=(
 
 # Include directories
 inc=(
-	-I ../../third_party/
+	-I ../../third_party/include/
 )
 
 # Source files
