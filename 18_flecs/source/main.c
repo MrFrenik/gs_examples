@@ -63,13 +63,14 @@ void move_system(ecs_iter_t* it)
 void render_system(ecs_iter_t* it)
 {
     app_data_t* app = gs_user_data(app_data_t);
+    const gs_vec2 fbs = gs_platform_framebuffer_sizev(gs_platform_main_window());
 
     // Grab position from column data
     ECS_COLUMN(it, position_t, p, 1);
     ECS_COLUMN(it, bounds_t, b, 2);
     ECS_COLUMN(it, color_t, c, 3);
 
-    gsi_camera2D(&app->gsi);
+    gsi_camera2D(&app->gsi, fbs.x, fbs.y);
 
     // Render all into immediate draw instance data
     for (int32_t i = 0; i < it->count; ++i) {
@@ -122,13 +123,14 @@ void app_update()
    ecs_world_t* world = app->world;
    gs_command_buffer_t* gcb = &app->gcb;
    gs_immediate_draw_t* gsi = &app->gsi;
+   const gs_vec2 fbs = gs_platform_framebuffer_sizev(gs_platform_main_window());
 
    // Progress ecs world
    ecs_progress(world, 0);
 
    // Render scene
    gs_snprintfc(tmp, 256, "FPS: %.2f", gs_subsystem(platform)->time.frame);
-   gsi_camera2D(gsi);
+   gsi_camera2D(gsi, fbs.x, fbs.y);
    gsi_rectvd(gsi, gs_v2(0.f, 0.f), gs_v2(100.f, 20.f), gs_v2(0.f, 0.f), gs_v2(1.f, 1.f), GS_COLOR_BLACK, GS_GRAPHICS_PRIMITIVE_TRIANGLES);
    gsi_text(gsi, 10.f, 15.f, tmp, NULL, false, 255, 255, 255, 255);
 

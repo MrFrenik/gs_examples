@@ -59,6 +59,8 @@ void app_init()
 
 void app_update()
 {
+    const gs_vec2 fbs = gs_platform_framebuffer_sizev(gs_platform_main_window());
+
     if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_quit();
 
     // If click, then lock again (in case lost)
@@ -74,7 +76,7 @@ void app_update()
     }
 
     /* Immediate draw scene */
-    gsi_camera(&gsi, &fps.cam);
+    gsi_camera(&gsi, &fps.cam, fbs.x, fbs.y);
     gsi_depth_enabled(&gsi, true);
     gsi_face_cull_enabled(&gsi, true);
 
@@ -101,7 +103,7 @@ void app_update()
 
     // Draw text
     gsi_defaults(&gsi);
-    gsi_camera2D(&gsi);
+    gsi_camera2D(&gsi, fbs.x, fbs.y);
     gsi_rectvd(&gsi, gs_v2(10.f, 10.f), gs_v2(220.f, 70.f), gs_v2(0.f, 0.f), gs_v2(1.f, 1.f), gs_color(10, 50, 150, 128), GS_GRAPHICS_PRIMITIVE_TRIANGLES);
     gsi_rectvd(&gsi, gs_v2(10.f, 10.f), gs_v2(220.f, 70.f), gs_v2(0.f, 0.f), gs_v2(1.f, 1.f), gs_color(10, 50, 220, 255), GS_GRAPHICS_PRIMITIVE_LINES);
     gsi_text(&gsi, 20.f, 25.f, "FPS Camera Controls:", NULL, false, 0, 0, 0, 255);

@@ -8,7 +8,7 @@ proj_name=App
 proj_root_dir=$(pwd)/../
 
 flags=(
-    -w -s WASM=1 -s USE_WEBGL2=1 -s ASYNCIFY=1 -O1
+    -O3 -w -s WASM=1 -s USE_WEBGL2=1 -s ASYNCIFY -s ALLOW_MEMORY_GROWTH=1 --preload-file ../assets
 )
 
 # Include directories

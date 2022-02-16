@@ -11,7 +11,6 @@
 #define NK_INCLUDE_DEFAULT_FONT
 #define NK_UINT_DRAW_INDEX
 #include <Nuklear/nuklear.h>
-#include <gs/gs.h>
 #include "gs_nuklear.h"
 #include "calculator.h"
 #include "node_editor.h"

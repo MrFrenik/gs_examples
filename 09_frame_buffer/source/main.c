@@ -68,7 +68,7 @@ void app_update()
     gs_graphics_clear_desc_t bb_clear = {.actions = &(gs_graphics_clear_action_t){.color = 0.1f, 0.1f, 0.1f, 1.f}};
 
     // Immediate rendering for offscreen buffer
-    gsi_camera3D(&gsi);
+    gsi_camera3D(&gsi, fbs.x, fbs.y);
     gsi_translatef(&gsi, 0.f, 0.f, -2.f);
     gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0001f, GS_YAXIS);
     gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0002f, GS_XAXIS);
@@ -83,7 +83,7 @@ void app_update()
     gs_graphics_end_render_pass(&gcb);
 
     // Immediate rendering for back buffer
-    gsi_camera3D(&gsi);
+    gsi_camera3D(&gsi, fbs.x, fbs.y);
     gsi_depth_enabled(&gsi, true);
     gsi_face_cull_enabled(&gsi, true);
     gsi_translatef(&gsi, 0.f, 0.f, -1.f);

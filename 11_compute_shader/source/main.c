@@ -122,6 +122,8 @@ void app_init()
 
 void app_update()
 {
+    const gs_vec2 fbs = gs_platform_framebuffer_sizev(gs_platform_main_window());
+
     if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_quit();
 
     // Simply return if we can't do this sample.
@@ -150,7 +152,7 @@ void app_update()
     }
 
     // Use immediate mode rendering to display texture
-    gsi_camera2D(&gsi);
+    gsi_camera2D(&gsi, fbs.x, fbs.y);
     gsi_texture(&gsi, cmptex);
     gsi_rectvd(&gsi, gs_v2(0.f, 0.f), gs_v2((float)TEX_WIDTH, (float)TEX_HEIGHT), gs_v2(0.f, 0.f), gs_v2(1.f, 1.f), GS_COLOR_WHITE, GS_GRAPHICS_PRIMITIVE_TRIANGLES);
     gsi_render_pass_submit(&gsi, &cb, gs_color(10, 10, 10, 255));

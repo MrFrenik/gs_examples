@@ -241,9 +241,11 @@ void app_init()
 
 void app_update()
 {
+    const gs_vec2 fbs = gs_platform_framebuffer_sizev(gs_platform_main_window());
+
     if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_quit();
 
-    gsi_camera2D(&gsi);
+    gsi_camera2D(&gsi, fbs.x, fbs.y);
 
     // Present property information (debug text)
     gs_meta_class_t* cls = gs_meta_class_get(&gmr, thing_t);

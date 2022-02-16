@@ -87,7 +87,7 @@ void app_update()
     { 
         gs_vec2 os = gs_v2(sin(_t * 0.3f) * 200.f, sin(_t * 0.5f) * 20.f);
         gs_vec2 pos = gs_v2((fbs.x - bg_sz.x) * 0.5f + os.x, (fbs.y - bg_sz.y) * 0.5f + os.y);
-        gsi_camera2D(gsi);
+        gsi_camera2D(gsi, fbs.x, fbs.y);
         gsi_texture(gsi, app->bg.hndl);
         gsi_rectvd(gsi, pos, bg_sz, gs_v2s(0.f), gs_v2s(1.f), GS_COLOR_WHITE, GS_GRAPHICS_PRIMITIVE_TRIANGLES); 
     } 

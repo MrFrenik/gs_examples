@@ -181,10 +181,10 @@ void __push_quad(gs_immediate_draw_t * gsi,mu_Rect dst, mu_Rect src, mu_Color co
 
 }
 void gs_mu_render(gs_mu_ctx * ctx,gs_command_buffer_t * cb)
-{
-    
+{ 
+    const gs_vec2 fbs = gs_platform_framebuffer_sizev(gs_platform_main_window());
     gsi_texture(&ctx->gsi,ctx->atlas_tex);
-    gsi_camera2D(&ctx->gsi);
+    gsi_camera2D(&ctx->gsi, fbs.x, fbs.y);
     mu_Command *cmd = NULL;
     while (mu_next_command(&ctx->mu, &cmd)) {
       switch (cmd->type) {

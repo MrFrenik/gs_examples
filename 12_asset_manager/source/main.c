@@ -149,7 +149,7 @@ void update()
     gs_asset_mesh_t* mp = gs_assets_getp(&gsa, gs_asset_mesh_t, msh_hndl);
     gs_asset_texture_t* dtp = gs_assets_getp(&gsa, gs_asset_texture_t, dtex_hndl);
 
-    gsi_camera3D(&gsi);
+    gsi_camera3D(&gsi, fb.x, fb.y);
     gsi_face_cull_enabled(&gsi, true);
     gsi_translatef(&gsi, -2.f, 0.f, -5.f);
     gsi_rotatefv(&gsi, -gs_platform_elapsed_time() * 0.001f, GS_YAXIS);
@@ -159,7 +159,7 @@ void update()
 
     // Default text
     gsi_defaults(&gsi);
-    gsi_camera2D(&gsi);
+    gsi_camera2D(&gsi, fb.x, fb.y);
     gsi_text(&gsi, 120.f, 100.f, "Press P to play jump sound", fp, false, 255, 255, 255, 255);
 
     // Print text of custom asset metric

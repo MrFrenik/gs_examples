@@ -230,6 +230,8 @@ void app_init()
 
 void app_update()
 {
+    const gs_vec2 fbs = gs_platform_framebuffer_sizev(gs_platform_main_window());
+
     // Increment time
     if (running) t += gs_platform_delta_time() * tmul;
 
@@ -237,7 +239,7 @@ void app_update()
     app_do_input();
 
     // Immediate draw scene
-    gsi_camera3D(&gsi);
+    gsi_camera3D(&gsi, fbs.x, fbs.y);
     gsi_depth_enabled(&gsi, true);
     gsi_face_cull_enabled(&gsi, true);
 
@@ -403,7 +405,7 @@ void app_update()
     // Render app control info
     if (render_display_info)
     {
-        gsi_camera2D(&gsi);
+        gsi_camera2D(&gsi, fbs.x, fbs.y);
         gsi_defaults(&gsi);
 
         // Text box

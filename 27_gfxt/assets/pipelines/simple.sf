@@ -1,18 +1,4 @@
-// simple.sf
-
-/*
-    NOTE: ALL states (raster, depth, blend, stencil) are optional, however a shader is required
-*/
 pipeline { 
-
-    /* 
-        Raster State (fields)
-
-            index_buffer_element_size: [UINT32, uint32_t, u32, UINT16, uint16_t, u16]
-            face_culling: [FRONT, BACK, FRONT_AND_BACK]
-            winding_order: [CW, CCW]
-            primitive: [TRIANGLES, LINES, QUADS]
-    */
 
     raster 
     { 
@@ -20,55 +6,11 @@ pipeline {
         index_buffer_element_size: UINT32
     },
 
-    /*
-        Depth State (fields)
-
-            func: [LESS, EQUAL, LEQUAL, GEQUAL, NOTEQUAL, ALWAYS, NEVER]
-
-    */ 
-
     depth 
     {
         func: LESS 
     },
 
-
-    /*
-        Blend State (fields)
-
-           func: [ADD, SUBTRACT, REVERSE_SUBTRACT, MIN, MAX] 
-           src: [ZERO, ONE, SRC_COLOR, ONE_MINUS_SRC_COLOR, DST_COLOR, ONE_MINUS_DST_COLOR, SRC_ALPHA,
-                    ONE_MINUS_SRC_ALPHA, DST_ALPHA, ONE_MINUS_DST_ALPHA, CONSTANT_COLOR, 
-                    ONE_MINUS_CONSTANT_COLOR, CONSTANT_ALPHA, ONE_MINUS_CONSTANT_ALPHA]
-           dst: [ZERO, ONE, SRC_COLOR, ONE_MINUS_SRC_COLOR, DST_COLOR, ONE_MINUS_DST_COLOR, SRC_ALPHA,
-                    ONE_MINUS_SRC_ALPHA, DST_ALPHA, ONE_MINUS_DST_ALPHA, CONSTANT_COLOR, 
-                    ONE_MINUS_CONSTANT_COLOR, CONSTANT_ALPHA, ONE_MINUS_CONSTANT_ALPHA]
-    */
-
-    blend 
-    {
-        // empty
-    },
-
-    /*
-        Stencil State (fields) 
-
-            func:[LESS, EQUAL, LEQUAL, GREATER, NOTEQUAL, GEQUAL, ALWAYS, NEVER] 
-            ref: [0 - 255] 
-            comp_mask: [0 - 255]
-            write_mask: [0 - 255]
-    */
-
-    stencil 
-    {
-        // empty
-    },
-    
-    /*
-        Shader Decl
-
-            stages: [vertex, fragment, compute]
-    */
 
     shader { 
     
@@ -89,15 +31,15 @@ pipeline {
                     TANGENT:  		float4
                     JOINT:    		float4
                     WEIGHT:   		float 
-		    FLOAT: 		float
-		    FLOAT2: 		float2
-		    FLOAT3: 		float3
-		    FLOAT4: 		float4
+                    FLOAT: 		float
+                    FLOAT2: 		float2
+                    FLOAT3: 		float3
+                    FLOAT4: 		float4
                 */
 
-		POSITION : a_position   
-		TEXCOORD : a_uv         
-		COLOR    : a_color      
+                POSITION : a_position   
+                TEXCOORD : a_uv         
+                COLOR    : a_color      
             }, 
 
             uniforms {
@@ -135,4 +77,4 @@ pipeline {
             }
         } 
     } 
-}
+} 
