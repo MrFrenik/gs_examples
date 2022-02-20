@@ -48,11 +48,13 @@ void app_init()
     cam.transform.position = gs_v3(-15.89f, 4.45f, -0.08f);
     cam.transform.rotation = gs_quat(0.02f, -0.79f, 0.02f, 0.61f);
 
+    gs_mt_rand_t rand = gs_rand_seed(time(NULL));
+
     for (int32_t i = 0; i < NUM_OFFSETS; ++i) {
 
-        offsets[i].x = 4000.0f * stb_frand() -2000.0f;
-        offsets[i].y = 4000.0f * stb_frand() -2000.0f;
-        offsets[i].z = 4000.0f * stb_frand() -2000.0f;
+        offsets[i].x = 4000.0f * gs_rand_gen(&rand) -2000.0f;
+        offsets[i].y = 4000.0f * gs_rand_gen(&rand) -2000.0f;
+        offsets[i].z = 4000.0f * gs_rand_gen(&rand) -2000.0f;
     }
 
     // Construct vertex buffer
