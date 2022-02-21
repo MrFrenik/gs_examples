@@ -4,7 +4,7 @@
 #ifdef GS_PLATFORM_WEB
     #define GS_VERSION_STR "#version 300 es\n"
 #else
-    #define GS_VERSION_STR "#version 430\n"
+    #define GS_VERSION_STR "#version 330 core\n"
 #endif
 
 // Shaders
