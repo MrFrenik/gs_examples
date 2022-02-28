@@ -6,6 +6,6 @@ PLATFORM["linux-gnu"]="linux"
 for d in */ ; do
     echo $d
     cd $d
-    bash build-all.sh
+    bash proc/${PLATFORM["$OSTYPE"]}/*.sh
     cd ..
 done
