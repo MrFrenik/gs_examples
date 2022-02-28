@@ -3,9 +3,14 @@ declare -A PLATFORM
 PLATFORM["msys"]="win"
 PLATFORM["darwin"]="osx"
 PLATFORM["linux-gnu"]="linux"
-for d in */ ; do
-    echo $d
-    cd $d
-    bash build-all.sh
+for sub_section in */ ; do
+    echo $sub_section
+    cd $sub_section
+    for d in */ ; do
+        echo $d
+        cd $d
+        bash proc/${PLATFORM["$OSTYPE"]}/*.sh
+        cd ..
+    done
     cd ..
 done
