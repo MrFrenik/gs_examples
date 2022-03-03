@@ -38,7 +38,7 @@ void update()
     if (gs_platform_key_pressed(GS_KEYCODE_ESC)) gs_quit();
 
     // Set up 2D camera for projection matrix
-    gsi_camera2D(&gsi, ws.x, ws.y);
+    gsi_camera2D(&gsi, (uint32_t)ws.x, (uint32_t)ws.y);
 
     // Rect
     gsi_rectv(&gsi, gs_v2(500.f, 50.f), gs_v2(600.f, 100.f), GS_COLOR_RED, GS_GRAPHICS_PRIMITIVE_TRIANGLES);
@@ -62,7 +62,7 @@ void update()
     // Box (with texture)
     gsi_depth_enabled(&gsi, true);
     gsi_face_cull_enabled(&gsi, true);
-    gsi_camera3D(&gsi, ws.x, ws.y);
+    gsi_camera3D(&gsi, (uint32_t)ws.x, (uint32_t)ws.y);
     gsi_push_matrix(&gsi, GSI_MATRIX_MODELVIEW);
     {
         gsi_translatef(&gsi, -2.f, -1.f, -5.f);
@@ -88,7 +88,7 @@ void update()
     gsi_pop_matrix(&gsi);
     
     // Sphere (triangles, no texture)
-    gsi_camera3D(&gsi, ws.x, ws.y);
+    gsi_camera3D(&gsi, (uint32_t)ws.x, (uint32_t)ws.y);
     gsi_push_matrix(&gsi, GSI_MATRIX_MODELVIEW);
     {
         gsi_translatef(&gsi, -2.f, -1.f, -5.f);
@@ -112,7 +112,7 @@ void update()
     gsi_pop_matrix(&gsi);
 
     // Text (custom and default fonts)
-    gsi_camera2D(&gsi, ws.x, ws.y);
+    gsi_camera2D(&gsi, (uint32_t)ws.x, (uint32_t)ws.y);
     gsi_defaults(&gsi);
     gsi_text(&gsi, 410.f, 150.f, "Custom Font", &font, false, 200, 100, 50, 255);
     gsi_text(&gsi, 450.f, 200.f, "Default Font", NULL, false, 50, 100, 255, 255);

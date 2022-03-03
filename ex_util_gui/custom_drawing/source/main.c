@@ -50,7 +50,7 @@ void app_update()
     // Initial sizes for windows
     const gs_vec2 ws = gs_v2(300.f, 200.f);
 
-    gs_gui_begin_window(gui, "Single", gs_gui_rect((fbs.x - ws.x) * 0.2f, (fbs.y - ws.y) * 0.5f, ws.x, ws.y));
+    gs_gui_window_begin(gui, "Single", gs_gui_rect((fbs.x - ws.x) * 0.2f, (fbs.y - ws.y) * 0.5f, ws.x, ws.y));
     {
         // Cache the current container
         gs_gui_container_t* cnt = gs_gui_get_current_container(gui); 
@@ -63,9 +63,9 @@ void app_update()
         gs_color_t color = gs_color_alpha(GS_COLOR_RED, (uint8_t)gs_clamp((sin(t * 0.001f) * 0.5f + 0.5f)* 255, 0, 255));
 		gs_gui_draw_custom(gui, cnt->body, gui_cb, &color, sizeof(color)); 
     } 
-    gs_gui_end_window(gui);
+    gs_gui_window_end(gui);
 
-    gs_gui_begin_window(gui, "Split", gs_gui_rect((fbs.x - ws.x) * 0.8f, (fbs.y - ws.y) * 0.5f, ws.x, ws.y));
+    gs_gui_window_begin(gui, "Split", gs_gui_rect((fbs.x - ws.x) * 0.8f, (fbs.y - ws.y) * 0.5f, ws.x, ws.y));
     {
         // Cache the current container
         gs_gui_container_t* cnt = gs_gui_get_current_container(gui); 
@@ -77,7 +77,7 @@ void app_update()
 		gs_gui_draw_custom(gui, gs_gui_layout_next(gui), gui_cb, &(gs_color_t){0, 255, 0, 255}, sizeof(gs_color_t)); 
 		gs_gui_draw_custom(gui, gs_gui_layout_next(gui), gui_cb, &(gs_color_t){255, 200, 0, 255}, sizeof(gs_color_t)); 
     } 
-    gs_gui_end_window(gui);
+    gs_gui_window_end(gui);
 
     // End gui frame
     gs_gui_end(gui);

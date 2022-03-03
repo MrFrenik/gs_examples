@@ -1,15 +1,27 @@
 // gui.ss
 
 /*
-    // All styles follow the following format (very similar to css)
-    <element>: [state] { <styles> } 
+    //=== General Format ===//
 
-    <styles>: style: value | transition: {<transitions}
+    All styles follow the following format (very similar to css):
 
-    // All states for an element are optional and inherit from the 
-        default state then override with their own styles
+        <element | id>: [state] { <styles> } 
 
-    // List of all available elements: 
+        <styles>: style: value | transition: {<transitions}
+
+    All states for an element are optional and inherit from the 
+        default state then override with their own styles.  
+
+    //=== Selectors ===//
+
+    All selectors fall into the following categories: 
+        * <element>
+        * <id>
+        * <state> 
+
+    //=== Elements ===//
+
+    List of all available <element>: 
         * container
         * label
         * text
@@ -17,9 +29,26 @@
         * input
         * button
         * scroll
-        * image
+        * image 
 
-    // List of all available styles and their expected inputs: 
+    //=== ID ===//
+    
+    A single ID selector can be used for each definition. Unlike CSS, you cannot chain elements and ids together...yet.
+    ID selectors have the following format, similar to CSS: 
+    
+        #your_id 
+
+    //=== State ===//
+
+    List of all available element states: 
+        * hover
+        * active
+
+    States are OPTIONAL, and an empty state will affect the default style. This default style gets applied to all states.
+
+    //=== Styles ===//
+
+    List of all available styles and their expected inputs: 
         * color_content:    rgb | rgba
         * color_border:     rgb | rgba
         * width:            int16_t
@@ -45,14 +74,18 @@
         * font:             string
         * transition:       {transitions}
 
-    // The `transition` style is a special style that allows you to 
+    //=== Transitions ===//
+
+    The `transition` style is a special style that allows you to 
         define transitions between element states.
 
     <transition>:  time_in_ms  delay_in_ms 
 
-    // All transitions inherit from default state
+    All transitions inherit from default state
 
-*/
+*/ 
+
+//=== Button ===//
 
 button {
     color_background: rgb(198 198 198)
@@ -68,7 +101,7 @@ button {
     shadow: 1
     justify_content: center
     align_content: center
-    font: mc_regular
+    font: "mc_regular"
     transition: { 
         color_background: 200 20
         color_content: 200 0
@@ -77,36 +110,53 @@ button {
     }
 }
 
-button : hover {
+button: hover {
     color_background: rgba(168 168 168 255)
     height: 47
 }
 
-button : focus {
+button: focus {
     color_content: rgb(255 255 255)
     color_background: rgb(49 174 31)
     height: 50
     padding_bottom: 12
 } 
 
-label { 
-    color_background: rgba(0 0 255 255)
-    color_content: rgb(255 0 0)
+#btn { 
+    color_content: rgb(0 255 0)
+} 
+
+#btn: hover {
+    color_content: rgb(120 120 120)
+}
+
+#btn: focus {
+    color_content: rgb(255 255 255)
+}
+
+//=== Label ===//
+
+label: hover {
+    color_content: rgb(255 120 10)
+} 
+
+#lbl { 
+    color_background: rgb(0 255 0)
+    color_content: rgb(0 0 255)
     width: 150
     padding: 10
-    font: mc_regular
+    font: "mc_regular"
     transition: {
+        color_background: 150 0
         width: 100 0
         height: 100 0
     }
 }
 
-label : hover { 
+#lbl: hover { 
+    color_background: rgb(255 0 0)
     color_background: rgba(255 0 255 255)
-}
-
-label : focus {
     width: 150
     height: 100
-}
+} 
 

@@ -55,7 +55,8 @@ void app_update()
     gs_command_buffer_t* cb = &app->cb;
     gs_gui_context_t* gui = &app->gui;
     const gs_vec2 fbs = gs_platform_framebuffer_sizev(gs_platform_main_window());
-    const float t = gs_platform_elapsed_time();
+    const float t = gs_platform_elapsed_time(); 
+    const gs_gui_style_sheet_t* ss = &app->style_sheet;
 
     if (gs_platform_key_pressed(GS_KEYCODE_ESC)) {
         gs_quit();
@@ -65,15 +66,26 @@ void app_update()
     gs_gui_begin(gui, fbs); 
 
     const gs_vec2 ws = gs_v2(500.f, 300.f);
-    gs_gui_begin_window(gui, "Window", gs_gui_rect((fbs.x - ws.x) * 0.5f, (fbs.y - ws.y) * 0.5f, ws.x, ws.y));
+    gs_gui_window_begin(gui, "Window", gs_gui_rect((fbs.x - ws.x) * 0.5f, (fbs.y - ws.y) * 0.5f, ws.x, ws.y));
     {
         // Cache the current container 
-        gs_gui_container_t* cnt = gs_gui_get_current_container(gui); 
+        gs_gui_container_t* cnt = gs_gui_get_current_container(gui);
 
-        gs_gui_button(gui, "Button"); 
-        gs_gui_label(gui, "Label");
+        gs_gui_layout_row(gui, 2, (int[]){150.f, 0}, 0);
+
+        gs_gui_label(gui, "<button>"); 
+        gs_gui_button(gui, "button"); 
+
+        gs_gui_label(gui, "<label>"); 
+        gs_gui_label(gui, "label");
+
+        gs_gui_label(gui, "#btn");
+        gs_gui_button_ex(gui, "button##id", &(gs_gui_selector_desc_t){.id = "#btn"}, 0x00);
+
+        gs_gui_label(gui, "#label"); 
+        gs_gui_label_ex(gui, "label##id", &(gs_gui_selector_desc_t){.id = "#lbl"}, 0x00); 
     } 
-    gs_gui_end_window(gui);
+    gs_gui_window_end(gui);
 
     // End gui frame
     gs_gui_end(gui);

@@ -98,8 +98,8 @@ void app_update()
         // Set menu style sheet
         gs_gui_set_style_sheet(&app->gui, &app->menu_style_sheet);
 
-        if (gs_gui_begin_window_ex(
-                gui, "#root", gs_gui_rect(0, 0, 0, 0), NULL,
+        if (gs_gui_window_begin_ex(
+                gui, "#root", gs_gui_rect(0, 0, 0, 0), NULL, NULL,
                     GS_GUI_OPT_NOFRAME | 
                     GS_GUI_OPT_NOTITLE | 
                     GS_GUI_OPT_NOMOVE | 
@@ -120,7 +120,7 @@ void app_update()
             gs_gui_pop_inline_style(gui, GS_GUI_ELEMENT_BUTTON);
 
             gs_gui_layout_set_next(gui, gs_gui_layout_anchor(&l->body, menu_sz.x, menu_sz.y, 0, 0, GS_GUI_LAYOUT_ANCHOR_CENTER), 0);
-            gs_gui_begin_panel_ex(gui, "#menu", GS_GUI_OPT_NOSCROLL);
+            gs_gui_panel_begin_ex(gui, "#menu", NULL, GS_GUI_OPT_NOSCROLL);
             {
                 // Logo
                 {
@@ -132,7 +132,7 @@ void app_update()
 
                 // buttons panel
                 gs_gui_layout_set_next(gui, gs_gui_layout_anchor(&l->body, btn_panel_sz.x, btn_panel_sz.y, 0, 0, GS_GUI_LAYOUT_ANCHOR_BOTTOMCENTER), 0); 
-                gs_gui_begin_panel_ex(gui, "#buttons", GS_GUI_OPT_NOSCROLL);
+                gs_gui_panel_begin_ex(gui, "#buttons", NULL, GS_GUI_OPT_NOSCROLL);
                 { 
                     l = gs_gui_get_layout(gui); 
 
@@ -149,9 +149,9 @@ void app_update()
                     button_custom(gui, "Settings");
                     button_custom(gui, "Exit Game");
                 }
-                gs_gui_end_panel(gui); 
+                gs_gui_panel_end(gui); 
             }
-            gs_gui_end_panel(gui); 
+            gs_gui_panel_end(gui); 
 
             // Version
             {
@@ -180,7 +180,7 @@ void app_update()
                 gs_gui_label(gui, TMP); 
             } 
 
-            gs_gui_end_window(gui);
+            gs_gui_window_end(gui);
         } 
 
         if (gs_platform_key_pressed(GS_KEYCODE_F1)) debug_enabled = !debug_enabled; 

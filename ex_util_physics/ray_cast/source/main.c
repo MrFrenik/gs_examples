@@ -181,7 +181,7 @@ void app_update()
             GS_GUI_OPT_NORESIZE | 
             GS_GUI_OPT_NOFRAME |
             GS_GUI_OPT_NOTITLE;
-    gs_gui_begin_window_ex(gui, "#dbg", gs_gui_rect(0, 0, 200, 100), NULL, op);
+    gs_gui_window_begin_ex(gui, "#dbg", gs_gui_rect(0, 0, 200, 100), NULL, NULL, op);
     { 
         struct {const char* str; int32_t option;} selections[] = { 
             {"AABB", COLLISION_SHAPE_AABB},
@@ -207,7 +207,7 @@ void app_update()
             gs_gui_combo_end(gui);
         }
     }
-    gs_gui_end_window(gui);
+    gs_gui_window_end(gui);
 
     gs_gui_end(gui);
 

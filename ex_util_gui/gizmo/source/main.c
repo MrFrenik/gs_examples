@@ -64,7 +64,7 @@ void app_update()
     dockspace(gui); 
 
     const gs_vec2 ws = gs_v2(800.f, 600.f);
-    gs_gui_begin_window(gui, "Canvas", gs_gui_rect((fbs.x - ws.x) * 0.5f, (fbs.y - ws.y) * 0.5f, ws.x, ws.y));
+    gs_gui_window_begin(gui, "Canvas", gs_gui_rect((fbs.x - ws.x) * 0.5f, (fbs.y - ws.y) * 0.5f, ws.x, ws.y));
     {
         // Cache the current container
         gs_gui_container_t* cnt = gs_gui_get_current_container(gui);
@@ -103,7 +103,7 @@ void app_update()
 		};
 
 		// Panel for gizmo options
-		gs_gui_begin_panel_ex(gui, "#options", GS_GUI_OPT_NOFRAME | GS_GUI_OPT_NOINTERACT);
+		gs_gui_panel_begin_ex(gui, "#options", NULL, GS_GUI_OPT_NOFRAME | GS_GUI_OPT_NOINTERACT);
 		{
 			gs_gui_layout_row(gui, 3, (int[]){120, 120, 180}, 20);
 
@@ -140,12 +140,12 @@ void app_update()
             }
 
 		}
-		gs_gui_end_panel(gui);
+		gs_gui_panel_end(gui);
 
 		// Custom callback for transformed object drawn into window
 		gs_gui_draw_custom(gui, cnt->body, gui_cb, NULL, 0);
     } 
-    gs_gui_end_window(gui);
+    gs_gui_window_end(gui);
 
     // End gui frame
     gs_gui_end(gui);
@@ -196,11 +196,11 @@ void dockspace(gs_gui_context_t* ctx)
 		GS_GUI_OPT_NOFOCUS | 
 		GS_GUI_OPT_NORESIZE;
 
-    gs_gui_begin_window_ex(ctx, "Dockspace", gs_gui_rect(350, 40, 600, 500), NULL, opt);
+    gs_gui_window_begin_ex(ctx, "Dockspace", gs_gui_rect(350, 40, 600, 500), NULL, NULL, opt);
     {
         // Empty dockspace...
     }
-    gs_gui_end_window(ctx);
+    gs_gui_window_end(ctx);
 } 
 
 // Custom callback for immediate drawing directly into the gui window
