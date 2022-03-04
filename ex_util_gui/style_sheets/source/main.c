@@ -28,7 +28,7 @@ typedef struct
 } app_t; 
 
 void gui_cb(gs_gui_context_t* ctx, struct gs_gui_customcommand_t* cmd);
-void reload_style_sheet();
+void app_load_style_sheet(bool destroy);
 
 void app_init()
 {
@@ -46,7 +46,7 @@ void app_init()
     });
 
     // Load style sheet from file now
-    reload_style_sheet();
+    app_load_style_sheet(false);
 } 
 
 void app_update()
@@ -71,7 +71,7 @@ void app_update()
         // Cache the current container 
         gs_gui_container_t* cnt = gs_gui_get_current_container(gui);
 
-        gs_gui_layout_row(gui, 2, (int[]){150.f, 0}, 0);
+        gs_gui_layout_row(gui, 2, (int[]){200, 0}, 0);
 
         gs_gui_label(gui, "<button>"); 
         gs_gui_button(gui, "button"); 
@@ -79,11 +79,16 @@ void app_update()
         gs_gui_label(gui, "<label>"); 
         gs_gui_label(gui, "label");
 
-        gs_gui_label(gui, "#btn");
-        gs_gui_button_ex(gui, "button##id", &(gs_gui_selector_desc_t){.id = "#btn"}, 0x00);
+        gs_gui_label(gui, ".red.blue.green.button#btn");
+        gs_gui_button_ex(gui, "button##btn", &(gs_gui_selector_desc_t){.id = "btn", .classes = {"red", "green", "blue", "button"}}, 0x00);
 
         gs_gui_label(gui, "#label"); 
-        gs_gui_label_ex(gui, "label##id", &(gs_gui_selector_desc_t){.id = "#lbl"}, 0x00); 
+        gs_gui_label_ex(gui, "label##lbl", &(gs_gui_selector_desc_t){.id = "lbl"}, 0x00); 
+
+        gs_gui_layout_row(gui, 1, (int[]){100}, 0);
+        if (gs_gui_button(gui, "reload")) {
+            app_load_style_sheet(true);
+        }
     } 
     gs_gui_window_end(gui);
 
@@ -122,10 +127,12 @@ gs_app_desc_t gs_main(int32_t argc, char** argv)
     };
 }
 
-void reload_style_sheet()
+void app_load_style_sheet(bool destroy)
 {
     app_t* app = gs_user_data(app_t);
-    gs_gui_style_sheet_destroy(&app->gui, &app->style_sheet);
+    if (destroy) {
+        gs_gui_style_sheet_destroy(&app->gui, &app->style_sheet);
+    }
     gs_snprintfc(TMP, 256, "%s/%s", app->asset_dir, "style_sheets/gui.ss");
     app->style_sheet = gs_gui_style_sheet_load_from_file(&app->gui, TMP);
     gs_gui_set_style_sheet(&app->gui, &app->style_sheet);
