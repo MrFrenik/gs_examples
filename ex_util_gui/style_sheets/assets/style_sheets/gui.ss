@@ -45,6 +45,19 @@
 
     //=== Class ===//
 
+    A selector that defines a group of styles that be can used for multiple elements.
+    Each gui element can have up to GS_GUI_CLS_SELECTOR_MAX class selectors. This can 
+    can increased or decreased by changing this define in gs/util/gs_gui.h.
+    Class selectors have the following format: 
+
+        .your_cls
+
+    //=== Wildcard ===//
+    
+    A selector that applies to all elements.
+
+        * 
+
     //=== State ===//
 
     List of all available element states: 
@@ -66,6 +79,7 @@
         button        // Type selector
         #green        // ID selector
         .red          // Class selector
+        *             // Wildcard selector
 
         gs_gui_selector_desc_t btn = {
             .id = "green", 
@@ -115,18 +129,46 @@
     All transitions inherit from default state
 
     TODO: 
-        * GSS Variables
-        * Support wildcard selector
         * Support or/and selectors for multiple elements/classes/ids 
 
 */ 
+
+//=== Constants ===//
+
+%justify:   start;
+%red:       rgb(255 0 0);
+%blue:      rgb(0 0 255);
+%border:    3;
+%shadow:    1;
+%shadow_col: rgba(255 0 0 10);
+%font:      "mc_regular"; 
+
+//=== Wildcard ===//
+
+* {
+    color_content: $(red);
+    border: $(border);
+    shadow: $(shadow);
+    color_shadow: $(shadow_col);
+    justify_content: $(justify);
+}
+
+* : hover {
+    color_border: rgb(0 255 255);
+} 
+
+//=== Container ===// 
+
+container {
+    color_content: rgb(255 255 255);
+} 
 
 //=== Button ===// 
 
 button {
     justify_content: center;
     align_content: center;
-    font: "mc_regular";
+    font: $(font);
 } 
 
 .button {
