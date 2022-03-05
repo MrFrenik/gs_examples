@@ -73,20 +73,25 @@ void app_update()
 
         gs_gui_layout_row(gui, 2, (int[]){200, 0}, 0);
 
-        gs_gui_label(gui, "<button>"); 
+        gs_gui_text(gui, "A regular element button."); 
         gs_gui_button(gui, "button"); 
 
-        gs_gui_label(gui, "<label>"); 
+        gs_gui_text(gui, "A regular element label."); 
         gs_gui_label(gui, "label");
 
-        gs_gui_label(gui, ".red.blue.green.button#btn");
-        gs_gui_button_ex(gui, "button##btn", &(gs_gui_selector_desc_t){.id = "btn", .classes = {"red", "green", "blue", "button"}}, 0x00);
+        gs_gui_text(gui, "Button with classes: {.c0 .btn}");
+        gs_gui_button_ex(gui, "button##btn", 
+                &(gs_gui_selector_desc_t){.classes = {"c0", "btn"}}, 0x00);
 
-        gs_gui_label(gui, "#label"); 
-        gs_gui_label_ex(gui, "label##lbl", &(gs_gui_selector_desc_t){.id = "lbl"}, 0x00); 
+        gs_gui_text(gui, "Label with id #lbl and class .c0"); 
+        gs_gui_label_ex(gui, "label##lbl", 
+                &(gs_gui_selector_desc_t){.id = "lbl", .classes ={"c0"}}, 0x00); 
 
-        gs_gui_layout_row(gui, 1, (int[]){100}, 0);
-        if (gs_gui_button(gui, "reload")) {
+        const float m = cnt->body.w * 0.3f;
+        // gs_gui_layout_row(gui, 2, (int[]){m, -m}, 0);
+        // gs_gui_layout_next(gui); // Empty space at beginning
+        gs_gui_layout_row(gui, 1, (int[]){0}, 0);
+        if (gs_gui_button_ex(gui, "reload style sheet", &(gs_gui_selector_desc_t){.classes = {"reload_btn"}}, 0x00)) {
             app_load_style_sheet(true);
         }
     } 

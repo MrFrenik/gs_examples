@@ -1,7 +1,9 @@
-// gui.ss
+// gui.ss 
+
+//*==========================*//
+//*======= Description ======*//
 
 /*
-    //=== Description ===//
     
     GSS is a tiny supported subset of CSS and used to load style sheets
     to be used with gs_gui contexts.
@@ -10,7 +12,7 @@
 
     All styles follow the following format:
 
-        <element | id>: [state] { <styles>; } 
+        <element | id | class | wildcard>: [state] { <styles>; } 
 
         <styles>: style: value | transition: {<transitions}
 
@@ -22,6 +24,8 @@
     All selectors fall into the following categories: 
         * <element>
         * <id>
+        * <class>
+        * <wildcard>
         * <state> 
 
     //=== Elements ===//
@@ -80,6 +84,7 @@
         #green        // ID selector
         .red          // Class selector
         *             // Wildcard selector
+        : hover       // State selector
 
         gs_gui_selector_desc_t btn = {
             .id = "green", 
@@ -89,7 +94,8 @@
         gs_gui_button_ex(gui, "btn_text", &btn, 0x00);
     
 
-    States are OPTIONAL, and an empty state will affect the default style. This default style gets applied to all states.
+    States are OPTIONAL, and an empty state will affect the default style. This default style gets applied 
+        to all other child states (hover/focus).
 
     //=== Styles ===//
 
@@ -128,128 +134,135 @@
 
     All transitions inherit from default state
 
-    TODO: 
-        * Support or/and selectors for multiple elements/classes/ids 
+    //=== Constants ===//
 
+    GSS allows for the user to define inline constants that can be reused for style values.  
+
+    Constants use the following format:
+        
+        $VAR_NAME: VAL;
+
+    Constants can have the following values: 
+
+        * Number: int32_t
+        * Enum value: (start | center | end)
+        * String: ""
+        * Color: rgb | rgba
+
+    Ex.  
+        $my_var: rgb(0 0 0);
+
+    //=== TODO ===//
+
+        * Support or/and selectors for multiple elements/classes/ids 
 */ 
+
+//*==========================*//
+//*======= Style Sheet ======*//
 
 //=== Constants ===//
 
-%justify:   start;
-%red:       rgb(255 0 0);
-%blue:      rgb(0 0 255);
-%border:    3;
-%shadow:    1;
-%shadow_col: rgba(255 0 0 10);
-%font:      "mc_regular"; 
+$justify:   start; 
+$black:     rgb(0 0 0);
+$red:       rgb(255 0 0);
+$blue:      rgb(0 0 255);
+$green:     rgb(0 255 0);
+$yellow:    rgb(255 255 0);
+$white:     rgb(255 255 255);
+$border:    1;
+$shadow:    1;
+$scol:      rgba(255 0 0 10);
+$font:      "mc_regular"; 
+$delay:     20;
+$time:      200; 
+$rel_border: 2;
 
 //=== Wildcard ===//
 
 * {
-    color_content: $(red);
-    border: $(border);
-    shadow: $(shadow);
-    color_shadow: $(shadow_col);
-    justify_content: $(justify);
+    color_content: $red;
+    justify_content: $justify;
 }
 
-* : hover {
-    color_border: rgb(0 255 255);
-} 
+//=== Classes ===//
 
-//=== Container ===// 
-
-container {
-    color_content: rgb(255 255 255);
-} 
-
-//=== Button ===// 
-
-button {
+.c0 {
+    color_content: $black;
+    color_border: $yellow;
+    color_shadow: $green;
+    shadow: $shadow;
+    font: $font;
+    border: $border;
     justify_content: center;
-    align_content: center;
-    font: $(font);
-} 
+}
 
-.button {
+.reload_btn {
+    width: 200;
+    height: 50;
+    border: 0;
+    border_right: $rel_border; 
+    border_bottom: $rel_border;
+    color_border: rgba(0 0 0 50);
+    color_content: rgb(100 100 100);
+    justify_content: center;
+}
+
+.reload_btn: focus {
+    color_background: rgb(30 30 30);
+    color_content: $red;
+}
+
+.btn {
     color_background: rgb(198 198 198);
-    color_content: rgb(255 0 0);
-    color_border: rgb(255 255 0);
-    color_shadow: rgb(0 255 0);
-    border: 2
     width: 200;
     height: 45;
     transition: { 
-        color_background: 200 20;
-        color_content: 200 0;
+        color_background: $time $delay;
+        color_content: 300 0;
         height: 100 0;
         margin_top: 150 0;
     }
 }
 
-.button: hover {
-    color_background: rgba(168 168 168 255);
-    height: 20;
-}
-
-.button: focus {
-    color_content: rgb(255 255 255);
-    color_background: rgb(49 174 31);
+.btn: hover {
+    color_background: rgba(168 168 168);
+    color_content: $red;
     height: 50;
+}
+
+.btn: focus {
+    color_background: $green;
+    height: 55;
     padding_bottom: 12;
+}
+
+//=== IDs ===//
+
+#lbl {
+    justify_content: end;
 } 
 
-.red {
-    color_background: rgb(255 0 0);
-}
+//=== Container ===// 
 
-.blue {
-    color_shadow: rgb(0 0 255);
-}
-
-.green { 
-    color_border: rgb(0 255 0);
-    transition: {
-        width: 150 0 
-    }
-}
-
-#btn { 
-    color_content: rgb(0 0 0);
-} 
-
-#btn: hover {
-    color_content: rgb(120 120 120);
-    width: 250
-}
-
-#btn: focus {
+container {
+    justify_content: start;
     color_content: rgb(255 255 255);
+} 
+
+//=== Button ===//
+
+button {
+    justify_content: center;
 }
 
 //=== Label ===// 
 
-label: hover {
-    color_content: rgb(255 120 10);
-} 
-
-#lbl { 
-    color_background: rgb(0 255 0);
-    color_content: rgb(0 0 255);
-    width: 150;
-    padding: 10;
-    font: "mc_regular";
-    transition: {
-        color_background: 150 0;
-        width: 100 0;
-        height: 100 0;
-    }
+label {
+    color_content: $yellow;
 }
 
-#lbl: hover { 
-    color_background: rgb(255 0 0);
-    color_background: rgba(255 0 255 255);
-    width: 150;
-    height: 100;
-} 
+label: hover {
+    color_content: $white;
+}
+
 
