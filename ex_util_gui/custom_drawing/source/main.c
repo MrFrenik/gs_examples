@@ -84,16 +84,16 @@ void app_update()
 
     // Do rendering
     gs_graphics_clear_desc_t clear = {.actions = &(gs_graphics_clear_action_t){.color = {0.05f, 0.05f, 0.05f, 1.f}}};
-    gs_graphics_begin_render_pass(cb, (gs_handle(gs_graphics_render_pass_t)){0});
+    gs_graphics_renderpass_begin(cb, (gs_handle(gs_graphics_renderpass_t)){0});
     {
         gs_graphics_clear(cb, &clear);
         gs_graphics_set_viewport(cb,0,0,(int)fbs.x,(int)fbs.y);
         gs_gui_render(gui, cb);
     }
-    gs_graphics_end_render_pass(cb);
+    gs_graphics_renderpass_end(cb);
     
     //Submits to cb
-    gs_graphics_submit_command_buffer(cb);
+    gs_graphics_command_buffer_submit(cb);
 }
 
 void app_shutdown()
@@ -128,7 +128,7 @@ void gui_cb( gs_gui_context_t* ctx, struct gs_gui_customcommand_t* cmd )
     gs_graphics_set_viewport(&gsi->commands, cmd->viewport.x, fbs.y - cmd->viewport.h - cmd->viewport.y, cmd->viewport.w, cmd->viewport.h); 
     gsi_push_matrix(gsi, GSI_MATRIX_MODELVIEW);
     {
-        gsi_rotatefv(gsi, t * 0.001f, GS_YAXIS);
+        gsi_rotatev(gsi, t * 0.001f, GS_YAXIS);
         gsi_scalef(gsi, 0.5f, 0.5f, 0.5f);
         gsi_box(gsi, 0.f, 0.f, 0.f, 0.5f, 0.5f, 0.5f, color->r, color->g, color->b, color->a, GS_GRAPHICS_PRIMITIVE_LINES);
     }

@@ -81,7 +81,7 @@ void app_update()
 
     // Rendering
     gs_graphics_clear_desc_t clear = {.actions = &(gs_graphics_clear_action_t){.color = {0.05f, 0.05, 0.05, 1.f}}};
-    gs_graphics_begin_render_pass(cb, (gs_handle(gs_graphics_render_pass_t)){0});
+    gs_graphics_renderpass_begin(cb, (gs_handle(gs_graphics_renderpass_t)){0});
     {
         // Set view port
         gs_graphics_set_viewport(cb,0,0,(int)fbs.x,(int)fbs.y);
@@ -98,10 +98,10 @@ void app_update()
         // Render mesh
         gs_gfxt_mesh_draw(cb, mesh);
     }
-    gs_graphics_end_render_pass(cb);
+    gs_graphics_renderpass_end(cb);
     
     //Submits to cb
-    gs_graphics_submit_command_buffer(cb);
+    gs_graphics_command_buffer_submit(cb);
 }
 
 void app_shutdown()

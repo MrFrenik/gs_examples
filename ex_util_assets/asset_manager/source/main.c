@@ -152,7 +152,7 @@ void update()
     gsi_camera3D(&gsi, fb.x, fb.y);
     gsi_face_cull_enabled(&gsi, true);
     gsi_translatef(&gsi, -2.f, 0.f, -5.f);
-    gsi_rotatefv(&gsi, -gs_platform_elapsed_time() * 0.001f, GS_YAXIS);
+    gsi_rotatev(&gsi, -gs_platform_elapsed_time() * 0.001f, GS_YAXIS);
     gsi_sphere(&gsi, 0.f, 0.f, 0.f, 1.5f, 20, 50, 150, 100, GS_GRAPHICS_PRIMITIVE_LINES);
     gsi_texture(&gsi, tp->hndl);
     gsi_sphere(&gsi, 0.f, 0.f, 0.f, 1.5f, 255, 255, 255, 255, GS_GRAPHICS_PRIMITIVE_TRIANGLES);
@@ -172,7 +172,7 @@ void update()
     gs_graphics_clear_desc_t clear = {.actions = &(gs_graphics_clear_action_t){.color = 0.1f, 0.1f, 0.1f, 255}};
 
     // Bind render pass for backbuffer
-    gs_graphics_begin_render_pass(&gcb, GS_GRAPHICS_RENDER_PASS_DEFAULT);
+    gs_graphics_renderpass_begin(&gcb, GS_GRAPHICS_RENDER_PASS_DEFAULT);
         gs_graphics_set_viewport(&gcb, 0, 0, (int32_t)fb.x, (int32_t)fb.y);
         gs_graphics_clear(&gcb, &clear);
         gsi_draw(&gsi, &gcb); // Binds pipelines and submits to graphics command buffer for rendering
@@ -223,10 +223,10 @@ void update()
             gs_graphics_draw(&gcb, &(gs_graphics_draw_desc_t){.start = 0, .count = prim->count});
         }
 
-    gs_graphics_end_render_pass(&gcb);
+    gs_graphics_renderpass_end(&gcb);
 
     // Final command buffer submit
-    gs_graphics_submit_command_buffer(&gcb);
+    gs_graphics_command_buffer_submit(&gcb);
 }
 
 gs_app_desc_t gs_main(int32_t argc, char** argv)

@@ -33,7 +33,7 @@ void app_update()
 
     gs_imgui_render(&gsimgui, &gcb);
 
-    gs_graphics_submit_command_buffer(&gcb);
+    gs_graphics_command_buffer_submit(&gcb);
 }
 
 gs_app_desc_t gs_main(int32_t argc, char** argv)

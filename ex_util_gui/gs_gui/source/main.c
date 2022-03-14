@@ -57,16 +57,16 @@ void app_update()
     // Do rendering
     gs_vec2 fbs = gs_platform_framebuffer_sizev(gs_platform_main_window());
     gs_graphics_clear_desc_t clear = {.actions = &(gs_graphics_clear_action_t){.color = {bg[0]/255, bg[1]/255,bg[2]/255, 1.f}}};
-    gs_graphics_begin_render_pass(&gcb, (gs_handle(gs_graphics_render_pass_t)){0});
+    gs_graphics_renderpass_begin(&gcb, (gs_handle(gs_graphics_renderpass_t)){0});
     {
         gs_graphics_clear(&gcb, &clear);
         gs_graphics_set_viewport(&gcb,0,0,(int)fbs.x,(int)fbs.y);
         gs_gui_render(&gsgui, &gcb);
     }
-    gs_graphics_end_render_pass(&gcb);
+    gs_graphics_renderpass_end(&gcb);
     
     //Submits to cb
-    gs_graphics_submit_command_buffer(&gcb);
+    gs_graphics_command_buffer_submit(&gcb);
 }
 
 void app_shutdown()

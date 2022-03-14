@@ -112,10 +112,10 @@ void app_update()
     gsi_text(&gsi, 40.f, 70.f, "- Shift to run", NULL, false, 20, 20, 20, 255);
 
     /* Render */
-    gsi_render_pass_submit(&gsi, &cb, GS_COLOR_WHITE);
+    gsi_renderpass_submit(&gsi, &cb, GS_COLOR_WHITE);
 
     // Submit command buffer (syncs to GPU, MUST be done on main thread where you have your GPU context created)
-    gs_graphics_submit_command_buffer(&cb);
+    gs_graphics_command_buffer_submit(&cb);
 }
 
 void fps_camera_update(fps_camera_t* fps)

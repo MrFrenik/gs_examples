@@ -50,7 +50,7 @@ void update()
     mu_end(&mu_ctx.mu);
     //Submits to cb
     gs_mu_render(&mu_ctx, &gcb);
-    gs_graphics_submit_command_buffer(&gcb);
+    gs_graphics_command_buffer_submit(&gcb);
 }
 
 gs_app_desc_t gs_main(int32_t argc, char** argv)

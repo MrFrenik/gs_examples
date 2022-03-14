@@ -152,16 +152,16 @@ void app_update()
 
     // Do rendering
     gs_graphics_clear_desc_t clear = {.actions = &(gs_graphics_clear_action_t){.color = {0.05f, 0.05f, 0.05f, 1.f}}};
-    gs_graphics_begin_render_pass(cb, (gs_handle(gs_graphics_render_pass_t)){0});
+    gs_graphics_renderpass_begin(cb, (gs_handle(gs_graphics_renderpass_t)){0});
     {
         gs_graphics_clear(cb, &clear);
         gs_graphics_set_viewport(cb,0,0,(int)fbs.x,(int)fbs.y);
         gs_gui_render(gui, cb);
     }
-    gs_graphics_end_render_pass(cb);
+    gs_graphics_renderpass_end(cb);
     
     //Submits to cb
-    gs_graphics_submit_command_buffer(cb);
+    gs_graphics_command_buffer_submit(cb);
 }
 
 void app_shutdown()

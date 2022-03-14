@@ -444,11 +444,11 @@ gs_imgui_render(gs_imgui_t* gs, gs_command_buffer_t* cb)
     clear.actions = &action;
 
     // Default action pass
-    gs_handle(gs_graphics_render_pass_t) def_pass = {};
+    gs_handle(gs_graphics_renderpass_t) def_pass = {};
 	def_pass.id = 0;
 
     // Render pass action for clearing screen (could handle this if you wanted to render gui into a separate frame buffer)
-    gs_graphics_begin_render_pass(cb, def_pass);
+    gs_graphics_renderpass_begin(cb, def_pass);
     {
         // Bind pipeline
         gs_graphics_bind_pipeline(cb, gs->pip);
@@ -542,7 +542,7 @@ gs_imgui_render(gs_imgui_t* gs, gs_command_buffer_t* cb)
             }
         }
     }
-    gs_graphics_end_render_pass(cb);
+    gs_graphics_renderpass_end(cb);
 }
 
 #endif // GS_IMGUI_IMPL

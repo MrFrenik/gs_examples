@@ -19,7 +19,7 @@
 
 gs_command_buffer_t                  gcb  = {0};
 gs_immediate_draw_t                  gsi  = {0};
-gs_handle(gs_graphics_render_pass_t) rp   = {0};
+gs_handle(gs_graphics_renderpass_t) rp   = {0};
 gs_handle(gs_graphics_framebuffer_t) fbo  = {0};
 gs_handle(gs_graphics_texture_t)     rt   = {0};
 
@@ -47,8 +47,8 @@ void app_init()
     );
 
     // Construct render pass for offscreen render pass
-    rp = gs_graphics_render_pass_create(
-        &(gs_graphics_render_pass_desc_t){
+    rp = gs_graphics_renderpass_create(
+        &(gs_graphics_renderpass_desc_t){
             .fbo = fbo,                      // Frame buffer to bind for render pass
             .color = &rt,                    // Color buffer array to bind to frame buffer    
             .color_size = sizeof(rt)         // Size of color attachment array in bytes
@@ -70,17 +70,17 @@ void app_update()
     // Immediate rendering for offscreen buffer
     gsi_camera3D(&gsi, fbs.x, fbs.y);
     gsi_translatef(&gsi, 0.f, 0.f, -2.f);
-    gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0001f, GS_YAXIS);
-    gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0002f, GS_XAXIS);
-    gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0005f, GS_ZAXIS);
+    gsi_rotatev(&gsi, gs_platform_elapsed_time() * 0.0001f, GS_YAXIS);
+    gsi_rotatev(&gsi, gs_platform_elapsed_time() * 0.0002f, GS_XAXIS);
+    gsi_rotatev(&gsi, gs_platform_elapsed_time() * 0.0005f, GS_ZAXIS);
     gsi_box(&gsi, 0.f, 0.f, 0.f, 0.5f, 0.5f, 0.5f, 200, 100, 50, 255, GS_GRAPHICS_PRIMITIVE_LINES);
 
     // Bind render pass for offscreen rendering then draw to buffer
-    gs_graphics_begin_render_pass(&gcb, rp);
+    gs_graphics_renderpass_begin(&gcb, rp);
         gs_graphics_set_viewport(&gcb, 0, 0, (int32_t)fbs.x, (int32_t)fbs.y);
         gs_graphics_clear(&gcb, &fb_clear);
         gsi_draw(&gsi, &gcb);
-    gs_graphics_end_render_pass(&gcb);
+    gs_graphics_renderpass_end(&gcb);
 
     // Immediate rendering for back buffer
     gsi_camera3D(&gsi, fbs.x, fbs.y);
@@ -88,20 +88,20 @@ void app_update()
     gsi_face_cull_enabled(&gsi, true);
     gsi_translatef(&gsi, 0.f, 0.f, -1.f);
     gsi_texture(&gsi, rt);
-    gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0001f, GS_YAXIS);
-    gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0002f, GS_XAXIS);
-    gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0003f, GS_ZAXIS);
+    gsi_rotatev(&gsi, gs_platform_elapsed_time() * 0.0001f, GS_YAXIS);
+    gsi_rotatev(&gsi, gs_platform_elapsed_time() * 0.0002f, GS_XAXIS);
+    gsi_rotatev(&gsi, gs_platform_elapsed_time() * 0.0003f, GS_ZAXIS);
     gsi_box(&gsi, 0.f, 0.f, 0.f, 0.5f, 0.5f, 0.5f, 255, 255, 255, 255, GS_GRAPHICS_PRIMITIVE_TRIANGLES);
 
     // Render to back buffer
-    gs_graphics_begin_render_pass(&gcb, GS_GRAPHICS_RENDER_PASS_DEFAULT);
+    gs_graphics_renderpass_begin(&gcb, GS_GRAPHICS_RENDER_PASS_DEFAULT);
         gs_graphics_set_viewport(&gcb, 0, 0, (int32_t)fbs.x, (int32_t)fbs.y);
         gs_graphics_clear(&gcb, &bb_clear);
         gsi_draw(&gsi, &gcb);
-    gs_graphics_end_render_pass(&gcb);
+    gs_graphics_renderpass_end(&gcb);
 
     // Submit command buffer (syncs to GPU, MUST be done on main thread where you have your GPU context created)
-    gs_graphics_submit_command_buffer(&gcb);
+    gs_graphics_command_buffer_submit(&gcb);
 }
 
 gs_app_desc_t gs_main(int32_t argc, char** argv)

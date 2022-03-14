@@ -66,8 +66,8 @@ void update()
     gsi_push_matrix(&gsi, GSI_MATRIX_MODELVIEW);
     {
         gsi_translatef(&gsi, -2.f, -1.f, -5.f);
-        gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.001f, GS_YAXIS);
-        gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0005f, GS_ZAXIS);
+        gsi_rotatev(&gsi, gs_platform_elapsed_time() * 0.001f, GS_YAXIS);
+        gsi_rotatev(&gsi, gs_platform_elapsed_time() * 0.0005f, GS_ZAXIS);
         gsi_texture(&gsi, tex.hndl);
         gsi_scalef(&gsi, 1.5f, 1.5f, 1.5f);
         gsi_box(&gsi, 0.f, 0.f, 0.f, 0.5f, 0.5f, 0.5f, 255, 255, 255, 255, GS_GRAPHICS_PRIMITIVE_TRIANGLES);
@@ -79,9 +79,9 @@ void update()
     gsi_push_matrix(&gsi, GSI_MATRIX_MODELVIEW);
     {
         gsi_translatef(&gsi, 2.f, -1.f, -5.f);
-        gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.001f, GS_YAXIS);
-        gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0008f, GS_ZAXIS);
-        gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0009f, GS_XAXIS);
+        gsi_rotatev(&gsi, gs_platform_elapsed_time() * 0.001f, GS_YAXIS);
+        gsi_rotatev(&gsi, gs_platform_elapsed_time() * 0.0008f, GS_ZAXIS);
+        gsi_rotatev(&gsi, gs_platform_elapsed_time() * 0.0009f, GS_XAXIS);
         gsi_scalef(&gsi, 1.5f, 1.5f, 1.5f);
         gsi_box(&gsi, 0.f, 0.f, 0.f, 0.5f, 0.5f, 0.5f, 255, 200, 100, 255, GS_GRAPHICS_PRIMITIVE_LINES);
     }
@@ -92,8 +92,8 @@ void update()
     gsi_push_matrix(&gsi, GSI_MATRIX_MODELVIEW);
     {
         gsi_translatef(&gsi, -2.f, -1.f, -5.f);
-        gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.001f, GS_YAXIS);
-        gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0005f, GS_ZAXIS);
+        gsi_rotatev(&gsi, gs_platform_elapsed_time() * 0.001f, GS_YAXIS);
+        gsi_rotatev(&gsi, gs_platform_elapsed_time() * 0.0005f, GS_ZAXIS);
         gsi_scalef(&gsi, 1.5f, 1.5f, 1.5f);
         gsi_sphere(&gsi, 0.f, 0.f, 0.f, 1.0f, 255, 255, 255, 50, GS_GRAPHICS_PRIMITIVE_TRIANGLES);
     }
@@ -103,9 +103,9 @@ void update()
     gsi_push_matrix(&gsi, GSI_MATRIX_MODELVIEW);
     {
         gsi_translatef(&gsi, 2.f, -1.f, -5.f);
-        gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.001f, GS_YAXIS);
-        gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0008f, GS_ZAXIS);
-        gsi_rotatefv(&gsi, gs_platform_elapsed_time() * 0.0009f, GS_XAXIS);
+        gsi_rotatev(&gsi, gs_platform_elapsed_time() * 0.001f, GS_YAXIS);
+        gsi_rotatev(&gsi, gs_platform_elapsed_time() * 0.0008f, GS_ZAXIS);
+        gsi_rotatev(&gsi, gs_platform_elapsed_time() * 0.0009f, GS_XAXIS);
         gsi_scalef(&gsi, 1.5f, 1.5f, 1.5f);
         gsi_sphere(&gsi, 0.f, 0.f, 0.f, 1.0f, 255, 255, 255, 50, GS_GRAPHICS_PRIMITIVE_LINES);
     }
@@ -122,10 +122,10 @@ void update()
     gsi_texture(&gsi, sdf_tex);
     gsi_rectvd(&gsi, gs_v2s(100.f), gs_vec2_scale(gs_v2((float)q.width, (float)q.height), 3.f), gs_v2s(0.f), gs_v2s(1.f), GS_COLOR_WHITE, GS_GRAPHICS_PRIMITIVE_TRIANGLES); 
 
-    gsi_render_pass_submit(&gsi, &cb, gs_color(10, 10, 10, 255));
+    gsi_renderpass_submit(&gsi, &cb, gs_color(10, 10, 10, 255));
 
     // Submit command buffer (syncs to GPU, MUST be done on main thread where you have your GPU context created)
-    gs_graphics_submit_command_buffer(&cb);
+    gs_graphics_command_buffer_submit(&cb);
 }
 
 gs_app_desc_t gs_main(int32_t argc, char** argv)

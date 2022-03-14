@@ -155,10 +155,10 @@ void app_update()
     gsi_camera2D(&gsi, fbs.x, fbs.y);
     gsi_texture(&gsi, cmptex);
     gsi_rectvd(&gsi, gs_v2(0.f, 0.f), gs_v2((float)TEX_WIDTH, (float)TEX_HEIGHT), gs_v2(0.f, 0.f), gs_v2(1.f, 1.f), GS_COLOR_WHITE, GS_GRAPHICS_PRIMITIVE_TRIANGLES);
-    gsi_render_pass_submit(&gsi, &cb, gs_color(10, 10, 10, 255));
+    gsi_renderpass_submit(&gsi, &cb, gs_color(10, 10, 10, 255));
 
     // Submit command buffer (syncs to GPU, MUST be done on main thread where you have your GPU context created)
-    gs_graphics_submit_command_buffer(&cb);
+    gs_graphics_command_buffer_submit(&cb);
 }
 
 gs_app_desc_t gs_main(int32_t argc, char** argv)

@@ -82,7 +82,7 @@ void update()
     gs_nk_render(&gs_nk, &gcb, NK_ANTI_ALIASING_ON);
 
     // Final graphics command buffer submit
-    gs_graphics_submit_command_buffer(&gcb);
+    gs_graphics_command_buffer_submit(&gcb);
 }
 
 gs_app_desc_t gs_main(int32_t argc, char** argv)

@@ -251,7 +251,7 @@ void app_update()
         .uniforms = {.desc = uniforms, .size = sizeof(uniforms)}
     };
 
-    gs_graphics_begin_render_pass(&cb, GS_GRAPHICS_RENDER_PASS_DEFAULT); {
+    gs_graphics_renderpass_begin(&cb, GS_GRAPHICS_RENDER_PASS_DEFAULT); {
         gs_graphics_bind_pipeline(&cb, pip);
         gs_graphics_set_viewport(&cb, 0, 0, (uint32_t)fs.x, (uint32_t)fs.y);
         gs_graphics_clear(&cb, &clear);
@@ -272,10 +272,10 @@ void app_update()
             gs_graphics_draw(&cb, &(gs_graphics_draw_desc_t){.start = 0, .count = 36});
         } 
     }
-    gs_graphics_end_render_pass(&cb);
+    gs_graphics_renderpass_end(&cb);
 
     // Submit command buffer (syncs to GPU, MUST be done on main thread where you have your GPU context created)
-    gs_graphics_submit_command_buffer(&cb);
+    gs_graphics_command_buffer_submit(&cb);
 }
 
 gs_app_desc_t gs_main(int32_t argc, char** argv)

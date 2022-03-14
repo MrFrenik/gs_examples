@@ -196,7 +196,7 @@ void app_update()
 
     // Do rendering
     gs_graphics_clear_desc_t clear = {.actions = &(gs_graphics_clear_action_t){.color = {10.f/255.f, 10.f/255.f, 10.f/255.f, 1.f}}};
-    gs_graphics_begin_render_pass(cb, (gs_handle(gs_graphics_render_pass_t)){0});
+    gs_graphics_renderpass_begin(cb, (gs_handle(gs_graphics_renderpass_t)){0});
     {
         // Set view port
         gs_graphics_set_viewport(cb,0,0,(int)fbs.x,(int)fbs.y);
@@ -205,15 +205,15 @@ void app_update()
         gs_graphics_clear(cb, &clear); 
 
         // Render gsi
-        gsi_render_pass_submit_ex(gsi, cb, NULL);
+        gsi_renderpass_submit_ex(gsi, cb, NULL);
 
         // Render gui
         gs_gui_render(gui, cb);
     }
-    gs_graphics_end_render_pass(cb);
+    gs_graphics_renderpass_end(cb);
     
     //Submits to cb
-    gs_graphics_submit_command_buffer(cb);
+    gs_graphics_command_buffer_submit(cb);
 }
 
 int32_t button_custom(gs_gui_context_t* ctx, const char* label)

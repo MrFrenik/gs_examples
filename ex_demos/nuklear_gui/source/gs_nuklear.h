@@ -475,7 +475,7 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
         gs_graphics_clear_desc_t clear = {.actions = &(gs_graphics_clear_action_t){.color = 0.0f, 0.0f, 0.0f, 1.f}};
 
         // Render pass
-        gs_graphics_begin_render_pass(cb, GS_GRAPHICS_RENDER_PASS_DEFAULT);
+        gs_graphics_renderpass_begin(cb, GS_GRAPHICS_RENDER_PASS_DEFAULT);
 
             // Bind pipeline for nuklear
             gs_graphics_bind_pipeline(cb, gs->pip);
@@ -520,7 +520,7 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
                 offset += cmd->elem_count;
             }
 
-        gs_graphics_end_render_pass(cb);
+        gs_graphics_renderpass_end(cb);
 
         // Clear nuklear info
         nk_clear(&gs->nk_ctx);

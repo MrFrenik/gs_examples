@@ -481,10 +481,10 @@ void app_update()
     }
 
     // Final submit to immediate draw
-    gsi_render_pass_submit(&gsi, &cb, gs_color(10, 10, 10, 255));
+    gsi_renderpass_submit(&gsi, &cb, gs_color(10, 10, 10, 255));
 
     // Submit command buffer (syncs to GPU, MUST be done on main thread where you have your GPU context created)
-    gs_graphics_submit_command_buffer(&cb);
+    gs_graphics_command_buffer_submit(&cb);
 }
 
 gs_app_desc_t gs_main(int32_t argc, char** argv)

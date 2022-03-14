@@ -212,21 +212,21 @@ void app_update()
     gs_gui_end(gui);
 
     // Render pass
-    gs_graphics_begin_render_pass(cb, (gs_renderpass){0}); 
+    gs_graphics_renderpass_begin(cb, (gs_renderpass){0}); 
     { 
         gs_graphics_clear_desc_t clear = {.actions = &(gs_graphics_clear_action_t){.color = {0.05f, 0.05f, 0.05f, 1.f}}}; 
         gs_graphics_clear(cb, &clear);
         gs_graphics_set_viewport(cb, 0, 0, (uint32_t)fbs.x, (uint32_t)fbs.y); 
 
         // Render all gsi
-        gsi_render_pass_submit_ex(gsi, cb, NULL);
+        gsi_renderpass_submit_ex(gsi, cb, NULL);
 
         // Render all gui
         gs_gui_render(gui, cb);
     } 
-    gs_graphics_end_render_pass(cb); 
+    gs_graphics_renderpass_end(cb); 
 
-    gs_graphics_submit_command_buffer(cb);
+    gs_graphics_command_buffer_submit(cb);
 }
 
 void app_shutdown()

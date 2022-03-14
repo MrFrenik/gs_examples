@@ -255,10 +255,10 @@ void app_update()
     print_object(&thing, cls, &pos);
 
     // Submit immediate draw render pass
-    gsi_render_pass_submit(&gsi, &gcb, gs_color(20, 20, 20, 255));
+    gsi_renderpass_submit(&gsi, &gcb, gs_color(20, 20, 20, 255));
 
     // Final command buffer submit
-    gs_graphics_submit_command_buffer(&gcb);
+    gs_graphics_command_buffer_submit(&gcb);
 }
 
 void app_shutdown()

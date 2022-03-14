@@ -116,7 +116,7 @@ void app_update()
     gs_gui_renderpass_submit(gui, cb, (gs_color_t){10, 10, 10, 255}); 
 
     // Submit to graphics backend
-    gs_graphics_submit_command_buffer(cb);
+    gs_graphics_command_buffer_submit(cb);
 }
 
 void app_shutdown()
