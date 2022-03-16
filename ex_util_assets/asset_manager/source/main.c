@@ -187,7 +187,7 @@ void update()
         };
         gs_handle(gs_graphics_pipeline_t) pip = gsi_get_pipeline(&gsi, state);
 
-        gs_graphics_bind_pipeline(&gcb, pip); // Bind pipeline
+        gs_graphics_pipeline_bind(&gcb, pip); // Bind pipeline
 
         // MVP Matrix
         gs_mat4 mvp = gs_mat4_perspective(60.f, ws.x / ws.y, 0.1f, 1000.f);

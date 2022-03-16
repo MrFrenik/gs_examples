@@ -81,7 +81,7 @@ void update()
 
     gs_graphics_renderpass_begin(&cb, GS_GRAPHICS_RENDER_PASS_DEFAULT);            // Begin render pass (default render pass draws to back buffer)
         gs_graphics_clear(&cb, &clear);                                            // Clear screen
-        gs_graphics_bind_pipeline(&cb, pip);                                       // Bind our triangle pipeline for rendering
+        gs_graphics_pipeline_bind(&cb, pip);                                       // Bind our triangle pipeline for rendering
         gs_graphics_apply_bindings(&cb, &binds);                                   // Bind all bindings (just vertex buffer)
         gs_graphics_draw(&cb, &(gs_graphics_draw_desc_t){.start = 0, .count = 3}); // Draw the triangle
     gs_graphics_renderpass_end(&cb);                                               // End the render pass

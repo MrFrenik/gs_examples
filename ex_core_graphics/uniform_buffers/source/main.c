@@ -158,7 +158,7 @@ void app_update()
                 .uniform_buffers = {&(gs_graphics_bind_uniform_buffer_desc_t){.buffer = u_vp, .binding = 0}},
                 .uniforms = {&(gs_graphics_bind_uniform_desc_t){.uniform = u_model, .data = &models[i]}}
             };
-            gs_graphics_bind_pipeline(&cb, pips[i]);
+            gs_graphics_pipeline_bind(&cb, pips[i]);
             gs_graphics_apply_bindings(&cb, &binds);
             gs_graphics_draw(&cb, &(gs_graphics_draw_desc_t){.start = 0, .count = 36});
         }

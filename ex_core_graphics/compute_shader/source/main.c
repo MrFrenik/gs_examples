@@ -144,7 +144,7 @@ void app_update()
         };
 
         // Bind compute pipeline
-        gs_graphics_bind_pipeline(&cb, cmdpip);
+        gs_graphics_pipeline_bind(&cb, cmdpip);
         // Bind compute bindings
         gs_graphics_apply_bindings(&cb, &binds);
         // Dispatch compute shader

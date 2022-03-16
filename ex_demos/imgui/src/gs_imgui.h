@@ -255,7 +255,7 @@ gs_imgui_create_fonts_texture(gs_imgui_t* gs)
     tdesc.format = GS_GRAPHICS_TEXTURE_FORMAT_RGBA8;
     tdesc.min_filter = GS_GRAPHICS_TEXTURE_FILTER_LINEAR; 
     tdesc.mag_filter = GS_GRAPHICS_TEXTURE_FILTER_LINEAR; 
-    tdesc.data = (void*)pixels;
+    *tdesc.data = (void*)pixels;
 
     gs->font_tex = gs_graphics_texture_create(&tdesc);
 
@@ -451,7 +451,7 @@ gs_imgui_render(gs_imgui_t* gs, gs_command_buffer_t* cb)
     gs_graphics_renderpass_begin(cb, def_pass);
     {
         // Bind pipeline
-        gs_graphics_bind_pipeline(cb, gs->pip);
+        gs_graphics_pipeline_bind(cb, gs->pip);
 
         // Set viewport
         gs_graphics_set_viewport(cb, 0, 0, fb_width, fb_height);

@@ -478,7 +478,7 @@ gs_nk_render(gs_nk_ctx_t* gs, gs_command_buffer_t* cb, enum nk_anti_aliasing AA)
         gs_graphics_renderpass_begin(cb, GS_GRAPHICS_RENDER_PASS_DEFAULT);
 
             // Bind pipeline for nuklear
-            gs_graphics_bind_pipeline(cb, gs->pip);
+            gs_graphics_pipeline_bind(cb, gs->pip);
 
             // Set viewport
             gs_graphics_set_viewport(cb, 0, 0, (uint32_t)gs->display_width, (uint32_t)gs->display_height);

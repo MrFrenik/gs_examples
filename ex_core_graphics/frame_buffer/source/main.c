@@ -41,8 +41,7 @@ void app_init()
             .wrap_s = GS_GRAPHICS_TEXTURE_WRAP_REPEAT,                           // Wrapping type for s axis of texture
             .wrap_t = GS_GRAPHICS_TEXTURE_WRAP_REPEAT,                           // Wrapping type for t axis of texture
             .min_filter = GS_GRAPHICS_TEXTURE_FILTER_LINEAR,                     // Minification filter for texture
-            .mag_filter = GS_GRAPHICS_TEXTURE_FILTER_LINEAR,                     // Magnification filter for texture
-            .render_target = true
+            .mag_filter = GS_GRAPHICS_TEXTURE_FILTER_LINEAR                      // Magnification filter for texture
         }
     );
 
@@ -68,7 +67,7 @@ void app_update()
     gs_graphics_clear_desc_t bb_clear = {.actions = &(gs_graphics_clear_action_t){.color = 0.1f, 0.1f, 0.1f, 1.f}};
 
     // Immediate rendering for offscreen buffer
-    gsi_camera3D(&gsi, fbs.x, fbs.y);
+    gsi_camera3D(&gsi, (uint32_t)fbs.x, (uint32_t)fbs.y);
     gsi_translatef(&gsi, 0.f, 0.f, -2.f);
     gsi_rotatev(&gsi, gs_platform_elapsed_time() * 0.0001f, GS_YAXIS);
     gsi_rotatev(&gsi, gs_platform_elapsed_time() * 0.0002f, GS_XAXIS);
@@ -77,13 +76,13 @@ void app_update()
 
     // Bind render pass for offscreen rendering then draw to buffer
     gs_graphics_renderpass_begin(&gcb, rp);
-        gs_graphics_set_viewport(&gcb, 0, 0, (int32_t)fbs.x, (int32_t)fbs.y);
+        gs_graphics_set_viewport(&gcb, 0, 0, (uint32_t)fbs.x, (uint32_t)fbs.y);
         gs_graphics_clear(&gcb, &fb_clear);
         gsi_draw(&gsi, &gcb);
     gs_graphics_renderpass_end(&gcb);
 
     // Immediate rendering for back buffer
-    gsi_camera3D(&gsi, fbs.x, fbs.y);
+    gsi_camera3D(&gsi, (uint32_t)fbs.x, (uint32_t)fbs.y);
     gsi_depth_enabled(&gsi, true);
     gsi_face_cull_enabled(&gsi, true);
     gsi_translatef(&gsi, 0.f, 0.f, -1.f);

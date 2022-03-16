@@ -129,11 +129,11 @@ void app_update()
     // Do gui
     gs_gui_begin(gui, fbs);
     { 
-        gs_gui_window_begin(gui, "AI", gs_gui_rect(10, 10, 250, 200));
-        gs_gui_layout_row(gui, 1, (int[]){-1}, 78);
-        gs_gui_text(gui, "The AI will continue to move towards a random location as long as its health is not lower than 50." 
-            "If health drops below 50, the AI will pause to heal back up to 100 then continue moving towards its target."
-            "After it reaches its target, it will find another random location to move towards.");
+        gs_gui_window_begin(gui, "AI", gs_gui_rect(10, 10, 350, 220));
+        gs_gui_layout_row(gui, 1, (int[]){-1}, 100);
+        gs_gui_text(gui, " * The AI will continue to move towards a random location as long as its health is not lower than 50.\n\n" 
+            " * If health drops below 50, the AI will pause to heal back up to 100 then continue moving towards its target.\n\n"
+            " * After it reaches its target, it will find another random location to move towards.");
 
         gs_gui_layout_row(gui, 1, (int[]){-1}, 0);
         gs_gui_label(gui, "state: %s", app->ai.state == AI_STATE_HEAL ? "HEAL" : "MOVE");
@@ -162,7 +162,8 @@ gs_app_desc_t gs_main(int32_t argc, char** argv)
         .user_data = gs_malloc_init(app_t),
         .init = app_init,
         .update = app_update,
-        .shutdown = app_shutdown
+        .shutdown = app_shutdown,
+        .window_width = 1200
     };
 }   
 

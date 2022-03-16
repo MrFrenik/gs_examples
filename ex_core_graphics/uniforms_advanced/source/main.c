@@ -252,7 +252,7 @@ void app_update()
     };
 
     gs_graphics_renderpass_begin(&cb, GS_GRAPHICS_RENDER_PASS_DEFAULT); {
-        gs_graphics_bind_pipeline(&cb, pip);
+        gs_graphics_pipeline_bind(&cb, pip);
         gs_graphics_set_viewport(&cb, 0, 0, (uint32_t)fs.x, (uint32_t)fs.y);
         gs_graphics_clear(&cb, &clear);
         gs_graphics_apply_bindings(&cb, &binds);

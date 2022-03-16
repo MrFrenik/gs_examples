@@ -246,7 +246,7 @@ void app_update()
         // 1). Draw floor as normal, but don't write the floor to the stencil buffer, we only care about the containers. 
         //     We set its mask to 0x00 to not write to the stencil buffer.        
         {
-            gs_graphics_bind_pipeline(&cb, pips[0]);
+            gs_graphics_pipeline_bind(&cb, pips[0]);
             model_binds = (gs_graphics_bind_desc_t){
                 .vertex_buffers = {.desc = &(gs_graphics_bind_vertex_buffer_desc_t){.buffer = pvbo}},
                 .uniforms = {
@@ -265,7 +265,7 @@ void app_update()
         // 2). 1st. render pass, draw objects as normal, writing to the stencil buffer
         {
             for (uint32_t i = 0; i < sizeof(translations) / sizeof(gs_mat4); ++i) {
-                gs_graphics_bind_pipeline(&cb, pips[1]);
+                gs_graphics_pipeline_bind(&cb, pips[1]);
                 model_binds = (gs_graphics_bind_desc_t){
                     .vertex_buffers = {.desc = &(gs_graphics_bind_vertex_buffer_desc_t){.buffer = cvbo}},
                     .uniforms = {
@@ -289,7 +289,7 @@ void app_update()
             for (uint32_t i = 0; i < sizeof(translations) / sizeof(gs_mat4); ++i) {
                 const float scale = 1.1f;
                 model = gs_mat4_mul(translations[i], gs_mat4_scale(scale, scale, scale));
-                gs_graphics_bind_pipeline(&cb, pips[2]);
+                gs_graphics_pipeline_bind(&cb, pips[2]);
                 model_binds = (gs_graphics_bind_desc_t){
                     .vertex_buffers = {.desc = &(gs_graphics_bind_vertex_buffer_desc_t){.buffer = cvbo}},
                     .uniforms = {.desc = &(gs_graphics_bind_uniform_desc_t){.uniform = u_model, .data = &model}}

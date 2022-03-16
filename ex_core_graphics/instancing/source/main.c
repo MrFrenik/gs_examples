@@ -123,7 +123,7 @@ void update()
     gs_graphics_renderpass_begin(&cb, GS_GRAPHICS_RENDER_PASS_DEFAULT);
         gs_graphics_set_viewport(&cb, 0, 0, (int32_t)fbs.x, (int32_t)fbs.y);
         gs_graphics_clear(&cb, &clear);
-        gs_graphics_bind_pipeline(&cb, pip);
+        gs_graphics_pipeline_bind(&cb, pip);
         gs_graphics_apply_bindings(&cb, &binds);
         gs_graphics_draw(&cb, &(gs_graphics_draw_desc_t){.start = 0, .count = 6, .instances = 100});
     gs_graphics_renderpass_end(&cb);

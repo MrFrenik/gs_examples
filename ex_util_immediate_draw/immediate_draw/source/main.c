@@ -25,10 +25,15 @@ void init()
     cb = gs_command_buffer_new(); 
     gsi = gs_immediate_draw_new(gs_platform_main_window());
 
-    gs_asset_font_load_from_file("./assets/font.ttf", &font, 48);
+	const char* asset_dir = gs_platform_dir_exists("./assets") ? "./assets" : "../assets";
+	char PATH[256] = {0};
 
+	gs_snprintf(PATH, sizeof(PATH), "%s/font.ttf", asset_dir);
+    gs_asset_font_load_from_file(PATH, &font, 48);
+
+	gs_snprintf(PATH, sizeof(PATH), "%s/champ.png", asset_dir);
     gs_graphics_texture_desc_t desc = {0};
-    gs_asset_texture_load_from_file("./assets/champ.png", &tex, NULL, true, false);
+    gs_asset_texture_load_from_file(PATH, &tex, NULL, true, false);
 }
 
 void update()
