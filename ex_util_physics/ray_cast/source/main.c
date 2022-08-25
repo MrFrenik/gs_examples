@@ -219,7 +219,7 @@ void app_update()
         gs_graphics_set_viewport(cb, 0, 0, (uint32_t)fbs.x, (uint32_t)fbs.y); 
 
         // Render all gsi
-        gsi_renderpass_submit_ex(gsi, cb, NULL);
+        gsi_renderpass_submit_ex(gsi, cb, (uint32_t)fbs.x, (uint32_t)fbs.y, NULL);
 
         // Render all gui
         gs_gui_render(gui, cb);

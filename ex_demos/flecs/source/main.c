@@ -134,7 +134,7 @@ void app_update()
    gsi_rectvd(gsi, gs_v2(0.f, 0.f), gs_v2(100.f, 20.f), gs_v2(0.f, 0.f), gs_v2(1.f, 1.f), GS_COLOR_BLACK, GS_GRAPHICS_PRIMITIVE_TRIANGLES);
    gsi_text(gsi, 10.f, 15.f, tmp, NULL, false, 255, 255, 255, 255);
 
-   gsi_renderpass_submit(gsi, gcb, gs_color(10, 10, 10, 255));
+   gsi_renderpass_submit(gsi, gcb, (uint32_t)fbs.x, (uint32_t)fbs.y, gs_color(10, 10, 10, 255));
    gs_graphics_command_buffer_submit(gcb);
 }
 

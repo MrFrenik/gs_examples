@@ -52,7 +52,8 @@ GS_VERSION_STR
 "out vec4 frag_color;\n"
 "void main()\n"
 "{\n"
-"   frag_color = texture(u_tex, uv);\n"
+"   vec4 tex_color = texture(u_tex, uv);\n"
+"   frag_color = vec4(tex_color.rgb, 1.0);\n"
 "}";
 
 

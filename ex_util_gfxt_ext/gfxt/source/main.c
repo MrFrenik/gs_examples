@@ -38,14 +38,14 @@ void app_init()
     });
 
     // Create mesh that uses the layout from the pipeline's requested mesh layout 
-    gs_snprintf(TMP, sizeof(TMP), "%s/%s", app->asset_dir, "meshes/slave.gltf");
+    gs_snprintf(TMP, sizeof(TMP), "%s/%s", app->asset_dir, "meshes/Duck.gltf");
     app->mesh = gs_gfxt_mesh_load_from_file(TMP, &(gs_gfxt_mesh_import_options_t){
         .layout = app->pip.mesh_layout,
         .size = gs_dyn_array_size(app->pip.mesh_layout) * sizeof(gs_gfxt_mesh_layout_t),
         .index_buffer_element_size = app->pip.desc.raster.index_buffer_element_size
     }); 
 
-    gs_snprintf(TMP, sizeof(TMP), "%s/%s", app->asset_dir, "textures/slave_albedo.png");
+    gs_snprintf(TMP, sizeof(TMP), "%s/%s", app->asset_dir, "textures/DuckCM.png");
     app->texture = gs_gfxt_texture_load_from_file(TMP, NULL, false, false);
 } 
 

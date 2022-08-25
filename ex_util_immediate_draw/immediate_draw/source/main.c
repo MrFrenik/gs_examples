@@ -127,7 +127,7 @@ void update()
     gsi_texture(&gsi, sdf_tex);
     gsi_rectvd(&gsi, gs_v2s(100.f), gs_vec2_scale(gs_v2((float)q.width, (float)q.height), 3.f), gs_v2s(0.f), gs_v2s(1.f), GS_COLOR_WHITE, GS_GRAPHICS_PRIMITIVE_TRIANGLES); 
 
-    gsi_renderpass_submit(&gsi, &cb, gs_color(10, 10, 10, 255));
+    gsi_renderpass_submit(&gsi, &cb, (uint32_t)ws.x, (uint32_t)ws.y, gs_color(10, 10, 10, 255));
 
     // Submit command buffer (syncs to GPU, MUST be done on main thread where you have your GPU context created)
     gs_graphics_command_buffer_submit(&cb);

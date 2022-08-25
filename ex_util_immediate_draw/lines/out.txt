@@ -1,0 +1,20 @@
+main.c
+e:\development\gs_examples\third_party\include\gs\util\gs_vg.h(280) : warning C4716: 'gs_vg_point_create': must return a value
+Microsoft (R) Incremental Linker Version 14.11.25547.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/debug 
+/out:App.exe 
+/SUBSYSTEM:CONSOLE 
+/NODEFAULTLIB:msvcrt.lib 
+/NODEFAULTLIB:LIBCMT 
+opengl32.lib 
+kernel32.lib 
+user32.lib 
+shell32.lib 
+vcruntime.lib 
+msvcrt.lib 
+gdi32.lib 
+Winmm.lib 
+Advapi32.lib 
+main.obj 

@@ -255,7 +255,7 @@ void app_update()
     print_object(&thing, cls, &pos);
 
     // Submit immediate draw render pass
-    gsi_renderpass_submit(&gsi, &gcb, gs_color(20, 20, 20, 255));
+    gsi_renderpass_submit(&gsi, &gcb, (uint32_t)fbs.x, (uint32_t)fbs.y, gs_color(20, 20, 20, 255));
 
     // Final command buffer submit
     gs_graphics_command_buffer_submit(&gcb);

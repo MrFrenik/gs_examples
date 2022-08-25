@@ -6,6 +6,11 @@
     cubemap texture and explicitly construct GPU resources to use 
     for your application.
 
+    NOTE: Cubemaps REQUIRE that all face images are the exact same size and 
+    both width and height are the same.
+    If not, the cubemap will be ill-formed and most likely 
+    crash in the graphics driver.
+
     Press `esc` to exit the application.
 =================================================================*/
 
@@ -29,7 +34,7 @@ typedef struct
     gs_handle(gs_graphics_uniform_t) u_proj;
     gs_handle(gs_graphics_uniform_t) u_view;
     gs_handle(gs_graphics_uniform_t) u_model;
-    gs_asset_texture_t test;
+    gs_handle(gs_graphics_texture_t) tex0;
     gs_immediate_draw_t gsi;
     gs_camera_t camera;
 } app_t;
@@ -46,7 +51,7 @@ void app_init()
 
     // Load texture data for all cubemap sides 
     const char* asset_dir = gs_platform_dir_exists("./assets") ? "./assets" : "../assets";
-    struct {const char* path; void* data; uint32_t width; uint32_t height; uint32_t ncomps;} tdata[6] = {
+    struct {const char* path; void* data; uint32_t width; uint32_t height; uint32_t ncomps;} tdata[] = {
         {.path = "right.jpg"},
         {.path = "left.jpg"},
         {.path = "top.jpg"},
@@ -58,26 +63,40 @@ void app_init()
     for (uint32_t i = 0; i < 6; ++i) {
         gs_snprintfc(PATH, 256, "%s/%s", asset_dir, tdata[i].path);
         gs_util_load_texture_data_from_file(PATH, &tdata[i].width, &tdata[i].height, &tdata[i].ncomps, &tdata[i].data, false);
-    }
+        gs_assert(tdata[i].data);
+        gs_println("%zu", tdata[i].ncomps);
+    } 
+
+    // Want to be able to give a single texture with offsets for where to read the data...
 
     // Construct cubemap texture and upload all required data for it
 	gs_graphics_texture_desc_t cdesc = (gs_graphics_texture_desc_t){
         .type = GS_GRAPHICS_TEXTURE_CUBEMAP,
         .width = tdata[0].width,
         .height = tdata[0].height,
-        .format = GS_GRAPHICS_TEXTURE_FORMAT_RGBA8,
+        .format = tdata[0].ncomps == 3 ? GS_GRAPHICS_TEXTURE_FORMAT_RGB8 : GS_GRAPHICS_TEXTURE_FORMAT_RGBA8,
         .min_filter = GS_GRAPHICS_TEXTURE_FILTER_NEAREST,
         .mag_filter = GS_GRAPHICS_TEXTURE_FILTER_NEAREST,
         .wrap_s = GS_GRAPHICS_TEXTURE_WRAP_CLAMP_TO_EDGE,
-        .wrap_t = GS_GRAPHICS_TEXTURE_WRAP_CLAMP_TO_EDGE
+        .wrap_t = GS_GRAPHICS_TEXTURE_WRAP_CLAMP_TO_EDGE,
+		.wrap_r = GS_GRAPHICS_TEXTURE_WRAP_CLAMP_TO_EDGE
 	};
 	for (uint32_t i = 0; i < 6; ++i) { 
 		cdesc.data[i] = tdata[i].data;
 	}
-	app->tex = gs_graphics_texture_create(&cdesc);
+	app->tex = gs_graphics_texture_create(&cdesc); 
 
-    gs_snprintfc(PATH, 256, "%s/right.jpg", asset_dir);
-    gs_asset_texture_load_from_file(PATH, &app->test, NULL, false, false);
+    app->tex0 = gs_graphics_texture_create(&(gs_graphics_texture_desc_t){
+        .type = GS_GRAPHICS_TEXTURE_2D,
+        .width = tdata[0].width,
+        .height = tdata[0].height,
+        .data = tdata[0].data,
+        .format = tdata[0].ncomps == 3 ? GS_GRAPHICS_TEXTURE_FORMAT_RGB8 : GS_GRAPHICS_TEXTURE_FORMAT_RGBA8,
+        .min_filter = GS_GRAPHICS_TEXTURE_FILTER_NEAREST,
+        .mag_filter = GS_GRAPHICS_TEXTURE_FILTER_NEAREST,
+        .wrap_s = GS_GRAPHICS_TEXTURE_WRAP_CLAMP_TO_EDGE,
+        .wrap_t = GS_GRAPHICS_TEXTURE_WRAP_CLAMP_TO_EDGE
+    });
 
     // Skybox vbo/ibo
     app->vbo = gs_graphics_vertex_buffer_create(&(gs_graphics_vertex_buffer_desc_t){
@@ -213,7 +232,7 @@ void app_update()
         gs_graphics_draw(cb, &(gs_graphics_draw_desc_t){.start = 0, .count = 36});
     gs_graphics_renderpass_end(cb);
 
-    gsi_renderpass_submit_ex(&app->gsi, cb, NULL);
+    gsi_renderpass_submit_ex(&app->gsi, cb, (uint32_t)fbs.x, (uint32_t)fbs.y, NULL);
 
     // Submit command buffer (syncs to GPU, MUST be done on main thread where you have your GPU context created)
     gs_graphics_command_buffer_submit(cb);

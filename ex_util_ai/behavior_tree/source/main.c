@@ -124,7 +124,7 @@ void app_update()
     gsi_pop_matrix(gsi);
 
     // Submit immediate draw
-    gsi_renderpass_submit(gsi, cb, gs_color(10, 10, 10, 255));
+    gsi_renderpass_submit(gsi, cb, (uint32_t)fbs.x, (uint32_t)fbs.y, gs_color(10, 10, 10, 255));
 
     // Do gui
     gs_gui_begin(gui, fbs);
