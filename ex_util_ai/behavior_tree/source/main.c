@@ -127,7 +127,7 @@ void app_update()
     gsi_renderpass_submit(gsi, cb, (uint32_t)fbs.x, (uint32_t)fbs.y, gs_color(10, 10, 10, 255));
 
     // Do gui
-    gs_gui_begin(gui, fbs);
+    gs_gui_begin(gui, (gs_gui_hints_t*)NULL);
     { 
         gs_gui_window_begin(gui, "AI", gs_gui_rect(10, 10, 350, 220));
         gs_gui_layout_row(gui, 1, (int[]){-1}, 100);

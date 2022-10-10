@@ -1,3 +1,7 @@
+/*
+    TODO(john): Need a description of the .sf format here
+*/
+
 pipeline { 
 
     raster 

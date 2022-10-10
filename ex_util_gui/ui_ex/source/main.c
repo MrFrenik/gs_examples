@@ -93,7 +93,7 @@ void app_update()
     } 
 
     // Begin new frame for gui
-    gs_gui_begin(gui, fbs); 
+    gs_gui_begin(gui, NULL); 
     { 
         // Set menu style sheet
         gs_gui_set_style_sheet(&app->gui, &app->menu_style_sheet);

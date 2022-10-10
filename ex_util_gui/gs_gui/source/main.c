@@ -45,7 +45,7 @@ void app_update()
     }
 
     // Begin new frame for gui
-    gs_gui_begin(&gsgui, gs_platform_framebuffer_sizev(gs_platform_main_window()));
+    gs_gui_begin(&gsgui, NULL);
 
     dockspace(&gsgui);
     gs_gui_demo_window(&gsgui, gs_gui_rect(100, 100, 500, 500), NULL);

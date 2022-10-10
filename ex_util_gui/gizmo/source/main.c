@@ -59,7 +59,7 @@ void app_update()
     }
 
     // Begin new frame for gui
-    gs_gui_begin(gui, fbs);
+    gs_gui_begin(gui, NULL);
 
     dockspace(gui); 
 
@@ -95,10 +95,10 @@ void app_update()
             {NULL}
         };
 
-		struct {const char* str; float* option;} snaps[] = {
-			{"Translation", &snap[0]},
-			{"Rotation", &snap[1]},
-			{"Scale", &snap[2]},
+		struct {const char* str; float* option; float step;} snaps[] = {
+			{"Translation", &snap[0], 0.01f},
+			{"Rotation", &snap[1], 1.f},
+			{"Scale", &snap[2], 0.01f},
 			{NULL}
 		};
 
@@ -133,7 +133,7 @@ void app_update()
                 gs_gui_layout_row(gui, 2, (int[]){100, -5}, 0);
                 for (uint32_t i = 0; snaps[i].str != NULL; ++i) {
                     gs_gui_label(gui, snaps[i].str);
-                    gs_gui_number(gui, snaps[i].option, 0.01f);
+                    gs_gui_number(gui, snaps[i].option, snaps[i].step);
                 }
                 gs_gui_pop_id(gui);
                 gs_gui_combo_end(gui);

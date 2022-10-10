@@ -45,7 +45,7 @@ void app_update()
     }
 
     // Begin new frame for gui
-    gs_gui_begin(gui, fbs);
+    gs_gui_begin(gui, NULL);
 
     // Initial sizes for windows
     const gs_vec2 ws = gs_v2(300.f, 200.f);

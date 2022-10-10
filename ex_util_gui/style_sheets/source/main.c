@@ -63,7 +63,7 @@ void app_update()
     }
 
     // Begin new frame for gui
-    gs_gui_begin(gui, fbs); 
+    gs_gui_begin(gui, NULL); 
 
     const gs_vec2 ws = gs_v2(500.f, 300.f);
     gs_gui_window_begin(gui, "Window", gs_gui_rect((fbs.x - ws.x) * 0.5f, (fbs.y - ws.y) * 0.5f, ws.x, ws.y));
@@ -136,7 +136,7 @@ void app_load_style_sheet(bool destroy)
 {
     app_t* app = gs_user_data(app_t);
     if (destroy) {
-        gs_gui_style_sheet_destroy(&app->gui, &app->style_sheet);
+        gs_gui_style_sheet_destroy(&app->style_sheet);
     }
     gs_snprintfc(TMP, 256, "%s/%s", app->asset_dir, "style_sheets/gui.ss");
     app->style_sheet = gs_gui_style_sheet_load_from_file(&app->gui, TMP);

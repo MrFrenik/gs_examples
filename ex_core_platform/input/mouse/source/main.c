@@ -25,7 +25,7 @@ typedef struct
 
 void app_init()
 {
-    app_t* app = gs_user_data(app_t); 
+    app_t* app = gs_user_data(app_t);
     app->cb = gs_command_buffer_new(); 
     app->gui = gs_gui_new(gs_platform_main_window());
 }
@@ -73,7 +73,7 @@ void app_update()
     bool moved = gs_platform_mouse_moved();
 
     // Simple gui to display all of this information
-    gs_gui_begin(gui, fbs); 
+    gs_gui_begin(gui, &(gs_gui_hints_t){.framebuffer_size = fbs, .viewport = {0.f, 0.f, fbs.x, fbs.y}});
     {
         const gs_vec2 ws = gs_v2(600.f, 300.f);
         gs_gui_window_begin(gui, "Mouse", gs_gui_rect((fbs.x - ws.x) * 0.5f, (fbs.y - ws.y) * 0.5f, ws.x, ws.y));
@@ -121,6 +121,7 @@ void app_update()
 
 void app_shutdown()
 { 
+    // Want to still be able to use this syntax...
     app_t* app = gs_user_data(app_t);
     gs_command_buffer_free(&app->cb);
     gs_gui_free(&app->gui);

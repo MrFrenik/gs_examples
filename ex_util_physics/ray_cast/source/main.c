@@ -78,6 +78,10 @@ void app_update()
     const float t = gs_platform_elapsed_time();
     gs_contact_info_t res = {0};
 
+    if (gs_platform_key_pressed(GS_KEYCODE_ESC)) {
+        gs_quit();
+    }
+
     // Rotate xform over time
     app->xform.rotation = gs_quat_mul_list(3, 
         gs_quat_angle_axis(t * 0.0001f, GS_XAXIS), 
@@ -171,7 +175,7 @@ void app_update()
     gsi_pop_matrix(gsi);
 
     // Render gui for options
-    gs_gui_begin(gui, fbs);
+    gs_gui_begin(gui, NULL);
 
     int32_t op = GS_GUI_OPT_NOTITLE | 
             GS_GUI_OPT_NORESIZE | 
