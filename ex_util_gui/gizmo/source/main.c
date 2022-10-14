@@ -71,11 +71,11 @@ void app_update()
 
         static int32_t gizmo_op = GS_GUI_GIZMO_ROTATE;
         static int32_t gizmo_mode = GS_GUI_TRANSFORM_LOCAL;
-		static float snap[3] = {0}; 
+        static float snap[3] = {0};
 
         // Set the layout to take up the entire window space
         gs_gui_layout_row(gui, 1, (int[]){-1}, -1);
-        gs_gui_gizmo(gui, &app->camera, &app->xform, snap[gizmo_op], gizmo_op, gizmo_mode, GS_GUI_OPT_LEFTCLICKONLY);
+        gs_gui_gizmo(gui, &app->camera, &app->xform, cnt->body, false, snap[gizmo_op], gizmo_op, gizmo_mode, GS_GUI_OPT_LEFTCLICKONLY);
 
         // Do overlay for gizmo options, anchored to the top left of the window
         gs_gui_rect_t anchor = gs_gui_layout_anchor(&cnt->body, cnt->body.w, 200, 1, 1, GS_GUI_LAYOUT_ANCHOR_TOPLEFT);
