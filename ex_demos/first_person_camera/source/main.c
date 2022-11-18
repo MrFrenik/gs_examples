@@ -112,7 +112,7 @@ void app_update()
     gsi_text(&gsi, 40.f, 70.f, "- Shift to run", NULL, false, 20, 20, 20, 255);
 
     /* Render */
-    gsi_renderpass_submit(&gsi, &cb, (uint32_t)fbs.x, (uint32_t)fbs.y, GS_COLOR_WHITE);
+    gsi_renderpass_submit(&gsi, &cb, gs_v4(0.f, 0.f, fbs.x, fbs.y), GS_COLOR_WHITE);
 
     // Submit command buffer (syncs to GPU, MUST be done on main thread where you have your GPU context created)
     gs_graphics_command_buffer_submit(&cb);

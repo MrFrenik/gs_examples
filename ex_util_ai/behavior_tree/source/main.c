@@ -115,6 +115,9 @@ void app_update()
     gsi_push_matrix(gsi, GSI_MATRIX_MODELVIEW);
         gsi_mul_matrix(gsi, gs_vqs_to_mat4(&app->ai.xform));
         gsi_box(gsi, 0.f, 0.f, 0.f, 0.5f, 0.5f, 0.5f, 255, 255, 255, 255, GS_GRAPHICS_PRIMITIVE_LINES);
+        gsi_line3Dv(gsi, gs_v3s(0.f), GS_ZAXIS, GS_COLOR_BLUE);
+        gsi_line3Dv(gsi, gs_v3s(0.f), GS_XAXIS, GS_COLOR_RED);
+        gsi_line3Dv(gsi, gs_v3s(0.f), GS_YAXIS, GS_COLOR_GREEN);
     gsi_pop_matrix(gsi);
 
     // Render target
@@ -124,7 +127,7 @@ void app_update()
     gsi_pop_matrix(gsi);
 
     // Submit immediate draw
-    gsi_renderpass_submit(gsi, cb, (uint32_t)fbs.x, (uint32_t)fbs.y, gs_color(10, 10, 10, 255));
+    gsi_renderpass_submit(gsi, cb, gs_v4(0.f, 0.f, fbs.x, fbs.y), gs_color(10, 10, 10, 255));
 
     // Do gui
     gs_gui_begin(gui, (gs_gui_hints_t*)NULL);
@@ -163,7 +166,7 @@ gs_app_desc_t gs_main(int32_t argc, char** argv)
         .init = app_init,
         .update = app_update,
         .shutdown = app_shutdown,
-        .window_width = 1200
+        .window.width = 1200
     };
 }   
 
@@ -236,13 +239,16 @@ void ai_task_target_move_to(struct gs_ai_bt_t* ctx, struct gs_ai_bt_node_t* node
     float dist = gs_vec3_dist(ai->xform.translation, ai->target);
     float speed = 25.f * dt;
     if (dist > speed) {
-        gs_vec3 vel = gs_vec3_scale(gs_vec3_norm(gs_vec3_sub(ai->target, ai->xform.translation)), speed);
+        gs_vec3 dir = gs_vec3_norm(gs_vec3_sub(ai->target, ai->xform.translation));
+        gs_vec3 vel = gs_vec3_scale(dir, speed);
         gs_vec3 np = gs_vec3_add(ai->xform.translation, vel);
         ai->xform.translation = gs_v3(
             gs_interp_linear(ai->xform.translation.x, np.x, 0.05f),
             gs_interp_linear(ai->xform.translation.y, np.y, 0.05f),
             gs_interp_linear(ai->xform.translation.z, np.z, 0.05f)
         );
+        // Look at target rotation
+        ai->xform.rotation = gs_quat_look_rotation(ai->xform.translation, ai->target, GS_YAXIS);
         node->state = GS_AI_BT_STATE_RUNNING;
         ai->state = AI_STATE_MOVE;
     }

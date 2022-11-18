@@ -79,8 +79,8 @@ gs_app_desc_t gs_main(int32_t argc, char** argv)
         .init = app_init,
         .update = app_update,
         .shutdown = app_shutdown,
-        .window_width = 1024,
-        .window_height = 760
+        .window.width = 1024,
+        .window.height = 760
     };
 }
 

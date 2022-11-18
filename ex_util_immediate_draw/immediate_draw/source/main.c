@@ -18,7 +18,6 @@ gs_command_buffer_t  cb   = {0};
 gs_immediate_draw_t  gsi  = {0};
 gs_asset_font_t      font = {0};
 gs_asset_texture_t   tex  = {0};
-gs_texture           sdf_tex = {0};
 
 void init()
 {
@@ -120,14 +119,9 @@ void update()
     gsi_camera2D(&gsi, (uint32_t)ws.x, (uint32_t)ws.y);
     gsi_defaults(&gsi);
     gsi_text(&gsi, 410.f, 150.f, "Custom Font", &font, false, 200, 100, 50, 255);
-    gsi_text(&gsi, 450.f, 200.f, "Default Font", NULL, false, 50, 100, 255, 255);
+    gsi_text(&gsi, 450.f, 200.f, "Default Font", NULL, false, 50, 100, 255, 255); 
 
-    gs_graphics_texture_desc_t q = {0};
-    gs_graphics_texture_desc_query(sdf_tex, &q);
-    gsi_texture(&gsi, sdf_tex);
-    gsi_rectvd(&gsi, gs_v2s(100.f), gs_vec2_scale(gs_v2((float)q.width, (float)q.height), 3.f), gs_v2s(0.f), gs_v2s(1.f), GS_COLOR_WHITE, GS_GRAPHICS_PRIMITIVE_TRIANGLES); 
-
-    gsi_renderpass_submit(&gsi, &cb, (uint32_t)ws.x, (uint32_t)ws.y, gs_color(10, 10, 10, 255));
+    gsi_renderpass_submit(&gsi, &cb, gs_v4(0.f, 0.f, ws.x, ws.y), gs_color(10, 10, 10, 255));
 
     // Submit command buffer (syncs to GPU, MUST be done on main thread where you have your GPU context created)
     gs_graphics_command_buffer_submit(&cb);

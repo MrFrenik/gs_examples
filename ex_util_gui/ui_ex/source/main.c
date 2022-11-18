@@ -205,7 +205,7 @@ void app_update()
         gs_graphics_clear(cb, &clear); 
 
         // Render gsi
-        gsi_renderpass_submit_ex(gsi, cb, (uint32_t)fbs.x, (uint32_t)fbs.y, NULL);
+        gsi_renderpass_submit_ex(gsi, cb, gs_v4(0.f, 0.f, fbs.x, fbs.y), NULL);
 
         // Render gui
         gs_gui_render(gui, cb);
@@ -247,8 +247,8 @@ gs_app_desc_t gs_main(int32_t argc, char** argv)
         .init = app_init,
         .update = app_update,
         .shutdown = app_shutdown,
-        .window_width = 900,
-        .window_height = 580
+        .window.width = 900,
+        .window.height = 580
     };
 }
 

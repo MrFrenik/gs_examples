@@ -90,7 +90,7 @@ gs_app_desc_t gs_main(int32_t argc, char** argv)
     return (gs_app_desc_t){
         .init = init,
         .update = update,
-        .window_width = 1024,
-        .window_height = 760
+        .window.width = 1024,
+        .window.height = 760
     };
 }

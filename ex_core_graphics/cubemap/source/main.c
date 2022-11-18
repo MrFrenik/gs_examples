@@ -232,7 +232,7 @@ void app_update()
         gs_graphics_draw(cb, &(gs_graphics_draw_desc_t){.start = 0, .count = 36});
     gs_graphics_renderpass_end(cb);
 
-    gsi_renderpass_submit_ex(&app->gsi, cb, (uint32_t)fbs.x, (uint32_t)fbs.y, NULL);
+    gsi_renderpass_submit_ex(&app->gsi, cb, gs_v4(0.f, 0.f, fbs.x, fbs.y), NULL);
 
     // Submit command buffer (syncs to GPU, MUST be done on main thread where you have your GPU context created)
     gs_graphics_command_buffer_submit(cb);
